@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "build:verify": "node scripts/build-verify.mjs",
     "test": "node scripts/verify-all.mjs --tests-only",
-    "verify": "node scripts/verify-all.mjs"
+    "verify": "node scripts/verify-all.mjs",
+    "verify:gate1": "node scripts/verify-gate1.mjs"
   },
   "dependencies": {
     "react": "^19.1.1",
