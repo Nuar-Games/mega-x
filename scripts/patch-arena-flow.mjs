@@ -26,12 +26,12 @@ app = app.replace(
 )
 
 // Temporary build diagnostics for the PASS -> opponent ATTACK control bug.
-for (const needle of ['PASS_ATTACK', 'attackTurn', 'Serang', 'PASS']) {
+for (const needle of ['passToPlayer', 'localViewer', 'function onlineStateToGame', 'const toIndex', 'attackTurn: toIndex']) {
   let from = 0
   while (true) {
     const at = app.indexOf(needle, from)
     if (at < 0) break
-    console.log(`ARENA_CONTROL_CONTEXT ${needle} @ ${at}\n${app.slice(Math.max(0, at - 700), Math.min(app.length, at + 1200))}\n---`)
+    console.log(`ARENA_CONTROL_CONTEXT ${needle} @ ${at}\n${app.slice(Math.max(0, at - 900), Math.min(app.length, at + 1600))}\n---`)
     from = at + needle.length
   }
 }
