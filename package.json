@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/recover-app.mjs && node scripts/recover-css.mjs && node scripts/recover-cards.mjs && node scripts/patch-auth-key.mjs && node scripts/patch-online-feel.mjs && node scripts/patch-network-load.mjs && node scripts/patch-realtime-load.mjs && node scripts/patch-critical-gameplay.mjs && node scripts/patch-polish.mjs && node scripts/patch-resilience.mjs && node scripts/patch-arena-flow.mjs && node scripts/patch-user-feedback.mjs && node scripts/patch-first-place-glow.mjs && node scripts/patch-attack-block-feedback.mjs && node scripts/diag-mobile-lobby.mjs && node tests/pass_attack_ui_regression.mjs && node tests/card_logic_audit_regression.mjs && node tests/engine_behavior_regression.mjs && node scripts/verify-gate1.mjs && tsc && vite build",
+    "build": "node scripts/recover-app.mjs && node scripts/recover-css.mjs && node scripts/recover-cards.mjs && node scripts/patch-auth-key.mjs && node scripts/patch-online-feel.mjs && node scripts/patch-network-load.mjs && node scripts/patch-realtime-load.mjs && node scripts/patch-critical-gameplay.mjs && node scripts/patch-polish.mjs && node scripts/patch-resilience.mjs && node scripts/patch-arena-flow.mjs && node scripts/patch-user-feedback.mjs && node scripts/patch-first-place-glow.mjs && node scripts/patch-attack-block-feedback.mjs && node tests/mobile_lobby_regression.mjs && node tests/pass_attack_ui_regression.mjs && node tests/card_logic_audit_regression.mjs && node tests/engine_behavior_regression.mjs && node scripts/verify-gate1.mjs && tsc && vite build",
     "preview": "vite preview",
     "build:verify": "node scripts/build-verify.mjs",
     "test": "node scripts/verify-all.mjs --tests-only",
