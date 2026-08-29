@@ -54,7 +54,7 @@ if (!app.includes(oldRealtimeCall)) throw new Error('Realtime fallback block mis
 app = app.replace(oldRealtimeCall, newRealtimeCall)
 
 if (!main.includes("serviceWorker.register('/sw.js')")) {
-  main += `\n\n// Cache immutable/heavy card art locally so repeat play does not repeatedly consume host egress.\nif ('serviceWorker' in navigator && import.meta.env.PROD) {\n  window.addEventListener('load', () => {\n    navigator.serviceWorker.register('/sw.js').catch(() => undefined)\n  })\n}\n`
+  main += `\n\n// Cache heavy card art locally so repeat play does not repeatedly consume host egress.\nif ('serviceWorker' in navigator && (import.meta as any).env?.PROD) {\n  window.addEventListener('load', () => {\n    navigator.serviceWorker.register('/sw.js').catch(() => undefined)\n  })\n}\n`
 }
 
 fs.writeFileSync(authPath, auth)
