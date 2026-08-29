@@ -25,6 +25,17 @@ app = app.replace(
   "    const duration =\n      motionFx.kind === 'ENTER_VS' ? 400 :\n      motionFx.kind === 'SUPPORT' ? 380 :\n      motionFx.kind === 'CAPTURE' ? 430 :\n      motionFx.kind === 'DRAW' ? 100 :\n      motionFx.kind === 'DESTROY' ? 200 :\n      motionFx.kind === 'DISCARD' ? 160 :\n      motionFx.kind === 'RETURN' ? 180 : 260",
 )
 
+// Temporary build diagnostics for the PASS -> opponent ATTACK control bug.
+for (const needle of ['PASS_ATTACK', 'attackTurn', 'Serang', 'PASS']) {
+  let from = 0
+  while (true) {
+    const at = app.indexOf(needle, from)
+    if (at < 0) break
+    console.log(`ARENA_CONTROL_CONTEXT ${needle} @ ${at}\n${app.slice(Math.max(0, at - 700), Math.min(app.length, at + 1200))}\n---`)
+    from = at + needle.length
+  }
+}
+
 const marker = '/* Arena flow de-jank */'
 if (!css.includes(marker)) {
   css += `\n${marker}\n.duel-shell .motion-card-fx{pointer-events:none!important;contain:layout paint style!important;transform-origin:center!important;backface-visibility:hidden!important}\n.duel-shell .motion-card-fx.support,.duel-shell .motion-card-fx.enter_vs{animation-duration:.38s!important}\n.duel-shell .motion-card-fx.support::before,.duel-shell .motion-card-fx.support::after{content:none!important;background:transparent!important;border:0!important;box-shadow:none!important;filter:none!important}\n.duel-shell .motion-card-fx>.digital-card{display:block!important;width:100%!important;height:100%!important;aspect-ratio:auto!important;object-fit:contain!important;border-radius:inherit!important}\n.duel-shell .is-arrival-hidden{visibility:hidden!important}\n`
