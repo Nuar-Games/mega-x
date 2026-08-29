@@ -46,6 +46,16 @@ replaceOnce(
   'attack unlock',
 )
 
+// Special visible Effect selection had the same rapid-click race.
+app = app.replace(
+  "      if (!matchNetworkBusy) {\n        setMatchNetworkBusy(true)\n        void submitMatchSpecialAction",
+  "      if (!matchNetworkBusyRef.current) {\n        matchNetworkBusyRef.current = true\n        setMatchNetworkBusy(true)\n        void submitMatchSpecialAction",
+)
+app = app.replace(
+  "          .finally(() => setMatchNetworkBusy(false))",
+  "          .finally(() => { matchNetworkBusyRef.current = false; setMatchNetworkBusy(false) })",
+)
+
 // Remove the speculative queue added in the previous patch. It could create duplicate/janky
 // travel because the authoritative state transition then generated a second movement.
 app = app.replace(
@@ -82,4 +92,4 @@ if (!css.includes(marker)) {
 
 fs.writeFileSync(appPath, app)
 fs.writeFileSync(cssPath, css)
-console.log('Applied critical gameplay fixes: Gravitian, click lock, non-stretch card motion')
+console.log('Applied critical gameplay fixes: Gravitian, click locks, non-stretch card motion')
