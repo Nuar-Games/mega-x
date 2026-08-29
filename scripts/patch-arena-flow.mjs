@@ -5,28 +5,25 @@ const cssPath = 'src/V24.css'
 let app = fs.readFileSync(appPath, 'utf8')
 let css = fs.readFileSync(cssPath, 'utf8')
 
+// Do not hide every destination card just because it is waiting in a serial animation queue.
+// That made bulk effects appear to "lose" cards for seconds.
 app = app.replace(
   "  const motionEvents = useMemo(() => (motionFx ? [motionFx, ...motionQueue] : motionQueue), [motionFx, motionQueue])",
   "  const motionEvents = useMemo(() => (motionFx ? [motionFx] : []), [motionFx])",
 )
+
+// Collapse bulk state diffs to one visual per motion kind. The authoritative board state still
+// updates every card immediately; this removes long trains of stale animations after cards already moved.
 app = app.replace(
   "    events.sort((a, b) => priority[a.kind] - priority[b.kind])\n    previousGameRef.current = game\n    preMutationRectsRef.current = new Map()\n    if (events.length) setMotionQueue((queue) => [...queue, ...events])",
   "    events.sort((a, b) => priority[a.kind] - priority[b.kind])\n    const visualEvents = events.filter((event, index, list) => list.findIndex((candidate) => candidate.kind === event.kind) === index)\n    previousGameRef.current = game\n    preMutationRectsRef.current = new Map()\n    if (visualEvents.length) setMotionQueue((queue) => [...queue.slice(-1), ...visualEvents])",
 )
+
+// Faster, consistent lifetimes. Board truth should never wait on animation completion.
 app = app.replace(
   /    const duration =\n      motionFx\.kind === 'ENTER_VS' \? 520 :\n      motionFx\.kind === 'SUPPORT' \? 500 :\n      motionFx\.kind === 'CAPTURE' \? 560 :\n      motionFx\.kind === 'DRAW' \? 150 :\n      motionFx\.kind === 'DESTROY' \? 260 :\n      motionFx\.kind === 'DISCARD' \? 220 :\n      motionFx\.kind === 'RETURN' \? 240 : 360/,
   "    const duration =\n      motionFx.kind === 'ENTER_VS' ? 400 :\n      motionFx.kind === 'SUPPORT' ? 380 :\n      motionFx.kind === 'CAPTURE' ? 430 :\n      motionFx.kind === 'DRAW' ? 100 :\n      motionFx.kind === 'DESTROY' ? 200 :\n      motionFx.kind === 'DISCARD' ? 160 :\n      motionFx.kind === 'RETURN' ? 180 : 260",
 )
-
-for (const needle of ["{ id: 14,", "case 14:", "attackBlocks += 1"]) {
-  let from = 0
-  while (true) {
-    const at = app.indexOf(needle, from)
-    if (at < 0) break
-    console.log(`CARD14_CONTEXT ${needle} @ ${at}\n${app.slice(Math.max(0, at - 500), Math.min(app.length, at + 1300))}\n---`)
-    from = at + needle.length
-  }
-}
 
 const marker = '/* Arena flow de-jank */'
 if (!css.includes(marker)) {
