@@ -51,6 +51,11 @@ if (!css.includes(marker)) {
   css += `\n${marker}\n@media (max-width:520px) and (orientation:portrait){\n  .duel-shell{--mx-hand:178px!important}\n  .duel-shell .player-hand:not(.opponent-hand){height:178px!important;min-height:178px!important;max-height:178px!important}\n  .duel-shell .player-hand:not(.opponent-hand) .hand-card-wrap{height:154px!important;max-height:154px!important;margin-left:-34px!important}\n}\n`
 }
 
+const vsMarker = '/* Recovery offline portrait VS scale */'
+if (!css.includes(vsMarker)) {
+  css += `\n${vsMarker}\n@media (max-width:520px) and (orientation:portrait){\n  .duel-shell .fighter-field{top:5%!important;bottom:31%!important;width:48%!important}\n  .duel-shell .fighter-field-left{left:1%!important}.duel-shell .fighter-field-right{right:1%!important}\n  .duel-shell .vs-battle-row{grid-template-columns:56px minmax(0,1fr)!important;gap:2px!important}\n  .duel-shell .vs-battle-row.reverse{grid-template-columns:minmax(0,1fr) 56px!important}\n  .duel-shell .live-stats{min-width:52px!important;max-width:56px!important}\n  .duel-shell .vs-inspect-button,.duel-shell .v9-vs-card .vs-zone>.card-back{height:min(28dvh,230px)!important;max-height:230px!important}\n}\n`
+}
+
 fs.writeFileSync(appPath, app)
 fs.writeFileSync(cssPath, css)
-console.log('Restored online responsiveness, card motion diff, attack timing, and portrait card scale')
+console.log('Restored online responsiveness, card motion diff, attack timing, portrait hand scale, and offline portrait VS scale')
