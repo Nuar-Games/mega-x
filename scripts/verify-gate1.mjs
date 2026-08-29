@@ -23,7 +23,8 @@ if (app) {
 
 if (css) {
   check(!/\.player-vs-card[^}]*max-height:\s*148px/i.test(css), 'degraded 148px portrait VS cap is still active')
-  check(!/\.player-hand:not\(\.opponent-hand\)[^}]*\.hand-card-wrap[^}]*height:\s*114px/i.test(css), 'degraded 114px local hand-card rule is still active')
+  const hasRecoveredHandRule = /Recovery online-feel portrait scale/.test(css) && /\.duel-shell \.player-hand:not\(\.opponent-hand\) \.hand-card-wrap\{height:\s*154px!important;max-height:\s*154px!important/i.test(css)
+  check(hasRecoveredHandRule, 'recovered 154px local hand-card override is missing')
   check(/--mx-vs-max:\s*230px/i.test(css) || /max-height:\s*230px/i.test(css), 'offline portrait VS 230px allowance is missing')
 }
 
@@ -62,7 +63,6 @@ if (!fs.existsSync(game) || !fs.existsSync(inspect)) {
   check(!fs.readFileSync(game).equals(fs.readFileSync(inspect)), 'game and inspect card are the same emergency asset bytes')
 }
 
-// Gate 1 remains intentionally red until the backend-authoritative normal-turn deadline is added.
 check(/turnDeadline|turn_deadline|actionDeadline|action_deadline/.test(app), 'client has no authoritative normal-turn deadline field yet')
 
 if (failures.length) {
