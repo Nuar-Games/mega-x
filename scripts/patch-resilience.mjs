@@ -47,8 +47,8 @@ const newRealtimeCall = `    let realtimeHealthy = false
     }, (healthy) => { realtimeHealthy = healthy })
     const scheduleFallback = () => {
       // Realtime is only an accelerator. If Supabase refuses/limits the channel,
-      // automatically continue on ordinary HTTPS polling instead of jamming the match.
-      const delay = document.visibilityState === 'hidden' ? 15_000 : realtimeHealthy ? 5_000 : 1_200
+      // ordinary HTTPS polling stays bounded instead of increasing load during degradation.
+      const delay = document.visibilityState === 'hidden' ? 30_000 : 5_000
 `
 if (!app.includes(oldRealtimeCall)) throw new Error('Realtime fallback block missing')
 app = app.replace(oldRealtimeCall, newRealtimeCall)
