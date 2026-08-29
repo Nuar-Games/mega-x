@@ -9,7 +9,7 @@ let auth = fs.readFileSync(authPath, 'utf8')
 let css = fs.readFileSync(cssPath, 'utf8')
 
 const timerOld = `{actionTimerVisible && <div className={\`mx-action-timer \${actionSecondsLeft <= 10 ? 'is-danger' : ''}\`}><span>{actionTimerIndex === localViewer ? 'YOUR TIME' : 'OPPONENT'}</span><strong>{actionSecondsLeft}</strong></div>}`
-const timerNew = `{actionTimerVisible && <div className={\`mx-action-timer \${actionSecondsLeft <= 5 ? 'is-critical' : actionSecondsLeft <= 10 ? 'is-danger' : actionSecondsLeft <= 15 ? 'is-warning' : ''}\`}><span>{actionTimerIndex === localViewer ? 'YOUR TURN' : 'OPPONENT TURN'}</span><strong>{actionSecondsLeft}</strong><em>SEC</em><i aria-hidden="true"><b style={{ width: \`${Math.max(0, Math.min(100, (actionSecondsLeft / 60) * 100))}%\` }} /></i></div>}`
+const timerNew = `{actionTimerVisible && <div className={\`mx-action-timer \${actionSecondsLeft <= 5 ? 'is-critical' : actionSecondsLeft <= 10 ? 'is-danger' : actionSecondsLeft <= 15 ? 'is-warning' : ''}\`}><span>{actionTimerIndex === localViewer ? 'YOUR TURN' : 'OPPONENT TURN'}</span><strong>{actionSecondsLeft}</strong><em>SEC</em><i aria-hidden="true"><b style={{ width: Math.max(0, Math.min(100, (actionSecondsLeft / 60) * 100)) + '%' }} /></i></div>}`
 if (!app.includes(timerOld)) throw new Error('arena timer patch target missing')
 app = app.replace(timerOld, timerNew)
 
