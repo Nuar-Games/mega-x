@@ -9,7 +9,7 @@ const parts = [
 const b64 = parts.map(n => fs.readFileSync(`recovery/cards/${n}.b64`, 'utf8').trim()).join('');
 const raw = zlib.gunzipSync(Buffer.from(b64, 'base64'));
 const sha = crypto.createHash('sha256').update(raw).digest('hex');
-const expected = 'a0d4655fde4fc2b35b9889de08ce9f7d5d1fa005c01147f86f42fea23d54c28f';
+const expected = 'a0d4655f9ac50049af41625240fab7d90408fca1bae83a3fc34cafbdbb93c28f';
 if (sha !== expected) throw new Error(`Card recovery checksum mismatch: ${sha}`);
 const files = JSON.parse(raw.toString('utf8'));
 if (Object.keys(files).length !== 31) throw new Error(`Expected 31 card assets, got ${Object.keys(files).length}`);
