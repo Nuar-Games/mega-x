@@ -178,7 +178,7 @@ test('17 GRAVITIAN preserves owner Effect Zone and resets opponent', () => {
 
 // 18 GERGASI PEDANG BESI
 test('18 GERGASI reduces opponent hand/effects to two', () => {
-  let s = play(makeState({ p1Hand: [18], p2Hand: [1,2,3,4,5], p2Effects: [effect(6),effect(7),effect(8),effect(9)] }), 18)
+  let s = play(makeState({ p1Hand: [18], p2Hand: [1,2,3,4,5], p2Effects: [effect(1),effect(2),effect(20),effect(24)] }), 18)
   while (s.pendingBoardChoice) s = act(s, P1, 'RESOLVE_BOARD_CHOICE', { cardId: s.pendingBoardChoice.cardIds[0] })
   while (s.pendingChoice) s = act(s, P1, 'RESOLVE_HIDDEN_CHOICE', { slot: 0 })
   assert(s.player2.hand.length === 2 && s.player2.effects.length === 2, 'GERGASI limits wrong')
@@ -247,9 +247,9 @@ test('26 SPUDUR VS and Effect discard counters are recorded', () => {
 })
 
 // 27 PENDEKAR CAHAYA PRISMA
-test('27 PENDEKAR DEF captures VS and destroys opponent hand', () => {
+test('27 PENDEKAR DEF captures VS and destroys opponent hand before refill', () => {
   const s = play(makeState({ p1Hand: [27], p1Vs: vs(20, 'DEF'), p2Vs: vs(17), p2Hand: [1,2,3] }), 27)
-  assert(s.player1.x.includes(17) && s.player2.hand.length === 0 && s.player2.discard.includes(1) && !s.player2.vs, 'PENDEKAR resolution wrong')
+  assert(s.player1.x.includes(17) && s.player2.hand.length === 5 && s.player2.discard.includes(1) && s.player2.discard.includes(2) && s.player2.discard.includes(3) && !s.player2.vs, 'PENDEKAR resolution wrong')
 })
 
 // 28 BLACK HOLE
