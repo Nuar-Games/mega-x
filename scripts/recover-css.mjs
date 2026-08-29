@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import crypto from 'node:crypto'
 import zlib from 'node:zlib'
 
-const names = ['00','01a','01b','02','03','04','05','06','07','08','09']
+const names = ['00','01a','01b1','01b2','02','03','04','05','06','07','08','09']
 const parts = names.map((n) => fs.readFileSync(`recovery/css/${n}.b64`, 'utf8').trim())
 const raw = zlib.brotliDecompressSync(Buffer.from(parts.join(''), 'base64'))
 const sha = crypto.createHash('sha256').update(raw).digest('hex')
