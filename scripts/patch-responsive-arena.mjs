@@ -56,3 +56,19 @@ ${marker}
 fs.writeFileSync(appPath,app)
 fs.writeFileSync(cssPath,css)
 console.log('Bound arena, hand, discard chooser, VS chooser and surrender control to responsive viewport')
+
+const mobileMarker='/* Mobile-first arena usability override */'
+if(!css.includes(mobileMarker)) css += `
+${mobileMarker}
+@media(max-width:560px){
+ .duel-shell .battlefield{top:58px!important;bottom:188px!important;left:4px!important;right:4px!important}
+ .duel-shell .hand-area{height:184px!important;max-height:184px!important;padding:5px 4px max(5px,env(safe-area-inset-bottom))!important}
+ .duel-shell .hand-scroll{height:100%!important;align-items:flex-end!important;gap:4px!important}
+ .duel-shell .hand-card-wrap{flex:0 0 clamp(92px,23vw,118px)!important;width:clamp(92px,23vw,118px)!important;max-width:118px!important}
+ .duel-shell .opponent-panel{top:60px!important;left:5px!important;transform:scale(.92)!important;transform-origin:top left!important}
+ .duel-shell .local-panel{bottom:192px!important;left:5px!important;transform:scale(.92)!important;transform-origin:bottom left!important}
+ .duel-shell .battlefield .zone-card-button,.duel-shell .battlefield .motion-card-fx{min-width:clamp(72px,19vw,102px)!important;width:clamp(72px,19vw,102px)!important}
+ .duel-shell .battlefield .zone-card-button .digital-card,.duel-shell .battlefield .motion-card-fx .digital-card{width:100%!important;height:auto!important}
+}
+`
+fs.writeFileSync(cssPath,css)
