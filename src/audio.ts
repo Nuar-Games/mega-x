@@ -50,15 +50,17 @@ class MegaXAudio {
   private unlock() {
     if (this.unlocked) return
     this.unlocked = true
-    for (const kind of Object.keys(SFX_ASSETS) as MegaXSfx[]) this.preloadSfx(kind)
-    for (const kind of Object.keys(VOICE_ASSETS) as MegaXVoice[]) this.preloadVoice(kind)
+    // Mobile-first: unlock immediately, but do not create dozens of remote Audio
+    // elements at once. SFX/voice are loaded lazily on first use.
+    this.preloadSfx('ready')
     this.playSfx('ready')
     this.syncScene(true)
   }
 
   private coinTossVisible() {
     if (document.querySelector('[class*="coin" i], [class*="toss" i], [data-screen*="coin" i], [data-screen*="toss" i]')) return true
-    const text = (document.body?.innerText ?? '').replace(/\s+/g, ' ').toUpperCase()
+    // textContent avoids the forced layout/reflow cost of innerText during animated screens.
+    const text = (document.body?.textContent ?? '').replace(/\s+/g, ' ').toUpperCase()
     return /COIN\s*TOSS|TOSS\s*COIN|LAMBUNGAN\s*SYILING|BALING\s*SYILING|SYILING\s*DILAMBUNG/.test(text)
   }
 
