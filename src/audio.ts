@@ -1,10 +1,17 @@
-import { LOBBY_PLAYLIST, MUSIC_ASSETS, SFX_ASSETS, VOICE_ASSETS, type MegaXSfx, type MegaXVoice } from './audio-assets.ts'
+import { ARENA_TRACKS, LOBBY_PLAYLIST, MUSIC_ASSETS, SFX_ASSETS, VOICE_ASSETS, type MegaXSfx, type MegaXVoice } from './audio-assets.ts'
 
 type AudioSettings = { muted: boolean; music: number; sfx: number; voice: number }
 type Scene = 'silent' | 'lobby' | 'coinToss' | 'match'
-const SETTINGS_KEY = 'mega-x-audio-v5'
+const SETTINGS_KEY = 'mega-x-audio-v6'
+const ARENA_BAG_KEY = 'mega-x-arena-bag-v1'
+const ARENA_LAST_KEY = 'mega-x-arena-last-v1'
 const COIN_TOSS_GAIN = 0.78
+const ARENA_GAIN = 0.58
+const VOICE_DUCK_GAIN = 0.5
+const SFX_DUCK_GAIN = 0.7
 const COIN_FADE_MS = 700
+const ARENA_FADE_IN_MS = 900
+const ARENA_FADE_OUT_MS = 600
 
 function clamp01(value: number) { return Math.max(0, Math.min(1, value)) }
 function loadSettings(): AudioSettings {
@@ -24,6 +31,9 @@ class MegaXAudio {
   private lobbyTrackIndex = 0
   private lobbyPreloads = new Map<number, HTMLAudioElement>()
   private fadeTimer: number | null = null
+  private duckTimer: number | null = null
+  private arenaDuckGain = 1
+  private arenaTrack: string | null = null
   private lastVoice = ''
   private lastVoiceAt = 0
 
@@ -64,24 +74,82 @@ class MegaXAudio {
     if (!force && next === this.scene) return
     const previous = this.scene
     this.scene = next
+
     if (previous === 'coinToss' && next === 'match' && this.music) {
       this.fadeOutMusic(COIN_FADE_MS, () => { if (this.scene === 'match') this.startSceneMusic('match') })
       return
     }
+
+    if (previous === 'match' && next !== 'match' && this.music) {
+      this.fadeOutMusic(ARENA_FADE_OUT_MS, () => {
+        this.arenaTrack = null
+        this.arenaDuckGain = 1
+        if (this.scene === next) this.startSceneMusic(next)
+      })
+      return
+    }
+
     this.stopMusic()
+    if (previous === 'match' && next !== 'match') this.arenaTrack = null
     this.startSceneMusic(next)
+  }
+
+  private baseMusicVolume(scene = this.scene) {
+    if (scene === 'coinToss') return this.settings.music * COIN_TOSS_GAIN
+    if (scene === 'match') return this.settings.music * ARENA_GAIN
+    return this.settings.music
+  }
+
+  private targetMusicVolume() {
+    return this.baseMusicVolume() * (this.scene === 'match' ? this.arenaDuckGain : 1)
   }
 
   private startSceneMusic(scene: Scene) {
     if (!this.unlocked || this.settings.muted || scene === 'silent') return
     if (scene === 'lobby') { this.playLobbyTrack(this.lobbyTrackIndex); return }
-    const audio = new Audio(scene === 'coinToss' ? MUSIC_ASSETS.coinToss : MUSIC_ASSETS.match)
+
+    if (scene === 'coinToss') {
+      const audio = new Audio(MUSIC_ASSETS.coinToss)
+      audio.loop = true
+      audio.preload = 'auto'
+      audio.volume = this.baseMusicVolume('coinToss')
+      this.music = audio
+      void audio.play().catch(() => undefined)
+      return
+    }
+
+    if (!this.arenaTrack) this.arenaTrack = this.pickArenaTrack()
+    const audio = new Audio(this.arenaTrack)
     audio.loop = true
     audio.preload = 'auto'
-    audio.volume = this.settings.music * (scene === 'coinToss' ? COIN_TOSS_GAIN : 1)
+    audio.volume = 0
     this.music = audio
-    void audio.play().catch(() => undefined)
-    if (scene === 'match') this.playVoice('fight')
+    void audio.play().then(() => this.fadeInMusic(ARENA_FADE_IN_MS)).catch(() => undefined)
+    this.playVoice('fight')
+  }
+
+  private pickArenaTrack() {
+    const valid = ARENA_TRACKS.map((_, index) => index)
+    let bag: number[] = []
+    try {
+      const parsed = JSON.parse(localStorage.getItem(ARENA_BAG_KEY) ?? '[]') as number[]
+      bag = parsed.filter((index) => Number.isInteger(index) && index >= 0 && index < ARENA_TRACKS.length)
+    } catch { bag = [] }
+
+    if (bag.length === 0) {
+      bag = [...valid]
+      for (let i = bag.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1))
+        ;[bag[i], bag[j]] = [bag[j], bag[i]]
+      }
+      const last = Number(localStorage.getItem(ARENA_LAST_KEY) ?? '-1')
+      if (bag.length > 1 && bag[0] === last) [bag[0], bag[1]] = [bag[1], bag[0]]
+    }
+
+    const chosen = bag.shift() ?? 0
+    localStorage.setItem(ARENA_BAG_KEY, JSON.stringify(bag))
+    localStorage.setItem(ARENA_LAST_KEY, String(chosen))
+    return ARENA_TRACKS[chosen] ?? ARENA_TRACKS[0]
   }
 
   private playLobbyTrack(index: number) {
@@ -111,6 +179,20 @@ class MegaXAudio {
     else window.setTimeout(run, 900)
   }
 
+  private fadeInMusic(duration: number) {
+    const audio = this.music
+    if (!audio) return
+    if (this.fadeTimer !== null) window.clearInterval(this.fadeTimer)
+    const started = performance.now()
+    this.fadeTimer = window.setInterval(() => {
+      const progress = Math.min(1, (performance.now() - started) / duration)
+      audio.volume = Math.max(0, this.targetMusicVolume() * progress)
+      if (progress < 1) return
+      if (this.fadeTimer !== null) window.clearInterval(this.fadeTimer)
+      this.fadeTimer = null
+    }, 40)
+  }
+
   private fadeOutMusic(duration: number, done: () => void) {
     const audio = this.music
     if (!audio) { done(); return }
@@ -129,8 +211,25 @@ class MegaXAudio {
     }, 40)
   }
 
+  private duckArenaMusic(gain: number, durationMs = 0) {
+    if (this.scene !== 'match' || !this.music) return
+    this.arenaDuckGain = Math.min(this.arenaDuckGain, gain)
+    this.music.volume = this.targetMusicVolume()
+    if (durationMs <= 0) return
+    if (this.duckTimer !== null) window.clearTimeout(this.duckTimer)
+    this.duckTimer = window.setTimeout(() => this.restoreArenaMusic(), durationMs)
+  }
+
+  private restoreArenaMusic() {
+    if (this.duckTimer !== null) { window.clearTimeout(this.duckTimer); this.duckTimer = null }
+    this.arenaDuckGain = 1
+    if (this.scene === 'match' && this.music) this.music.volume = this.targetMusicVolume()
+  }
+
   private stopMusic() {
     if (this.fadeTimer !== null) { window.clearInterval(this.fadeTimer); this.fadeTimer = null }
+    if (this.duckTimer !== null) { window.clearTimeout(this.duckTimer); this.duckTimer = null }
+    this.arenaDuckGain = 1
     if (!this.music) return
     try { this.music.pause(); this.music.currentTime = 0 } catch { /* no gameplay impact */ }
     this.music = null
@@ -146,6 +245,7 @@ class MegaXAudio {
   }
   private playSfx(kind: MegaXSfx) {
     if (!this.unlocked || this.settings.muted || this.settings.sfx <= 0) return
+    if (this.scene === 'match' && (kind === 'attack' || kind === 'blocked' || kind === 'destroy')) this.duckArenaMusic(SFX_DUCK_GAIN, 420)
     this.preloadSfx(kind)
     const pool = this.sfxPool.get(kind) ?? []
     const audio = pool.find((item) => item.paused || item.ended) ?? pool[0]
@@ -159,7 +259,14 @@ class MegaXAudio {
     this.lastVoice = kind; this.lastVoiceAt = now; this.preloadVoice(kind)
     const audio = this.voicePool.get(kind)
     if (!audio) return
-    try { audio.pause(); audio.currentTime = 0; audio.volume = this.settings.voice; void audio.play().catch(() => undefined) } catch { /* no gameplay impact */ }
+    if (this.scene === 'match') {
+      this.duckArenaMusic(VOICE_DUCK_GAIN)
+      const restore = () => this.restoreArenaMusic()
+      audio.addEventListener('ended', restore, { once: true })
+      audio.addEventListener('error', restore, { once: true })
+      window.setTimeout(restore, 3500)
+    }
+    try { audio.pause(); audio.currentTime = 0; audio.volume = this.settings.voice; void audio.play().catch(() => this.restoreArenaMusic()) } catch { this.restoreArenaMusic() }
   }
 
   private onClick = (event: Event) => {
@@ -213,7 +320,7 @@ class MegaXAudio {
       input.addEventListener('input', () => {
         this.settings[key] = Number(input.value) / 100
         this.saveSettings()
-        if (key === 'music' && this.music) this.music.volume = this.settings.music * (this.scene === 'coinToss' ? COIN_TOSS_GAIN : 1)
+        if (key === 'music' && this.music) this.music.volume = this.targetMusicVolume()
       })
     }
     const refresh = () => { toggle.textContent = this.settings.muted ? '🔇' : '🔊'; mute.textContent = this.settings.muted ? 'UNMUTE' : 'MUTE' }

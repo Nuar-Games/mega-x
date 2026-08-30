@@ -24,7 +24,11 @@ export const LOBBY_PLAYLIST = [
   '/audio/lobby/wishing-star-v1.opus',
 ] as const
 
+export const ARENA_TRACKS = [
+  '/audio/arena/arena-c2-v1.opus',
+  '/audio/arena/arena-c3-v1.opus',
+] as const
+
 export const MUSIC_ASSETS = {
   coinToss: '/audio/coin-toss/mega-x-coin-toss-v1.opus',
-  match: 'https://opengameart.org/sites/default/files/hard_battle_2_bpm140_0.ogg',
 } as const
