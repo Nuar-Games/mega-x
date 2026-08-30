@@ -53,38 +53,33 @@ ${marker}
 }
 `
 
+const phoneContract='/* Authoritative phone-first arena contract */'
+if(!css.includes(phoneContract)) css += `
+${phoneContract}
+@media(max-width:560px){
+ .duel-shell{height:100dvh!important;min-height:100dvh!important;max-height:100dvh!important;overflow:hidden!important}
+ .duel-shell .battlefield{top:56px!important;bottom:214px!important;left:3px!important;right:3px!important;max-height:none!important}
+ .duel-shell .arena-wrap{width:100%!important;height:100%!important;padding:2px!important;overflow:hidden!important}
+ .duel-shell .arena{width:100%!important;height:100%!important;max-width:100%!important;aspect-ratio:auto!important}
+ .duel-shell .vs-inspect-button{width:100%!important;max-width:100%!important;height:auto!important;aspect-ratio:.68!important}
+ .duel-shell .v9-vs-card{min-width:0!important;overflow:hidden!important}
+ .duel-shell .battlefield .zone-card-button,.duel-shell .battlefield .motion-card-fx{min-width:0!important;width:auto!important;max-width:100%!important}
+ .duel-shell .effect-card-slot .zone-card-button{width:100%!important;height:auto!important;max-height:92%!important;aspect-ratio:.68!important}
+ .duel-shell .opponent-panel{top:58px!important;left:5px!important;max-width:34vw!important;transform:scale(.9)!important;transform-origin:top left!important}
+ .duel-shell .local-panel{bottom:218px!important;left:5px!important;max-width:34vw!important;transform:scale(.9)!important;transform-origin:bottom left!important}
+ .duel-shell .hand-area{height:210px!important;min-height:210px!important;max-height:210px!important;padding:5px 4px max(7px,env(safe-area-inset-bottom))!important;overflow:hidden!important}
+ .duel-shell .hand-scroll,.duel-shell .hand-fan{height:100%!important;max-width:100%!important;justify-content:flex-start!important;align-items:flex-end!important;gap:0!important;overflow-x:auto!important;overflow-y:hidden!important;touch-action:pan-x!important;-webkit-overflow-scrolling:touch!important;padding:0 6px 8px!important}
+ .duel-shell .player-hand .hand-card-wrap{height:176px!important;width:auto!important;max-width:none!important;min-width:0!important;flex:0 0 auto!important;margin-left:-26px!important;overflow:visible!important}
+ .duel-shell .player-hand .hand-card-wrap:first-child{margin-left:0!important}
+ .duel-shell .player-hand .hand-card-wrap .digital-card{height:100%!important;width:auto!important;max-width:none!important;aspect-ratio:.68!important}
+ .duel-shell .action-bar button,.duel-shell .selected-card-actions button{min-height:42px!important;font-size:12px!important}
+ .duel-shell .mx-action-timer{bottom:218px!important}
+ .mega-coin{will-change:transform!important;contain:layout paint style!important;transform:translateZ(0)}
+ .mega-coin.flipping>div{box-shadow:inset 0 0 0 4px #f2c960,0 8px 16px #000!important}
+ .fight-splash span{text-shadow:5px 5px 0 #d51923,-3px -3px 0 #168dff!important}
+}
+`
+
 fs.writeFileSync(appPath,app)
 fs.writeFileSync(cssPath,css)
-console.log('Bound arena, hand, discard chooser, VS chooser and surrender control to responsive viewport')
-
-const mobileMarker='/* Mobile-first arena usability override */'
-if(!css.includes(mobileMarker)) css += `
-${mobileMarker}
-@media(max-width:560px){
- .duel-shell .battlefield{top:58px!important;bottom:188px!important;left:4px!important;right:4px!important}
- .duel-shell .hand-area{height:184px!important;max-height:184px!important;padding:5px 4px max(5px,env(safe-area-inset-bottom))!important}
- .duel-shell .hand-scroll{height:100%!important;align-items:flex-end!important;gap:4px!important}
- .duel-shell .hand-card-wrap{flex:0 0 clamp(92px,23vw,118px)!important;width:clamp(92px,23vw,118px)!important;max-width:118px!important}
- .duel-shell .opponent-panel{top:60px!important;left:5px!important;transform:scale(.92)!important;transform-origin:top left!important}
- .duel-shell .local-panel{bottom:192px!important;left:5px!important;transform:scale(.92)!important;transform-origin:bottom left!important}
- .duel-shell .battlefield .zone-card-button,.duel-shell .battlefield .motion-card-fx{min-width:clamp(72px,19vw,102px)!important;width:clamp(72px,19vw,102px)!important}
- .duel-shell .battlefield .zone-card-button .digital-card,.duel-shell .battlefield .motion-card-fx .digital-card{width:100%!important;height:auto!important}
-}
-`
-fs.writeFileSync(cssPath,css)
-
-const phoneReflow='/* Mobile phone arena reflow v2 */'
-if(!css.includes(phoneReflow)) css += `
-${phoneReflow}
-@media(max-width:560px){
- .duel-shell{height:100dvh!important;min-height:100dvh!important}
- .duel-shell .battlefield{top:52px!important;bottom:210px!important;left:2px!important;right:2px!important}
- .duel-shell .hand-area{height:206px!important;max-height:206px!important;min-height:206px!important}
- .duel-shell .hand-scroll{justify-content:flex-start!important;overflow-x:auto!important}
- .duel-shell .hand-card-wrap{flex:0 0 min(27vw,124px)!important;width:min(27vw,124px)!important;max-width:124px!important}
- .duel-shell .battlefield .zone-card-button,.duel-shell .battlefield .motion-card-fx{width:min(22vw,108px)!important;min-width:min(22vw,108px)!important;max-width:108px!important}
- .duel-shell .opponent-panel{top:54px!important;max-width:30vw!important}
- .duel-shell .local-panel{bottom:212px!important;max-width:30vw!important}
-}
-`
-fs.writeFileSync(cssPath,css)
+console.log('Bound arena and phone-first layout to responsive viewport')
