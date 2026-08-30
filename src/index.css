@@ -4,3 +4,67 @@ html,body,#root{min-height:100%;}
 html:has(.mx-lobby-shell),body:has(.mx-lobby-shell),#root:has(.mx-lobby-shell){height:auto!important;min-height:100%!important;max-height:none!important;overflow-x:hidden!important;overflow-y:auto!important;position:static!important;touch-action:pan-y!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior-y:auto!important}
 body:has(.mx-lobby-shell){min-height:100dvh!important}
 .mx-lobby-shell{height:auto!important;min-height:100dvh!important;max-height:none!important;overflow:visible!important}
+
+/* Mobile-first arena correction 2026-08-30 */
+@media(max-width:700px){
+  .duel-shell{
+    height:100dvh!important;
+    min-height:100dvh!important;
+    max-height:100dvh!important;
+    overflow:hidden!important;
+  }
+
+  /* Keep the board usable instead of letting the VS cards collide in the middle. */
+  .duel-shell .vs-inspect-button{
+    height:88%!important;
+    max-height:88%!important;
+  }
+
+  /* Use the hand area for the cards instead of leaving a large dead black region. */
+  .duel-shell .hand-area{
+    max-height:clamp(190px,28dvh,245px)!important;
+    min-height:190px!important;
+    padding-bottom:max(8px,env(safe-area-inset-bottom))!important;
+  }
+  .duel-shell .player-hand{
+    grid-template-rows:26px minmax(0,1fr)!important;
+  }
+  .duel-shell .hand-fan{
+    align-items:flex-end!important;
+    padding:0 6px 8px!important;
+  }
+  .duel-shell .player-hand .hand-card-wrap{
+    height:clamp(170px,25dvh,225px)!important;
+    width:auto!important;
+    max-width:none!important;
+    flex:0 0 auto!important;
+    margin-left:clamp(-38px,-5vw,-22px)!important;
+  }
+  .duel-shell .player-hand .hand-card-wrap:first-child{
+    margin-left:0!important;
+  }
+
+  /* Keep controls and card content tappable/readable on phone. */
+  .duel-shell .selected-card-actions button,
+  .duel-shell .action-bar button{
+    min-height:42px!important;
+    font-size:12px!important;
+  }
+  .duel-shell .mx-quit-match{
+    min-height:40px!important;
+    padding:8px 10px!important;
+  }
+
+  /* The coin animation was doing expensive paint work while rotating on mobile. */
+  .mega-coin{
+    transform:translateZ(0);
+    will-change:transform;
+    contain:layout paint style;
+  }
+  .mega-coin.flipping>div{
+    box-shadow:inset 0 0 0 4px #f2c960,0 8px 16px #000!important;
+  }
+  .fight-splash span{
+    text-shadow:5px 5px 0 #d51923,-3px -3px 0 #168dff!important;
+  }
+}
