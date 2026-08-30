@@ -75,8 +75,7 @@ class MegaXAudio {
   private startSceneMusic(scene: Scene) {
     if (!this.unlocked || this.settings.muted || scene === 'silent') return
     if (scene === 'lobby') { this.playLobbyTrack(this.lobbyTrackIndex); return }
-    const src = scene === 'coinToss' ? MUSIC_ASSETS.coinToss : MUSIC_ASSETS.match
-    const audio = new Audio(src)
+    const audio = new Audio(scene === 'coinToss' ? MUSIC_ASSETS.coinToss : MUSIC_ASSETS.match)
     audio.loop = true
     audio.preload = 'auto'
     audio.volume = this.settings.music * (scene === 'coinToss' ? COIN_TOSS_GAIN : 1)
@@ -102,9 +101,13 @@ class MegaXAudio {
     if (this.scene !== 'lobby' || this.lobbyPreloads.has(nextIndex)) return
     const run = () => {
       if (this.scene !== 'lobby' || this.lobbyPreloads.has(nextIndex)) return
-      const preload = new Audio(LOBBY_PLAYLIST[nextIndex]); preload.preload = 'auto'; preload.load(); this.lobbyPreloads.set(nextIndex, preload)
+      const preload = new Audio(LOBBY_PLAYLIST[nextIndex])
+      preload.preload = 'auto'
+      preload.load()
+      this.lobbyPreloads.set(nextIndex, preload)
     }
-    if ('requestIdleCallback' in window) (window as typeof window & { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback(run, { timeout: 1800 })
+    const idle = Reflect.get(window, 'requestIdleCallback') as ((cb: () => void, opts?: { timeout: number }) => number) | undefined
+    if (typeof idle === 'function') idle.call(window, run, { timeout: 1800 })
     else window.setTimeout(run, 900)
   }
 
@@ -135,18 +138,27 @@ class MegaXAudio {
 
   private preloadSfx(kind: MegaXSfx) {
     if (this.sfxPool.has(kind)) return
-    this.sfxPool.set(kind, Array.from({ length: 3 }, () => { const a = new Audio(SFX_ASSETS[kind]); a.preload = 'auto'; return a }))
+    this.sfxPool.set(kind, Array.from({ length: 3 }, () => { const audio = new Audio(SFX_ASSETS[kind]); audio.preload = 'auto'; return audio }))
   }
-  private preloadVoice(kind: MegaXVoice) { if (!this.voicePool.has(kind)) { const a = new Audio(VOICE_ASSETS[kind]); a.preload = 'auto'; this.voicePool.set(kind, a) } }
+  private preloadVoice(kind: MegaXVoice) {
+    if (this.voicePool.has(kind)) return
+    const audio = new Audio(VOICE_ASSETS[kind]); audio.preload = 'auto'; this.voicePool.set(kind, audio)
+  }
   private playSfx(kind: MegaXSfx) {
     if (!this.unlocked || this.settings.muted || this.settings.sfx <= 0) return
-    this.preloadSfx(kind); const pool = this.sfxPool.get(kind) ?? []; const audio = pool.find((a) => a.paused || a.ended) ?? pool[0]; if (!audio) return
+    this.preloadSfx(kind)
+    const pool = this.sfxPool.get(kind) ?? []
+    const audio = pool.find((item) => item.paused || item.ended) ?? pool[0]
+    if (!audio) return
     try { audio.pause(); audio.currentTime = 0; audio.volume = this.settings.sfx; void audio.play().catch(() => undefined) } catch { /* no gameplay impact */ }
   }
   private playVoice(kind: MegaXVoice) {
     if (!this.unlocked || this.settings.muted || this.settings.voice <= 0) return
-    const now = performance.now(); if (this.lastVoice === kind && now - this.lastVoiceAt < 1300) return
-    this.lastVoice = kind; this.lastVoiceAt = now; this.preloadVoice(kind); const audio = this.voicePool.get(kind); if (!audio) return
+    const now = performance.now()
+    if (this.lastVoice === kind && now - this.lastVoiceAt < 1300) return
+    this.lastVoice = kind; this.lastVoiceAt = now; this.preloadVoice(kind)
+    const audio = this.voicePool.get(kind)
+    if (!audio) return
     try { audio.pause(); audio.currentTime = 0; audio.volume = this.settings.voice; void audio.play().catch(() => undefined) } catch { /* no gameplay impact */ }
   }
 
@@ -170,8 +182,15 @@ class MegaXAudio {
         const text = (node.textContent ?? '').replace(/\s+/g, ' ').toUpperCase()
         if (text.includes('SERANGAN DISEKAT')) this.playSfx('blocked')
         if (text.includes('DIMUSNAHKAN') || text.includes('DESTROY')) this.playSfx('destroy')
-        if (/PUSINGAN\s*1|ROUND\s*1/.test(text)) this.playVoice('round1'); else if (/PUSINGAN\s*2|ROUND\s*2/.test(text)) this.playVoice('round2'); else if (/PUSINGAN\s*3|ROUND\s*3/.test(text)) this.playVoice('round3'); else if (/PUSINGAN\s*4|ROUND\s*4/.test(text)) this.playVoice('round4'); else if (/PUSINGAN\s*5|ROUND\s*5/.test(text)) this.playVoice('round5')
-        if (/\bWINNER\b|\bPEMENANG\b/.test(text)) this.playVoice('winner'); if (/YOU WIN|ANDA MENANG/.test(text)) this.playVoice('youWin'); if (/YOU LOSE|ANDA KALAH/.test(text)) this.playVoice('youLose'); if (/GAME OVER|PERLAWANAN TAMAT/.test(text)) this.playVoice('gameOver')
+        if (/PUSINGAN\s*1|ROUND\s*1/.test(text)) this.playVoice('round1')
+        else if (/PUSINGAN\s*2|ROUND\s*2/.test(text)) this.playVoice('round2')
+        else if (/PUSINGAN\s*3|ROUND\s*3/.test(text)) this.playVoice('round3')
+        else if (/PUSINGAN\s*4|ROUND\s*4/.test(text)) this.playVoice('round4')
+        else if (/PUSINGAN\s*5|ROUND\s*5/.test(text)) this.playVoice('round5')
+        if (/\bWINNER\b|\bPEMENANG\b/.test(text)) this.playVoice('winner')
+        if (/YOU WIN|ANDA MENANG/.test(text)) this.playVoice('youWin')
+        if (/YOU LOSE|ANDA KALAH/.test(text)) this.playVoice('youLose')
+        if (/GAME OVER|PERLAWANAN TAMAT/.test(text)) this.playVoice('gameOver')
       }
     }
     if (sceneChanged) this.syncScene()
@@ -180,15 +199,36 @@ class MegaXAudio {
   private saveSettings() { localStorage.setItem(SETTINGS_KEY, JSON.stringify(this.settings)) }
   private mountControls() {
     if (document.getElementById('mx-audio-controls')) return
-    const root = document.createElement('div'); root.id = 'mx-audio-controls'; root.innerHTML = `<button type="button" data-audio-toggle aria-label="Audio settings">🔊</button><div data-audio-panel hidden><label>MUSIC <input data-audio-music type="range" min="0" max="100"></label><label>SFX <input data-audio-sfx type="range" min="0" max="100"></label><label>VOICE <input data-audio-voice type="range" min="0" max="100"></label><button type="button" data-audio-mute>MUTE</button></div>`
+    const root = document.createElement('div')
+    root.id = 'mx-audio-controls'
+    root.innerHTML = `<button type="button" data-audio-toggle aria-label="Audio settings">🔊</button><div data-audio-panel hidden><label>MUSIC <input data-audio-music type="range" min="0" max="100"></label><label>SFX <input data-audio-sfx type="range" min="0" max="100"></label><label>VOICE <input data-audio-voice type="range" min="0" max="100"></label><button type="button" data-audio-mute>MUTE</button></div>`
     Object.assign(root.style, { position: 'fixed', top: '10px', right: '10px', zIndex: '1500', fontFamily: 'Barlow Condensed, Impact, sans-serif' })
-    const toggle = root.querySelector<HTMLButtonElement>('[data-audio-toggle]')!, panel = root.querySelector<HTMLElement>('[data-audio-panel]')!, mute = root.querySelector<HTMLButtonElement>('[data-audio-mute]')!
+    const toggle = root.querySelector<HTMLButtonElement>('[data-audio-toggle]')!
+    const panel = root.querySelector<HTMLElement>('[data-audio-panel]')!
+    const mute = root.querySelector<HTMLButtonElement>('[data-audio-mute]')!
     const ranges = { music: root.querySelector<HTMLInputElement>('[data-audio-music]')!, sfx: root.querySelector<HTMLInputElement>('[data-audio-sfx]')!, voice: root.querySelector<HTMLInputElement>('[data-audio-voice]')! }
-    for (const key of Object.keys(ranges) as Array<keyof typeof ranges>) { const input = ranges[key]; input.value = String(Math.round(this.settings[key] * 100)); input.addEventListener('input', () => { this.settings[key] = Number(input.value) / 100; this.saveSettings(); if (key === 'music' && this.music) this.music.volume = this.settings.music * (this.scene === 'coinToss' ? COIN_TOSS_GAIN : 1) }) }
+    for (const key of Object.keys(ranges) as Array<keyof typeof ranges>) {
+      const input = ranges[key]
+      input.value = String(Math.round(this.settings[key] * 100))
+      input.addEventListener('input', () => {
+        this.settings[key] = Number(input.value) / 100
+        this.saveSettings()
+        if (key === 'music' && this.music) this.music.volume = this.settings.music * (this.scene === 'coinToss' ? COIN_TOSS_GAIN : 1)
+      })
+    }
     const refresh = () => { toggle.textContent = this.settings.muted ? '🔇' : '🔊'; mute.textContent = this.settings.muted ? 'UNMUTE' : 'MUTE' }
-    toggle.addEventListener('click', (e) => { e.stopPropagation(); panel.hidden = !panel.hidden; this.unlock() }); mute.addEventListener('click', (e) => { e.stopPropagation(); this.settings.muted = !this.settings.muted; this.saveSettings(); refresh(); this.syncScene(true) }); root.addEventListener('click', (e) => e.stopPropagation())
-    panel.style.cssText = 'margin-top:6px;display:grid;gap:6px;padding:10px;background:rgba(7,8,14,.94);border:1px solid rgba(255,255,255,.2);border-radius:10px;color:#fff;font-size:12px;min-width:170px;box-shadow:0 8px 28px rgba(0,0,0,.5)'; toggle.style.cssText = 'width:38px;height:38px;border-radius:999px;border:1px solid rgba(255,255,255,.25);background:rgba(7,8,14,.9);color:#fff;cursor:pointer'; mute.style.cssText = 'min-height:32px;border:1px solid rgba(255,255,255,.2);background:#171923;color:#fff;border-radius:7px;font-weight:800;cursor:pointer'; refresh(); document.body.appendChild(root)
+    toggle.addEventListener('click', (event) => { event.stopPropagation(); panel.hidden = !panel.hidden; this.unlock() })
+    mute.addEventListener('click', (event) => { event.stopPropagation(); this.settings.muted = !this.settings.muted; this.saveSettings(); refresh(); this.syncScene(true) })
+    root.addEventListener('click', (event) => event.stopPropagation())
+    panel.style.cssText = 'margin-top:6px;display:grid;gap:6px;padding:10px;background:rgba(7,8,14,.94);border:1px solid rgba(255,255,255,.2);border-radius:10px;color:#fff;font-size:12px;min-width:170px;box-shadow:0 8px 28px rgba(0,0,0,.5)'
+    toggle.style.cssText = 'width:38px;height:38px;border-radius:999px;border:1px solid rgba(255,255,255,.25);background:rgba(7,8,14,.9);color:#fff;cursor:pointer'
+    mute.style.cssText = 'min-height:32px;border:1px solid rgba(255,255,255,.2);background:#171923;color:#fff;border-radius:7px;font-weight:800;cursor:pointer'
+    refresh(); document.body.appendChild(root)
   }
 }
 
-if (typeof window !== 'undefined' && typeof document !== 'undefined') { const boot = () => new MegaXAudio().start(); if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot() }
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  const boot = () => new MegaXAudio().start()
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true })
+  else boot()
+}
