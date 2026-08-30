@@ -1,0 +1,21 @@
+MEGA-X Arena Music Source Record
+
+Source pack:
+JRPG Battle BGM Pack 1 by doranarasi
+https://doranarasi.itch.io/jrpg-battle-bgm-pack-1
+
+Usage summary from creator page:
+- Free and commercial content use permitted
+- Modification / processing permitted for use in projects
+- Credit not required, though appreciated
+- Do not sell or redistribute the music itself
+- NFT use prohibited
+- Creator states no generative AI was used
+
+Processing for MEGA-X:
+- Target integrated loudness: -23 LUFS
+- True peak ceiling: -2 dBTP
+- Codec: Opus
+- Bitrate: 96 kbps VBR
+- Intended runtime arena gain: ~0.58 of the user's music setting
+- One selected arena track per match; same track loops until match ends
