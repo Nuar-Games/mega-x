@@ -1,0 +1,18 @@
+import fs from 'node:fs'
+const app = fs.readFileSync('src/App.tsx','utf8')
+const audio = fs.readFileSync('src/audio.ts','utf8')
+const assets = fs.readFileSync('src/audio-assets.ts','utf8')
+const css = fs.readFileSync('src/V24.css','utf8') + '\n' + fs.readFileSync('src/Online.css','utf8')
+const must = (ok,msg) => { if (!ok) throw new Error(msg) }
+must(assets.includes("'draw'"), 'draw SFX type missing')
+must(assets.includes("'enter'"), 'card-entry SFX type missing')
+must(!assets.includes('forceField_001.ogg'), 'old card selection sound is still active')
+must(audio.includes("playSfx('draw')"), 'draw event SFX is not wired')
+must(audio.includes("playSfx('enter')"), 'card-entry event SFX is not wired')
+must(audio.includes("playSfx('destroy')"), 'destroy event SFX is not wired')
+must(audio.includes("playSfx('attack')"), 'attack event SFX is not wired')
+must(css.includes('/* Arena mobile audit pass */'), 'arena mobile layout audit CSS missing')
+must(css.includes('.duel-shell ~ #mega-x-audio-controls') || css.includes('body:has(.duel-shell) #mega-x-audio-controls'), 'arena audio controls are not forced compact')
+must(app.includes('CONFIRM DISCARD'), 'Spudur discard confirmation UI missing')
+must(app.includes('selectedDiscardIds'), 'Spudur discard selection state missing')
+console.log('PASS arena audit: compact audio, distinct action SFX, layout pass, and Spudur confirmation')
