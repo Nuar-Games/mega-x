@@ -1,15 +1,18 @@
-export type MegaXSfx = 'ready' | 'ui' | 'card' | 'attack' | 'pass' | 'blocked' | 'destroy'
+export type MegaXSfx = 'ready' | 'ui' | 'card' | 'draw' | 'enter' | 'attack' | 'pass' | 'blocked' | 'destroy'
 export type MegaXVoice = 'ready' | 'fight' | 'round1' | 'round2' | 'round3' | 'round4' | 'round5' | 'winner' | 'youWin' | 'youLose' | 'gameOver'
 
 const KENNEY_SFX = 'https://cdn.jsdelivr.net/gh/euuuuuuan/voidclad-public@main/assets/sfx/kenney/'
+const KENNEY_UI = 'https://cdn.jsdelivr.net/gh/ETdoFresh/kenney.nl@master/kenney_interfacesounds/Audio/'
 const KENNEY_VOICE = 'https://cdn.jsdelivr.net/gh/ETdoFresh/kenney.nl@master/kenney_voiceoverfighter/Audio/'
 
 export const SFX_ASSETS: Record<MegaXSfx, string> = {
   ready: `${KENNEY_SFX}laserLarge_000.ogg`,
-  ui: 'https://cdn.jsdelivr.net/gh/ETdoFresh/kenney.nl@master/kenney_interfacesounds/Audio/confirmation_001.ogg',
-  card: `${KENNEY_SFX}forceField_001.ogg`,
+  ui: `${KENNEY_UI}confirmation_001.ogg`,
+  card: `${KENNEY_UI}select_003.ogg`,
+  draw: `${KENNEY_UI}pluck_002.ogg`,
+  enter: `${KENNEY_UI}drop_002.ogg`,
   attack: 'https://cdn.jsdelivr.net/gh/euuuuuuan/voidclad-public@main/assets/sfx/core_boom.wav',
-  pass: 'https://cdn.jsdelivr.net/gh/ETdoFresh/kenney.nl@master/kenney_interfacesounds/Audio/back_002.ogg',
+  pass: `${KENNEY_UI}back_002.ogg`,
   blocked: `${KENNEY_SFX}impactMetal_heavy_001.ogg`,
   destroy: `${KENNEY_SFX}explosionCrunch_003.ogg`,
 }
