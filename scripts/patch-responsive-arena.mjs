@@ -72,3 +72,19 @@ ${mobileMarker}
 }
 `
 fs.writeFileSync(cssPath,css)
+
+const phoneReflow='/* Mobile phone arena reflow v2 */'
+if(!css.includes(phoneReflow)) css += `
+${phoneReflow}
+@media(max-width:560px){
+ .duel-shell{height:100dvh!important;min-height:100dvh!important}
+ .duel-shell .battlefield{top:52px!important;bottom:210px!important;left:2px!important;right:2px!important}
+ .duel-shell .hand-area{height:206px!important;max-height:206px!important;min-height:206px!important}
+ .duel-shell .hand-scroll{justify-content:flex-start!important;overflow-x:auto!important}
+ .duel-shell .hand-card-wrap{flex:0 0 min(27vw,124px)!important;width:min(27vw,124px)!important;max-width:124px!important}
+ .duel-shell .battlefield .zone-card-button,.duel-shell .battlefield .motion-card-fx{width:min(22vw,108px)!important;min-width:min(22vw,108px)!important;max-width:108px!important}
+ .duel-shell .opponent-panel{top:54px!important;max-width:30vw!important}
+ .duel-shell .local-panel{bottom:212px!important;max-width:30vw!important}
+}
+`
+fs.writeFileSync(cssPath,css)
