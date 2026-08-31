@@ -1,13 +1,12 @@
-import { ARENA_TRACKS, LOBBY_TRACK, MUSIC_ASSETS, SFX_ASSETS, VOICE_ASSETS, type MegaXSfx, type MegaXVoice } from './audio-assets.ts'
+import { ARENA_TRACKS, LOBBY_TRACK, MUSIC_ASSETS, SFX_ASSETS, type MegaXSfx } from './audio-assets.ts'
 
-type AudioSettings = { muted: boolean; music: number; sfx: number; voice: number }
+type AudioSettings = { muted: boolean; music: number; sfx: number }
 type Scene = 'silent' | 'lobby' | 'coinToss' | 'match'
-const SETTINGS_KEY = 'mega-x-audio-v7'
+const SETTINGS_KEY = 'mega-x-audio-v8'
 const ARENA_BAG_KEY = 'mega-x-arena-bag-v1'
 const ARENA_LAST_KEY = 'mega-x-arena-last-v1'
 const COIN_TOSS_GAIN = 0.78
 const ARENA_GAIN = 0.58
-const VOICE_DUCK_GAIN = 0.5
 const SFX_DUCK_GAIN = 0.7
 const SFX_BASE_GAIN = 0.64
 const COIN_FADE_MS = 700
@@ -23,31 +22,32 @@ const SFX_GAIN: Partial<Record<MegaXSfx, number>> = {
   zonX: 0.88,
   prompt: 0.78,
   arenaAppear: 0.82,
+  fight: 0.86,
+  win: 0.88,
 }
 
 function clamp01(value: number) { return Math.max(0, Math.min(1, value)) }
 function loadSettings(): AudioSettings {
   try {
     const parsed = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? '{}') as Partial<AudioSettings>
-    return { muted: Boolean(parsed.muted), music: clamp01(Number(parsed.music ?? 0.34)), sfx: clamp01(Number(parsed.sfx ?? 0.78)), voice: clamp01(Number(parsed.voice ?? 0.82)) }
-  } catch { return { muted: false, music: 0.34, sfx: 0.78, voice: 0.82 } }
+    return { muted: Boolean(parsed.muted), music: clamp01(Number(parsed.music ?? 0.34)), sfx: clamp01(Number(parsed.sfx ?? 0.78)) }
+  } catch { return { muted: false, music: 0.34, sfx: 0.78 } }
 }
 
 class MegaXAudio {
   private unlocked = false
   private settings = loadSettings()
   private sfxPool = new Map<MegaXSfx, HTMLAudioElement[]>()
-  private voicePool = new Map<MegaXVoice, HTMLAudioElement>()
   private music: HTMLAudioElement | null = null
   private scene: Scene = 'silent'
   private fadeTimer: number | null = null
   private duckTimer: number | null = null
   private arenaDuckGain = 1
   private arenaTrack: string | null = null
-  private lastVoice = ''
-  private lastVoiceAt = 0
   private lastPrompt = ''
   private lastPromptAt = 0
+  private lastFightAt = 0
+  private lastWinAt = 0
 
   start() {
     this.mountControls()
@@ -240,16 +240,9 @@ class MegaXAudio {
     }))
   }
 
-  private preloadVoice(kind: MegaXVoice) {
-    if (this.voicePool.has(kind)) return
-    const audio = new Audio(VOICE_ASSETS[kind])
-    audio.preload = 'auto'
-    this.voicePool.set(kind, audio)
-  }
-
   private playSfx(kind: MegaXSfx) {
     if (!this.unlocked || this.settings.muted || this.settings.sfx <= 0) return
-    if (this.scene === 'match' && (kind === 'attack' || kind === 'destroy' || kind === 'zonX')) this.duckArenaMusic(SFX_DUCK_GAIN, 420)
+    if (this.scene === 'match' && (kind === 'attack' || kind === 'destroy' || kind === 'zonX' || kind === 'fight' || kind === 'win')) this.duckArenaMusic(SFX_DUCK_GAIN, 520)
     this.preloadSfx(kind)
     const pool = this.sfxPool.get(kind) ?? []
     const audio = pool.find((item) => item.paused || item.ended) ?? pool[0]
@@ -261,30 +254,6 @@ class MegaXAudio {
       audio.volume = Math.min(1, this.settings.sfx * SFX_BASE_GAIN * eventGain)
       void audio.play().catch(() => undefined)
     } catch { /* no gameplay impact */ }
-  }
-
-  private playVoice(kind: MegaXVoice) {
-    if (!this.unlocked || this.settings.muted || this.settings.voice <= 0) return
-    const now = performance.now()
-    if (this.lastVoice === kind && now - this.lastVoiceAt < 1300) return
-    this.lastVoice = kind
-    this.lastVoiceAt = now
-    this.preloadVoice(kind)
-    const audio = this.voicePool.get(kind)
-    if (!audio) return
-    if (this.scene === 'match') {
-      this.duckArenaMusic(VOICE_DUCK_GAIN)
-      const restore = () => this.restoreArenaMusic()
-      audio.addEventListener('ended', restore, { once: true })
-      audio.addEventListener('error', restore, { once: true })
-      window.setTimeout(restore, 3500)
-    }
-    try {
-      audio.pause()
-      audio.currentTime = 0
-      audio.volume = Math.min(1, this.settings.voice * 0.76)
-      void audio.play().catch(() => this.restoreArenaMusic())
-    } catch { this.restoreArenaMusic() }
   }
 
   private onMotionSfx = (event: Event) => {
@@ -324,8 +293,9 @@ class MegaXAudio {
         const text = (node.textContent ?? '').replace(/\s+/g, ' ').toUpperCase()
         if (!text) continue
         this.maybePlayPrompt(text)
-        if (/\bFIGHT\b/.test(text)) this.playVoice('fight')
-        if (/YOU WIN|ANDA MENANG/.test(text)) this.playVoice('youWin')
+        const now = performance.now()
+        if (/\bFIGHT\b/.test(text) && now - this.lastFightAt > 1300) { this.lastFightAt = now; this.playSfx('fight') }
+        if (/YOU WIN|ANDA MENANG/.test(text) && now - this.lastWinAt > 1300) { this.lastWinAt = now; this.playSfx('win') }
       }
     }
     if (sceneChanged) this.syncScene()
@@ -337,7 +307,7 @@ class MegaXAudio {
     if (document.getElementById('mx-audio-controls')) return
     const root = document.createElement('div')
     root.id = 'mx-audio-controls'
-    root.innerHTML = `<button type="button" data-audio-toggle aria-label="Audio settings">🔊</button><div data-audio-panel hidden><label>MUSIC <input data-audio-music type="range" min="0" max="100"></label><label>SFX <input data-audio-sfx type="range" min="0" max="100"></label><label>VOICE <input data-audio-voice type="range" min="0" max="100"></label><button type="button" data-audio-mute>MUTE</button></div>`
+    root.innerHTML = `<button type="button" data-audio-toggle aria-label="Audio settings">🔊</button><div data-audio-panel hidden><label>MUSIC <input data-audio-music type="range" min="0" max="100"></label><label>SFX <input data-audio-sfx type="range" min="0" max="100"></label><button type="button" data-audio-mute>MUTE</button></div>`
     Object.assign(root.style, { position: 'fixed', top: '10px', right: '10px', zIndex: '1500', fontFamily: 'Barlow Condensed, Impact, sans-serif' })
     const toggle = root.querySelector<HTMLButtonElement>('[data-audio-toggle]')!
     const panel = root.querySelector<HTMLElement>('[data-audio-panel]')!
@@ -345,7 +315,6 @@ class MegaXAudio {
     const ranges = {
       music: root.querySelector<HTMLInputElement>('[data-audio-music]')!,
       sfx: root.querySelector<HTMLInputElement>('[data-audio-sfx]')!,
-      voice: root.querySelector<HTMLInputElement>('[data-audio-voice]')!,
     }
     for (const key of Object.keys(ranges) as Array<keyof typeof ranges>) {
       const input = ranges[key]
