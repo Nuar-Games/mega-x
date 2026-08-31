@@ -1,4 +1,4 @@
-/* MEGA-X Arena — authoritative portrait layout.
+/* MEGA-X Arena — authoritative portrait blueprint 780 x 1110.
    One board. One viewport. No legacy reflow geometry. */
 body.mx-arena-present{margin:0!important;overflow:hidden!important;background:#02050b!important}
 .duel-shell.mx-portrait-stage{position:relative!important;width:min(100vw,780px)!important;height:100dvh!important;max-height:none!important;min-height:0!important;margin:0 auto!important;padding:0!important;overflow:hidden!important;isolation:isolate!important;box-sizing:border-box!important;background:radial-gradient(circle at 50% 48%,rgba(26,83,145,.24),transparent 33%),linear-gradient(180deg,#07111d 0%,#030811 55%,#010307 100%)!important}
