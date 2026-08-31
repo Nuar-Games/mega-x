@@ -1,24 +1,36 @@
-import { ARENA_TRACKS, LOBBY_PLAYLIST, MUSIC_ASSETS, SFX_ASSETS, VOICE_ASSETS, type MegaXSfx, type MegaXVoice } from './audio-assets.ts'
+import { ARENA_TRACKS, LOBBY_TRACK, MUSIC_ASSETS, SFX_ASSETS, VOICE_ASSETS, type MegaXSfx, type MegaXVoice } from './audio-assets.ts'
 
 type AudioSettings = { muted: boolean; music: number; sfx: number; voice: number }
 type Scene = 'silent' | 'lobby' | 'coinToss' | 'match'
-const SETTINGS_KEY = 'mega-x-audio-v6'
+const SETTINGS_KEY = 'mega-x-audio-v7'
 const ARENA_BAG_KEY = 'mega-x-arena-bag-v1'
 const ARENA_LAST_KEY = 'mega-x-arena-last-v1'
 const COIN_TOSS_GAIN = 0.78
 const ARENA_GAIN = 0.58
 const VOICE_DUCK_GAIN = 0.5
 const SFX_DUCK_GAIN = 0.7
+const SFX_BASE_GAIN = 0.64
 const COIN_FADE_MS = 700
 const ARENA_FADE_IN_MS = 900
 const ARENA_FADE_OUT_MS = 600
+
+const SFX_GAIN: Partial<Record<MegaXSfx, number>> = {
+  card: 0.82,
+  draw: 0.90,
+  enter: 0.84,
+  attack: 0.86,
+  destroy: 0.82,
+  zonX: 0.88,
+  prompt: 0.78,
+  arenaAppear: 0.82,
+}
 
 function clamp01(value: number) { return Math.max(0, Math.min(1, value)) }
 function loadSettings(): AudioSettings {
   try {
     const parsed = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? '{}') as Partial<AudioSettings>
-    return { muted: Boolean(parsed.muted), music: clamp01(Number(parsed.music ?? 0.34)), sfx: clamp01(Number(parsed.sfx ?? 0.78)), voice: clamp01(Number(parsed.voice ?? 0.9)) }
-  } catch { return { muted: false, music: 0.34, sfx: 0.78, voice: 0.9 } }
+    return { muted: Boolean(parsed.muted), music: clamp01(Number(parsed.music ?? 0.34)), sfx: clamp01(Number(parsed.sfx ?? 0.78)), voice: clamp01(Number(parsed.voice ?? 0.82)) }
+  } catch { return { muted: false, music: 0.34, sfx: 0.78, voice: 0.82 } }
 }
 
 class MegaXAudio {
@@ -28,20 +40,21 @@ class MegaXAudio {
   private voicePool = new Map<MegaXVoice, HTMLAudioElement>()
   private music: HTMLAudioElement | null = null
   private scene: Scene = 'silent'
-  private lobbyTrackIndex = 0
-  private lobbyPreloads = new Map<number, HTMLAudioElement>()
   private fadeTimer: number | null = null
   private duckTimer: number | null = null
   private arenaDuckGain = 1
   private arenaTrack: string | null = null
   private lastVoice = ''
   private lastVoiceAt = 0
+  private lastPrompt = ''
+  private lastPromptAt = 0
 
   start() {
     this.mountControls()
     document.addEventListener('pointerdown', () => this.unlock(), { once: true, capture: true })
     document.addEventListener('keydown', () => this.unlock(), { once: true, capture: true })
     document.addEventListener('click', this.onClick, true)
+    window.addEventListener('mega-x:motion', this.onMotionSfx as EventListener)
     const observer = new MutationObserver(this.onMutations)
     observer.observe(document.documentElement, { childList: true, subtree: true, characterData: true })
     this.syncScene()
@@ -50,16 +63,11 @@ class MegaXAudio {
   private unlock() {
     if (this.unlocked) return
     this.unlocked = true
-    // Mobile-first: unlock immediately, but do not create dozens of remote Audio
-    // elements at once. SFX/voice are loaded lazily on first use.
-    this.preloadSfx('ready')
-    this.playSfx('ready')
     this.syncScene(true)
   }
 
   private coinTossVisible() {
     if (document.querySelector('[class*="coin" i], [class*="toss" i], [data-screen*="coin" i], [data-screen*="toss" i]')) return true
-    // textContent avoids the forced layout/reflow cost of innerText during animated screens.
     const text = (document.body?.textContent ?? '').replace(/\s+/g, ' ').toUpperCase()
     return /COIN\s*TOSS|TOSS\s*COIN|LAMBUNGAN\s*SYILING|BALING\s*SYILING|SYILING\s*DILAMBUNG/.test(text)
   }
@@ -78,7 +86,11 @@ class MegaXAudio {
     this.scene = next
 
     if (previous === 'coinToss' && next === 'match' && this.music) {
-      this.fadeOutMusic(COIN_FADE_MS, () => { if (this.scene === 'match') this.startSceneMusic('match') })
+      this.fadeOutMusic(COIN_FADE_MS, () => {
+        if (this.scene !== 'match') return
+        this.startSceneMusic('match')
+        this.playSfx('arenaAppear')
+      })
       return
     }
 
@@ -94,6 +106,7 @@ class MegaXAudio {
     this.stopMusic()
     if (previous === 'match' && next !== 'match') this.arenaTrack = null
     this.startSceneMusic(next)
+    if (next === 'match' && previous !== 'match') this.playSfx('arenaAppear')
   }
 
   private baseMusicVolume(scene = this.scene) {
@@ -108,7 +121,16 @@ class MegaXAudio {
 
   private startSceneMusic(scene: Scene) {
     if (!this.unlocked || this.settings.muted || scene === 'silent') return
-    if (scene === 'lobby') { this.playLobbyTrack(this.lobbyTrackIndex); return }
+
+    if (scene === 'lobby') {
+      const audio = new Audio(LOBBY_TRACK)
+      audio.loop = true
+      audio.preload = 'auto'
+      audio.volume = this.settings.music
+      this.music = audio
+      void audio.play().catch(() => undefined)
+      return
+    }
 
     if (scene === 'coinToss') {
       const audio = new Audio(MUSIC_ASSETS.coinToss)
@@ -127,7 +149,6 @@ class MegaXAudio {
     audio.volume = 0
     this.music = audio
     void audio.play().then(() => this.fadeInMusic(ARENA_FADE_IN_MS)).catch(() => undefined)
-    this.playVoice('fight')
   }
 
   private pickArenaTrack() {
@@ -152,33 +173,6 @@ class MegaXAudio {
     localStorage.setItem(ARENA_BAG_KEY, JSON.stringify(bag))
     localStorage.setItem(ARENA_LAST_KEY, String(chosen))
     return ARENA_TRACKS[chosen] ?? ARENA_TRACKS[0]
-  }
-
-  private playLobbyTrack(index: number) {
-    if (this.scene !== 'lobby' || this.settings.muted) return
-    this.lobbyTrackIndex = index % LOBBY_PLAYLIST.length
-    const audio = new Audio(LOBBY_PLAYLIST[this.lobbyTrackIndex])
-    audio.preload = 'auto'
-    audio.volume = this.settings.music
-    audio.addEventListener('ended', () => { if (this.scene === 'lobby') this.playLobbyTrack((this.lobbyTrackIndex + 1) % LOBBY_PLAYLIST.length) }, { once: true })
-    audio.addEventListener('playing', () => this.preloadNextLobbyTrack(), { once: true })
-    this.music = audio
-    void audio.play().catch(() => undefined)
-  }
-
-  private preloadNextLobbyTrack() {
-    const nextIndex = (this.lobbyTrackIndex + 1) % LOBBY_PLAYLIST.length
-    if (this.scene !== 'lobby' || this.lobbyPreloads.has(nextIndex)) return
-    const run = () => {
-      if (this.scene !== 'lobby' || this.lobbyPreloads.has(nextIndex)) return
-      const preload = new Audio(LOBBY_PLAYLIST[nextIndex])
-      preload.preload = 'auto'
-      preload.load()
-      this.lobbyPreloads.set(nextIndex, preload)
-    }
-    const idle = Reflect.get(window, 'requestIdleCallback') as ((cb: () => void, opts?: { timeout: number }) => number) | undefined
-    if (typeof idle === 'function') idle.call(window, run, { timeout: 1800 })
-    else window.setTimeout(run, 900)
   }
 
   private fadeInMusic(duration: number) {
@@ -239,26 +233,43 @@ class MegaXAudio {
 
   private preloadSfx(kind: MegaXSfx) {
     if (this.sfxPool.has(kind)) return
-    this.sfxPool.set(kind, Array.from({ length: 3 }, () => { const audio = new Audio(SFX_ASSETS[kind]); audio.preload = 'auto'; return audio }))
+    this.sfxPool.set(kind, Array.from({ length: 3 }, () => {
+      const audio = new Audio(SFX_ASSETS[kind])
+      audio.preload = 'auto'
+      return audio
+    }))
   }
+
   private preloadVoice(kind: MegaXVoice) {
     if (this.voicePool.has(kind)) return
-    const audio = new Audio(VOICE_ASSETS[kind]); audio.preload = 'auto'; this.voicePool.set(kind, audio)
+    const audio = new Audio(VOICE_ASSETS[kind])
+    audio.preload = 'auto'
+    this.voicePool.set(kind, audio)
   }
+
   private playSfx(kind: MegaXSfx) {
     if (!this.unlocked || this.settings.muted || this.settings.sfx <= 0) return
-    if (this.scene === 'match' && (kind === 'attack' || kind === 'blocked' || kind === 'destroy')) this.duckArenaMusic(SFX_DUCK_GAIN, 420)
+    if (this.scene === 'match' && (kind === 'attack' || kind === 'destroy' || kind === 'zonX')) this.duckArenaMusic(SFX_DUCK_GAIN, 420)
     this.preloadSfx(kind)
     const pool = this.sfxPool.get(kind) ?? []
     const audio = pool.find((item) => item.paused || item.ended) ?? pool[0]
     if (!audio) return
-    try { audio.pause(); audio.currentTime = 0; audio.volume = this.settings.sfx; void audio.play().catch(() => undefined) } catch { /* no gameplay impact */ }
+    const eventGain = SFX_GAIN[kind] ?? 0.82
+    try {
+      audio.pause()
+      audio.currentTime = 0
+      audio.volume = Math.min(1, this.settings.sfx * SFX_BASE_GAIN * eventGain)
+      void audio.play().catch(() => undefined)
+    } catch { /* no gameplay impact */ }
   }
+
   private playVoice(kind: MegaXVoice) {
     if (!this.unlocked || this.settings.muted || this.settings.voice <= 0) return
     const now = performance.now()
     if (this.lastVoice === kind && now - this.lastVoiceAt < 1300) return
-    this.lastVoice = kind; this.lastVoiceAt = now; this.preloadVoice(kind)
+    this.lastVoice = kind
+    this.lastVoiceAt = now
+    this.preloadVoice(kind)
     const audio = this.voicePool.get(kind)
     if (!audio) return
     if (this.scene === 'match') {
@@ -268,7 +279,20 @@ class MegaXAudio {
       audio.addEventListener('error', restore, { once: true })
       window.setTimeout(restore, 3500)
     }
-    try { audio.pause(); audio.currentTime = 0; audio.volume = this.settings.voice; void audio.play().catch(() => this.restoreArenaMusic()) } catch { this.restoreArenaMusic() }
+    try {
+      audio.pause()
+      audio.currentTime = 0
+      audio.volume = Math.min(1, this.settings.voice * 0.76)
+      void audio.play().catch(() => this.restoreArenaMusic())
+    } catch { this.restoreArenaMusic() }
+  }
+
+  private onMotionSfx = (event: Event) => {
+    const kind = (event as CustomEvent<{ kind?: string }>).detail?.kind
+    if (kind === 'DRAW') this.playSfx('draw')
+    else if (kind === 'ENTER_VS' || kind === 'SUPPORT') this.playSfx('enter')
+    else if (kind === 'DESTROY') this.playSfx('destroy')
+    else if (kind === 'CAPTURE') this.playSfx('zonX')
   }
 
   private onClick = (event: Event) => {
@@ -277,9 +301,18 @@ class MegaXAudio {
     if (!target) return
     const label = (target.textContent ?? '').replace(/\s+/g, ' ').trim().toUpperCase()
     if (label.includes('ATTACK') || label === 'SERANG') { this.playSfx('attack'); return }
-    if (label === 'PASS') { this.playSfx('pass'); return }
-    if (target.matches('.digital-card, .zone-card-button, .hand-card-wrap') || target.querySelector('.digital-card')) { this.playSfx('card'); return }
-    this.playSfx('ui')
+    if (target.matches('.digital-card, .zone-card-button, .hand-card-wrap') || target.querySelector('.digital-card')) this.playSfx('card')
+  }
+
+  private maybePlayPrompt(text: string) {
+    const match = text.match(/PILIH\s+(?:KAD|VS|SASARAN|TARGET)|SELECT\s+(?:CARD|TARGET)|CHOOSE\s+(?:CARD|TARGET)/)
+    if (!match) return
+    const prompt = match[0]
+    const now = performance.now()
+    if (prompt === this.lastPrompt && now - this.lastPromptAt < 1200) return
+    this.lastPrompt = prompt
+    this.lastPromptAt = now
+    this.playSfx('prompt')
   }
 
   private onMutations = (mutations: MutationRecord[]) => {
@@ -289,23 +322,17 @@ class MegaXAudio {
       const nodes = mutation.type === 'childList' ? Array.from(mutation.addedNodes) : [mutation.target]
       for (const node of nodes) {
         const text = (node.textContent ?? '').replace(/\s+/g, ' ').toUpperCase()
-        if (text.includes('SERANGAN DISEKAT')) this.playSfx('blocked')
-        if (text.includes('DIMUSNAHKAN') || text.includes('DESTROY')) this.playSfx('destroy')
-        if (/PUSINGAN\s*1|ROUND\s*1/.test(text)) this.playVoice('round1')
-        else if (/PUSINGAN\s*2|ROUND\s*2/.test(text)) this.playVoice('round2')
-        else if (/PUSINGAN\s*3|ROUND\s*3/.test(text)) this.playVoice('round3')
-        else if (/PUSINGAN\s*4|ROUND\s*4/.test(text)) this.playVoice('round4')
-        else if (/PUSINGAN\s*5|ROUND\s*5/.test(text)) this.playVoice('round5')
-        if (/\bWINNER\b|\bPEMENANG\b/.test(text)) this.playVoice('winner')
+        if (!text) continue
+        this.maybePlayPrompt(text)
+        if (/\bFIGHT\b/.test(text)) this.playVoice('fight')
         if (/YOU WIN|ANDA MENANG/.test(text)) this.playVoice('youWin')
-        if (/YOU LOSE|ANDA KALAH/.test(text)) this.playVoice('youLose')
-        if (/GAME OVER|PERLAWANAN TAMAT/.test(text)) this.playVoice('gameOver')
       }
     }
     if (sceneChanged) this.syncScene()
   }
 
   private saveSettings() { localStorage.setItem(SETTINGS_KEY, JSON.stringify(this.settings)) }
+
   private mountControls() {
     if (document.getElementById('mx-audio-controls')) return
     const root = document.createElement('div')
@@ -315,7 +342,11 @@ class MegaXAudio {
     const toggle = root.querySelector<HTMLButtonElement>('[data-audio-toggle]')!
     const panel = root.querySelector<HTMLElement>('[data-audio-panel]')!
     const mute = root.querySelector<HTMLButtonElement>('[data-audio-mute]')!
-    const ranges = { music: root.querySelector<HTMLInputElement>('[data-audio-music]')!, sfx: root.querySelector<HTMLInputElement>('[data-audio-sfx]')!, voice: root.querySelector<HTMLInputElement>('[data-audio-voice]')! }
+    const ranges = {
+      music: root.querySelector<HTMLInputElement>('[data-audio-music]')!,
+      sfx: root.querySelector<HTMLInputElement>('[data-audio-sfx]')!,
+      voice: root.querySelector<HTMLInputElement>('[data-audio-voice]')!,
+    }
     for (const key of Object.keys(ranges) as Array<keyof typeof ranges>) {
       const input = ranges[key]
       input.value = String(Math.round(this.settings[key] * 100))
@@ -325,14 +356,18 @@ class MegaXAudio {
         if (key === 'music' && this.music) this.music.volume = this.targetMusicVolume()
       })
     }
-    const refresh = () => { toggle.textContent = this.settings.muted ? '🔇' : '🔊'; mute.textContent = this.settings.muted ? 'UNMUTE' : 'MUTE' }
+    const refresh = () => {
+      toggle.textContent = this.settings.muted ? '🔇' : '🔊'
+      mute.textContent = this.settings.muted ? 'UNMUTE' : 'MUTE'
+    }
     toggle.addEventListener('click', (event) => { event.stopPropagation(); panel.hidden = !panel.hidden; this.unlock() })
     mute.addEventListener('click', (event) => { event.stopPropagation(); this.settings.muted = !this.settings.muted; this.saveSettings(); refresh(); this.syncScene(true) })
     root.addEventListener('click', (event) => event.stopPropagation())
     panel.style.cssText = 'margin-top:6px;display:grid;gap:6px;padding:10px;background:rgba(7,8,14,.94);border:1px solid rgba(255,255,255,.2);border-radius:10px;color:#fff;font-size:12px;min-width:170px;box-shadow:0 8px 28px rgba(0,0,0,.5)'
     toggle.style.cssText = 'width:38px;height:38px;border-radius:999px;border:1px solid rgba(255,255,255,.25);background:rgba(7,8,14,.9);color:#fff;cursor:pointer'
     mute.style.cssText = 'min-height:32px;border:1px solid rgba(255,255,255,.2);background:#171923;color:#fff;border-radius:7px;font-weight:800;cursor:pointer'
-    refresh(); document.body.appendChild(root)
+    refresh()
+    document.body.appendChild(root)
   }
 }
 
