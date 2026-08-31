@@ -14,14 +14,22 @@ must(!pkg.scripts.build.includes('patch-arena-responsive-system.mjs'), 'obsolete
 must(stage.includes('authoritative portrait blueprint 780 x 1110'), 'portrait coordinate Arena is not authoritative')
 must(action.includes('visual feedback only. Never owns geometry'), 'motion layer is not geometry-isolated')
 
-must(assets.includes("card: '/audio/replacements/card-selected.opus'"), 'replacement card selection sound missing')
-must(assets.includes("draw: '/audio/replacements/card-draw.opus'"), 'replacement draw sound missing')
-must(assets.includes("enter: '/audio/replacements/effect-enter-field.opus'"), 'replacement card entry sound missing')
-must(assets.includes("attack: '/audio/replacements/card-attacking.opus'"), 'replacement attack sound missing')
-must(assets.includes("destroy: '/audio/replacements/card-destroyed.opus'"), 'replacement destroy sound missing')
-must(assets.includes("zonX: '/audio/replacements/card-goes-to-zon-x.opus'"), 'replacement Zon X sound missing')
-must(assets.includes("fight: '/audio/replacements/fight.opus'"), 'replacement fight sound missing')
-must(assets.includes("win: '/audio/replacements/player-win.opus'"), 'replacement win sound missing')
+const requiredAssets = [
+  "card: '/audio/replacements/card-selected.opus'",
+  "draw: '/audio/replacements/card-draw.opus'",
+  "enter: '/audio/replacements/effect-enter-field.opus'",
+  "attack: '/audio/replacements/card-attacking.opus'",
+  "destroy: '/audio/replacements/card-destroyed.opus'",
+  "zonX: '/audio/replacements/card-goes-to-zon-x.opus'",
+  "prompt: '/audio/replacements/prompt-needed.opus'",
+  "arenaAppear: '/audio/replacements/arena-appear.opus'",
+  "fight: '/audio/replacements/fight.opus'",
+  "win: '/audio/replacements/player-win.opus'",
+]
+for (const asset of requiredAssets) must(assets.includes(asset), `replacement audio asset missing: ${asset}`)
+must(assets.includes("export const LOBBY_TRACK = '/audio/replacements/lobby.opus'"), 'replacement lobby track missing')
+must(!assets.includes('VOICE_ASSETS'), 'legacy announcer asset map remains')
+must(!assets.includes('MegaXVoice'), 'legacy announcer type remains')
 
 must(app.includes("new CustomEvent('mega-x:motion'"), 'motion state does not dispatch gameplay audio events')
 must(audio.includes('private onMotionSfx'), 'state-driven motion SFX handler is missing')
@@ -30,9 +38,13 @@ must(audio.includes("kind === 'ENTER_VS' || kind === 'SUPPORT'"), 'entry event i
 must(audio.includes("kind === 'DESTROY'"), 'destroy event is not wired from motion state')
 must(audio.includes("kind === 'CAPTURE'"), 'Zon X capture event is not wired from motion state')
 must(audio.includes("label.includes('ATTACK') || label === 'SERANG'"), 'attack button SFX trigger is missing')
+must(audio.includes("this.playSfx('fight')"), 'fight replacement SFX trigger is missing')
+must(audio.includes("this.playSfx('win')"), 'win replacement SFX trigger is missing')
 must(audio.includes('SFX_BASE_GAIN = 0.64'), 'replacement SFX base gain is missing')
 must(audio.includes('attack: 0.86'), 'attack SFX gain is not configured')
 must(audio.includes('destroy: 0.82'), 'destroy SFX gain is not configured')
+must(!audio.includes('playVoice'), 'legacy announcer playback remains')
+must(!audio.includes('voicePool'), 'legacy announcer pool remains')
 
 must(!assets.includes('sfx-select.ogg'), 'legacy card selection sound reference remains')
 must(!assets.includes('sfx-card-draw.ogg'), 'legacy draw sound reference remains')
