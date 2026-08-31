@@ -35,20 +35,22 @@ if(!audio.includes("window.addEventListener('mega-x:motion'")){
 if(!audio.includes('private onMotionSfx')){
   const hook=`  private onClick = (event: Event) => {`
   if(!audio.includes(hook)) throw new Error('audio click hook missing')
-  const method=`  private onMotionSfx = (event: Event) => {\n    const kind = (event as CustomEvent<{ kind?: string }>).detail?.kind\n    if (kind === 'DRAW') this.playSfx('draw')\n    else if (kind === 'ENTER_VS' || kind === 'SUPPORT') this.playSfx('enter')\n    else if (kind === 'DESTROY') this.playSfx('destroy')\n  }\n\n`
+  const method=`  private onMotionSfx = (event: Event) => {\n    const kind = (event as CustomEvent<{ kind?: string }>).detail?.kind\n    if (kind === 'DRAW') this.playSfx('draw')\n    else if (kind === 'ENTER_VS' || kind === 'SUPPORT') this.playSfx('enter')\n    else if (kind === 'DESTROY') this.playSfx('destroy')\n    else if (kind === 'CAPTURE') this.playSfx('zonX')\n  }\n\n`
   audio=audio.replace(hook,method+hook)
 }
 
-// Per-event gain staging: combat impacts sit under music/voice instead of blasting at the
-// same level as every UI sound.
-const oldVolume=`audio.volume = this.settings.sfx; void audio.play()`
-const newVolume=`audio.volume = Math.min(1, this.settings.sfx * (({ card: 0.52, draw: 0.62, enter: 0.58, attack: 0.34, blocked: 0.42, destroy: 0.30 } as Partial<Record<MegaXSfx, number>>)[kind] ?? 0.7)); void audio.play()`
-if(!audio.includes(newVolume)){
-  if(!audio.includes(oldVolume)) throw new Error('SFX volume assignment missing')
-  audio=audio.replace(oldVolume,newVolume)
+// Replacement audio owns its own normalized per-event gain staging. Only retain the
+// legacy fallback for older branches that do not yet define SFX_BASE_GAIN.
+if(!audio.includes('SFX_BASE_GAIN')){
+  const oldVolume=`audio.volume = this.settings.sfx; void audio.play()`
+  const newVolume=`audio.volume = Math.min(1, this.settings.sfx * (({ card: 0.52, draw: 0.62, enter: 0.58, attack: 0.34, blocked: 0.42, destroy: 0.30 } as Partial<Record<MegaXSfx, number>>)[kind] ?? 0.7)); void audio.play()`
+  if(!audio.includes(newVolume)){
+    if(!audio.includes(oldVolume)) throw new Error('SFX volume assignment missing')
+    audio=audio.replace(oldVolume,newVolume)
+  }
 }
 
 fs.writeFileSync(appPath,app)
 fs.writeFileSync(cssPath,css)
 fs.writeFileSync(audioPath,audio)
-console.log('Applied production jank hotfix: original coin motion, state-driven card SFX, sane gains, unclipped toss title')
+console.log('Applied production jank hotfix: original coin motion, state-driven replacement audio, normalized gains, unclipped toss title')
