@@ -46,7 +46,7 @@ class MegaXAudio {
   private arenaTrack: string | null = null
   private lastPrompt = ''
   private lastPromptAt = 0
-  private lastFightAt = 0
+  private fightPlayedForMatch = false
   private lastWinAt = 0
 
   start() {
@@ -84,6 +84,7 @@ class MegaXAudio {
     if (!force && next === this.scene) return
     const previous = this.scene
     this.scene = next
+    if (next === 'match' && previous !== 'match') this.fightPlayedForMatch = false
 
     if (previous === 'coinToss' && next === 'match' && this.music) {
       this.fadeOutMusic(COIN_FADE_MS, () => {
@@ -285,20 +286,20 @@ class MegaXAudio {
   }
 
   private onMutations = (mutations: MutationRecord[]) => {
-    let sceneChanged = false
+    const sceneChanged = mutations.some((mutation) => mutation.type === 'childList')
+    if (sceneChanged) this.syncScene()
+
     for (const mutation of mutations) {
-      if (mutation.type === 'childList') sceneChanged = true
       const nodes = mutation.type === 'childList' ? Array.from(mutation.addedNodes) : [mutation.target]
       for (const node of nodes) {
         const text = (node.textContent ?? '').replace(/\s+/g, ' ').toUpperCase()
         if (!text) continue
         this.maybePlayPrompt(text)
         const now = performance.now()
-        if (/\bFIGHT\b/.test(text) && now - this.lastFightAt > 1300) { this.lastFightAt = now; this.playSfx('fight') }
+        if (/\bFIGHT\b/.test(text) && !this.fightPlayedForMatch) { this.fightPlayedForMatch = true; this.playSfx('fight') }
         if (/YOU WIN|ANDA MENANG/.test(text) && now - this.lastWinAt > 1300) { this.lastWinAt = now; this.playSfx('win') }
       }
     }
-    if (sceneChanged) this.syncScene()
   }
 
   private saveSettings() { localStorage.setItem(SETTINGS_KEY, JSON.stringify(this.settings)) }
