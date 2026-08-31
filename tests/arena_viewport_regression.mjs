@@ -14,6 +14,6 @@ assert(v24.includes('.duel-shell [class]:has(> .mx-responsive-discard-title)>div
 assert(v24.includes('.duel-shell .vs-inspect-button{width:100%!important;max-width:100%!important'),'mobile VS cards can still force overlap outside their grid cell')
 assert(v24.includes('.duel-shell .player-hand .hand-card-wrap{height:176px!important'),'phone hand cards are still desktop-small')
 assert(v24.includes('.duel-shell .arena{width:100%!important;height:100%!important;max-width:100%!important;aspect-ratio:auto!important'),'phone arena is still constrained by desktop 16:9 geometry')
-assert(v24.includes('.mega-coin{will-change:transform!important;contain:layout paint style!important'),'coin toss mobile animation is not paint-contained')
+assert(!v24.includes('.mega-coin{will-change:transform!important;contain:layout paint style!important;transform:translateZ(0)}'),'mobile coin transform override still suppresses original keyframes')
 assert(v24.includes('overflow:auto!important;-webkit-overflow-scrolling:touch!important'),'chooser content does not have touch scrolling fallback')
-console.log('PASS arena phone layout keeps VS cards separated, hand readable, and coin toss paint-contained')
+console.log('PASS arena phone layout keeps VS cards separated, hand readable, and coin keyframes unobstructed')
