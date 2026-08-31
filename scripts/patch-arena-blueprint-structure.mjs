@@ -16,8 +16,11 @@ let depth = 1
 let closeStart = -1
 let match
 while ((match = tagRe.exec(app))) {
-  if (match[0].startsWith('</div')) depth -= 1
-  else depth += 1
+  if (match[0].startsWith('</div')) {
+    depth -= 1
+  } else if (!/\/\s*>$/.test(match[0])) {
+    depth += 1
+  }
   if (depth === 0) {
     closeStart = match.index
     break
