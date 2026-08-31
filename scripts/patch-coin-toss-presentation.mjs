@@ -51,17 +51,20 @@ app=app.replace(oldBanner,`<div className="coin-result-banner">{playerLabel(coin
 const marker='/* Coin toss mobile presentation contract */'
 if(!css.includes(marker)) css += `
 ${marker}
-.coin-panel-shell .coin-choice-panel{box-sizing:border-box!important;max-width:min(92vw,520px)!important;width:min(92vw,520px)!important;padding-inline:clamp(16px,5vw,34px)!important;overflow:hidden!important}
-.coin-panel-shell .mx-coin-waiting h2{max-width:100%!important;margin-inline:auto!important;padding-block:.08em!important;white-space:normal!important;overflow:visible!important;overflow-wrap:anywhere!important;word-break:normal!important;text-align:center!important;line-height:1.18!important;font-size:clamp(20px,6.8vw,38px)!important;letter-spacing:.01em!important}
-.coin-panel-shell .mx-coin-waiting p{max-width:100%!important;margin:12px auto 0!important;padding-block:.05em!important;white-space:normal!important;overflow:visible!important;text-align:center!important;line-height:1.32!important;font-size:clamp(12px,3.6vw,18px)!important;letter-spacing:.08em!important}
-.coin-stage-result .coin-result-banner{box-sizing:border-box!important;max-width:min(92vw,620px)!important;margin-inline:auto!important;padding:12px 16px!important;text-align:center!important;white-space:normal!important;line-height:1.18!important;font-size:clamp(20px,6vw,42px)!important;overflow:visible!important;overflow-wrap:anywhere!important}
+.coin-panel-shell,.coin-panel-shell .coin-stage,.coin-stage-result,.coin-stage-fight{box-sizing:border-box!important;overflow:visible!important}
+.coin-panel-shell .coin-choice-panel{box-sizing:border-box!important;width:min(94vw,520px)!important;max-width:min(94vw,520px)!important;min-height:0!important;padding:22px 18px!important;overflow:visible!important}
+.coin-panel-shell .coin-choice-panel.mx-coin-waiting{padding:22px 16px!important}
+.coin-panel-shell .mx-coin-waiting h2{display:block!important;max-width:100%!important;margin:0 auto!important;padding:.16em .08em!important;white-space:normal!important;overflow:visible!important;overflow-wrap:anywhere!important;text-align:center!important;line-height:1.22!important;font-size:clamp(20px,6.2vw,36px)!important;letter-spacing:0!important}
+.coin-panel-shell .mx-coin-waiting p{max-width:100%!important;margin:12px auto 0!important;padding:.08em!important;white-space:normal!important;overflow:visible!important;text-align:center!important;line-height:1.32!important;font-size:clamp(12px,3.6vw,18px)!important;letter-spacing:.06em!important}
+.coin-stage-result .coin-result-banner,.coin-stage-fight .coin-result-banner{box-sizing:border-box!important;width:min(94vw,620px)!important;max-width:min(94vw,620px)!important;margin-inline:auto!important;padding:14px 18px!important;text-align:center!important;white-space:normal!important;line-height:1.22!important;font-size:clamp(20px,5.8vw,40px)!important;overflow:visible!important;overflow-wrap:anywhere!important}
 @media(max-width:560px){
-  .coin-panel-shell .coin-choice-panel{width:min(90vw,430px)!important;max-width:min(90vw,430px)!important;padding-inline:18px!important}
-  .coin-panel-shell .mx-coin-waiting h2{font-size:clamp(22px,7vw,32px)!important;line-height:1.18!important}
-  .coin-stage-result .coin-result-banner{font-size:clamp(22px,7vw,34px)!important;line-height:1.18!important;padding:11px 12px!important;overflow:visible!important}
+  .coin-panel-shell{padding-inline:3vw!important;overflow:visible!important}
+  .coin-panel-shell .coin-choice-panel{width:94vw!important;max-width:94vw!important;padding:20px 16px!important;overflow:visible!important}
+  .coin-panel-shell .mx-coin-waiting h2{font-size:clamp(20px,6.3vw,30px)!important;line-height:1.22!important}
+  .coin-stage-result .coin-result-banner,.coin-stage-fight .coin-result-banner{width:94vw!important;max-width:94vw!important;font-size:clamp(20px,6.2vw,32px)!important;line-height:1.22!important;padding:13px 14px!important;overflow:visible!important}
 }
 `
 
 fs.writeFileSync(appPath,app)
 fs.writeFileSync(cssPath,css)
-console.log('Applied complete coin toss presentation: readable waiting copy, unclipped type and held winner reveal')
+console.log('Applied unclipped coin toss presentation and held winner reveal')
