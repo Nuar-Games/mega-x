@@ -1,0 +1,118 @@
+/* Real-phone Arena hotfix: derived from production Android screenshot 2026-08-31. */
+@media (max-width: 560px) and (orientation: portrait) {
+  .duel-shell {
+    --mx-utility-h: 52px !important;
+    --mx-opponent-hand-h: 84px !important;
+    --mx-local-hand-h: clamp(142px, 19dvh, 166px) !important;
+    --mx-hud-w: clamp(66px, 17vw, 74px) !important;
+    --mx-vs-w: clamp(86px, 23vw, 102px) !important;
+    grid-template-rows: var(--mx-utility-h) var(--mx-opponent-hand-h) minmax(0,1fr) var(--mx-local-hand-h) !important;
+  }
+
+  .duel-shell .battlefield {
+    left: 0 !important;
+    right: 0 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .duel-shell .opponent-panel,
+  .duel-shell .local-panel {
+    width: var(--mx-hud-w) !important;
+    max-width: var(--mx-hud-w) !important;
+    min-width: 0 !important;
+    transform: none !important;
+    overflow: hidden !important;
+    font-size: clamp(8px,2vw,10px) !important;
+  }
+  .duel-shell .opponent-panel { left: 4px !important; }
+  .duel-shell .local-panel { left: 4px !important; }
+
+  .duel-shell .vs-battle-row {
+    width: calc(100% - (2 * var(--mx-hud-w)) - 16px) !important;
+    max-width: calc(100% - (2 * var(--mx-hud-w)) - 16px) !important;
+    margin-inline: auto !important;
+    gap: clamp(12px,3.5vw,18px) !important;
+    min-width: 0 !important;
+  }
+  .duel-shell .v9-vs-card .vs-inspect-button,
+  .duel-shell .vs-inspect-button {
+    width: var(--mx-vs-w) !important;
+    max-width: var(--mx-vs-w) !important;
+    height: auto !important;
+    aspect-ratio: 420 / 595 !important;
+  }
+
+  .duel-shell .hand-area {
+    height: var(--mx-local-hand-h) !important;
+    min-height: var(--mx-local-hand-h) !important;
+    max-height: var(--mx-local-hand-h) !important;
+    padding-top: 0 !important;
+    overflow: hidden !important;
+  }
+  .duel-shell .hand-fan,
+  .duel-shell .player-hand {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: flex-end !important;
+    gap: 2px !important;
+    padding-inline: 4px !important;
+    overflow: hidden !important;
+  }
+  .duel-shell .player-hand .hand-card-wrap,
+  .duel-shell .hand-card-wrap {
+    flex: 0 1 min(23vw, 92px) !important;
+    width: min(23vw, 92px) !important;
+    max-width: min(23vw, 92px) !important;
+    height: auto !important;
+    aspect-ratio: 420 / 595 !important;
+    margin: 0 !important;
+    transform: none !important;
+  }
+  .duel-shell .hand-card-wrap .digital-card {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 420 / 595 !important;
+  }
+
+  .duel-shell .mx-action-timer,
+  .mx-action-timer {
+    top: 5px !important;
+    bottom: auto !important;
+    height: 44px !important;
+    min-width: 148px !important;
+    max-width: 45vw !important;
+    padding-block: 5px !important;
+  }
+  .duel-shell .mx-quit-match,
+  .mx-quit-match {
+    top: 6px !important;
+    left: 6px !important;
+    height: 42px !important;
+    max-width: 31vw !important;
+  }
+  body:has(.duel-shell) #mx-audio-controls {
+    top: 58px !important;
+    right: 6px !important;
+  }
+
+  .duel-shell :is(.turn-status,.turn-status-line,.status-line,.round-status,.game-status,.battle-status,.mx-turn-status,.mx-status-line) {
+    position: relative !important;
+    z-index: 120 !important;
+    min-height: 24px !important;
+    padding-inline: 72px !important;
+    white-space: normal !important;
+    text-align: center !important;
+    overflow: visible !important;
+  }
+  .duel-shell :is(.opponent-hand,.opponent-hand-row,.opponent-cards,.enemy-hand,.remote-hand) {
+    position: relative !important;
+    z-index: 40 !important;
+    max-height: 68px !important;
+    margin-top: 22px !important;
+    overflow: visible !important;
+  }
+}
