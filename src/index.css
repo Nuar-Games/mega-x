@@ -26,8 +26,44 @@ html,body,#root{min-height:100%;}
   touch-action:pan-y!important;
   -webkit-overflow-scrolling:touch!important;
 }
+
+/* Mobile challenge title: tag the actual rendered title, regardless of source element type. */
+.mx-challenge-headline-fit{
+  display:block!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+  padding-left:12px!important;
+  padding-right:12px!important;
+  white-space:normal!important;
+  overflow:hidden!important;
+  overflow-wrap:anywhere!important;
+  word-break:normal!important;
+  text-align:center!important;
+  line-height:.92!important;
+  box-sizing:border-box!important;
+}
+
+/* Arena top HUD: each live status owns its own band instead of overlapping. */
+.duel-shell.mx-portrait-stage>.fighter-hud{height:7.2%!important}
+.duel-shell.mx-portrait-stage .arcade-center-hud{top:4%!important;height:88%!important}
+.duel-shell.mx-portrait-stage .round-slam{top:0!important}
+.duel-shell.mx-portrait-stage .mx-action-timer{top:50%!important}
+.duel-shell.mx-portrait-stage>.mx-live-status{top:7.25%!important;left:30%!important;width:40%!important;max-height:2.6%!important;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important;font-size:clamp(7px,1.9vw,11px)!important;line-height:1!important}
+.duel-shell.mx-portrait-stage>.arena-history-callout{top:9.5%!important;left:30%!important;width:40%!important;max-height:2.5%!important;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important;font-size:clamp(7px,1.9vw,11px)!important;line-height:1!important}
+.duel-shell.mx-portrait-stage .fighter-identity{top:10.8%!important;height:5.6%!important;width:28%!important;padding:.7% 1.8%!important}
+.duel-shell.mx-portrait-stage .fighter-identity-left{left:2.5%!important}
+.duel-shell.mx-portrait-stage .fighter-identity-right{right:2.5%!important}
+.duel-shell.mx-portrait-stage>.opponent-hand,.duel-shell.mx-portrait-stage>.hand-area.opponent,.duel-shell.mx-portrait-stage>[data-motion-anchor$="-hand"].opponent{top:16.4%!important}
+
 @media(max-width:560px){
   #mx-audio-controls{top:8px!important;right:8px!important}
   #mx-audio-controls [data-audio-panel]{max-width:min(78vw,230px)!important}
   .mx-online-roster.mx-online-roster-scroll{max-height:230px!important}
+  .mx-challenge-headline-fit{font-size:clamp(24px,7.1vw,34px)!important;letter-spacing:.01em!important}
+  .duel-shell.mx-portrait-stage .fighter-identity span{font-size:clamp(6px,1.75vw,10px)!important}
+  .duel-shell.mx-portrait-stage .fighter-identity strong{font-size:clamp(10px,2.65vw,15px)!important}
+  .duel-shell.mx-portrait-stage .fighter-identity em{font-size:clamp(6px,1.55vw,9px)!important}
 }
