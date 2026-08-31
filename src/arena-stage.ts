@@ -59,7 +59,7 @@ function openCardInspector(shell: HTMLElement, target: Element) {
 }
 
 function markFieldSides(shell: HTMLElement) {
-  const fields = [...shell.querySelectorAll<HTMLElement>('.fighter-field')]
+  const fields = Array.from(shell.querySelectorAll<HTMLElement>('.fighter-field'))
   fields.forEach((field, index) => {
     field.classList.toggle('mx-field-left', index === 0)
     field.classList.toggle('mx-field-right', index === fields.length - 1 && fields.length > 1)
@@ -76,14 +76,14 @@ function refreshZoneCounters(shell: HTMLElement) {
       zone.appendChild(badge)
     }
     const faceCards = zone.querySelectorAll('.digital-card').length
-    const existingText = [...zone.querySelectorAll<HTMLElement>('span,b,strong')].map(node => node === badge ? '' : node.textContent ?? '').join(' ')
+    const existingText = Array.from(zone.querySelectorAll<HTMLElement>('span,b,strong')).map(node => node === badge ? '' : node.textContent ?? '').join(' ')
     const numeric = existingText.match(/\b(\d+)\b/)
     badge.textContent = numeric?.[1] ?? String(faceCards)
   })
 }
 
 function markPhase(shell: HTMLElement) {
-  const text = [...shell.querySelectorAll<HTMLElement>('h1,h2,h3,h4,[role="status"],.prompt,.callout')].map(node => node.textContent?.trim() ?? '').join(' | ').toUpperCase()
+  const text = Array.from(shell.querySelectorAll<HTMLElement>('h1,h2,h3,h4,[role="status"],.prompt,.callout')).map(node => node.textContent?.trim() ?? '').join(' | ').toUpperCase()
   shell.classList.toggle('mx-phase-vs', text.includes('PILIH KAD VS'))
   shell.classList.toggle('mx-phase-effect', text.includes('PILIH KAD EFFECT'))
   shell.classList.toggle('mx-phase-select', text.includes('PILIH KAD UNTUK DIBUANG') || text.includes('PILIH SASARAN'))
