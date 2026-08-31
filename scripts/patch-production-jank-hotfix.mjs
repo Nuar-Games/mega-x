@@ -11,21 +11,20 @@ let audio=fs.readFileSync(audioPath,'utf8')
 // animated by the original keyframes, so the coin visually stops flipping.
 css=css.replace(' .mega-coin{will-change:transform!important;contain:layout paint style!important;transform:translateZ(0)}\n','')
 
-// The current production screenshot also shows the waiting title overflowing its frame.
-// Apply this after every earlier responsive patch so the phone rule is authoritative.
+// The production screenshot also shows the waiting title overflowing its frame.
 const coinMarker='/* Production coin hotfix */'
 if(!css.includes(coinMarker)) css+=`\n${coinMarker}\n@media(max-width:560px){\n .coin-choice-panel.mx-coin-waiting,.coin-panel-shell .coin-choice-panel.mx-coin-waiting{box-sizing:border-box!important;width:calc(100vw - 34px)!important;max-width:430px!important;padding:20px 14px!important;overflow:hidden!important}\n .coin-choice-panel.mx-coin-waiting h2,.coin-panel-shell .mx-coin-waiting h2{display:block!important;width:100%!important;max-width:100%!important;margin:0 auto!important;padding:0!important;font-size:clamp(20px,6.1vw,27px)!important;line-height:1.05!important;letter-spacing:0!important;white-space:normal!important;overflow-wrap:normal!important;word-break:normal!important;text-align:center!important}\n}\n`
 
-// DOM mutation observation proved unreliable for DRAW because React can reuse the motion
-// element. Dispatch one event from the actual motionFx state instead.
-const durationNeedle=`    const duration =\n      motionFx.kind === 'ENTER_VS' ? 520 :`
+// DOM mutation observation is unreliable for DRAW because React can reuse the motion node.
+// Dispatch from the actual motionFx state after the arena-flow duration patch has run.
+const durationNeedle=`    const duration =\n      motionFx.kind === 'ENTER_VS' ? 400 :`
 if(!app.includes("new CustomEvent('mega-x:motion'")){
   if(!app.includes(durationNeedle)) throw new Error('motionFx duration hook missing')
   app=app.replace(durationNeedle,`    window.dispatchEvent(new CustomEvent('mega-x:motion', { detail: { kind: motionFx.kind } }))\n${durationNeedle}`)
 }
 
-// Remove draw/entry/destroy DOM guesses from the previous audit helper. Attack remains tied
-// to the actual impact layer, while card movement now comes from motionFx itself.
+// Remove draw/entry/destroy DOM guesses from the previous audit helper. Attack stays tied
+// to the actual impact layer; card movement comes directly from motionFx state.
 audio=audio.replace(`      if (element.matches('.motion-card-fx.draw')) kind = 'draw'\n      else if (element.matches('.motion-card-fx.enter_vs, .motion-card-fx.support')) kind = 'enter'\n      else if (element.matches('.motion-card-fx.destroy')) kind = 'destroy'\n      else if (element.matches('.combat-screen-fx.stage-impact')) kind = 'attack'`,`      if (element.matches('.combat-screen-fx.stage-impact')) kind = 'attack'`)
 
 if(!audio.includes("window.addEventListener('mega-x:motion'")){
@@ -40,8 +39,8 @@ if(!audio.includes('private onMotionSfx')){
   audio=audio.replace(hook,method+hook)
 }
 
-// Per-event gain staging: impacts must sit under the music/voice instead of blasting at the
-// global SFX slider level. Card actions stay tactile but restrained.
+// Per-event gain staging: combat impacts sit under music/voice instead of blasting at the
+// same level as every UI sound.
 const oldVolume=`audio.volume = this.settings.sfx; void audio.play()`
 const newVolume=`audio.volume = Math.min(1, this.settings.sfx * ({ card: 0.52, draw: 0.62, enter: 0.58, attack: 0.34, blocked: 0.42, destroy: 0.30 }[kind] ?? 0.7)); void audio.play()`
 if(!audio.includes(newVolume)){
