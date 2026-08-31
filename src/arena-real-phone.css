@@ -1,118 +1,39 @@
-/* Real-phone Arena hotfix: derived from production Android screenshot 2026-08-31. */
-@media (max-width: 560px) and (orientation: portrait) {
-  .duel-shell {
-    --mx-utility-h: 52px !important;
-    --mx-opponent-hand-h: 84px !important;
-    --mx-local-hand-h: clamp(142px, 19dvh, 166px) !important;
-    --mx-hud-w: clamp(66px, 17vw, 74px) !important;
-    --mx-vs-w: clamp(86px, 23vw, 102px) !important;
-    grid-template-rows: var(--mx-utility-h) var(--mx-opponent-hand-h) minmax(0,1fr) var(--mx-local-hand-h) !important;
-  }
-
-  .duel-shell .battlefield {
-    left: 0 !important;
-    right: 0 !important;
-    min-width: 0 !important;
-    overflow: hidden !important;
-  }
-
-  .duel-shell .opponent-panel,
-  .duel-shell .local-panel {
-    width: var(--mx-hud-w) !important;
-    max-width: var(--mx-hud-w) !important;
-    min-width: 0 !important;
-    transform: none !important;
-    overflow: hidden !important;
-    font-size: clamp(8px,2vw,10px) !important;
-  }
-  .duel-shell .opponent-panel { left: 4px !important; }
-  .duel-shell .local-panel { left: 4px !important; }
-
-  .duel-shell .vs-battle-row {
-    width: calc(100% - (2 * var(--mx-hud-w)) - 16px) !important;
-    max-width: calc(100% - (2 * var(--mx-hud-w)) - 16px) !important;
-    margin-inline: auto !important;
-    gap: clamp(12px,3.5vw,18px) !important;
-    min-width: 0 !important;
-  }
-  .duel-shell .v9-vs-card .vs-inspect-button,
-  .duel-shell .vs-inspect-button {
-    width: var(--mx-vs-w) !important;
-    max-width: var(--mx-vs-w) !important;
-    height: auto !important;
-    aspect-ratio: 420 / 595 !important;
-  }
-
-  .duel-shell .hand-area {
-    height: var(--mx-local-hand-h) !important;
-    min-height: var(--mx-local-hand-h) !important;
-    max-height: var(--mx-local-hand-h) !important;
-    padding-top: 0 !important;
-    overflow: hidden !important;
-  }
-  .duel-shell .hand-fan,
-  .duel-shell .player-hand {
-    width: 100% !important;
-    max-width: 100% !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: flex-end !important;
-    gap: 2px !important;
-    padding-inline: 4px !important;
-    overflow: hidden !important;
-  }
-  .duel-shell .player-hand .hand-card-wrap,
-  .duel-shell .hand-card-wrap {
-    flex: 0 1 min(23vw, 92px) !important;
-    width: min(23vw, 92px) !important;
-    max-width: min(23vw, 92px) !important;
-    height: auto !important;
-    aspect-ratio: 420 / 595 !important;
-    margin: 0 !important;
-    transform: none !important;
-  }
-  .duel-shell .hand-card-wrap .digital-card {
-    display: block !important;
-    width: 100% !important;
-    height: auto !important;
-    aspect-ratio: 420 / 595 !important;
-  }
-
-  .duel-shell .mx-action-timer,
-  .mx-action-timer {
-    top: 5px !important;
-    bottom: auto !important;
-    height: 44px !important;
-    min-width: 148px !important;
-    max-width: 45vw !important;
-    padding-block: 5px !important;
-  }
-  .duel-shell .mx-quit-match,
-  .mx-quit-match {
-    top: 6px !important;
-    left: 6px !important;
-    height: 42px !important;
-    max-width: 31vw !important;
-  }
-  body:has(.duel-shell) #mx-audio-controls {
-    top: 58px !important;
-    right: 6px !important;
-  }
-
-  .duel-shell :is(.turn-status,.turn-status-line,.status-line,.round-status,.game-status,.battle-status,.mx-turn-status,.mx-status-line) {
-    position: relative !important;
-    z-index: 120 !important;
-    min-height: 24px !important;
-    padding-inline: 72px !important;
-    white-space: normal !important;
-    text-align: center !important;
-    overflow: visible !important;
-  }
-  .duel-shell :is(.opponent-hand,.opponent-hand-row,.opponent-cards,.enemy-hand,.remote-hand) {
-    position: relative !important;
-    z-index: 40 !important;
-    max-height: 68px !important;
-    margin-top: 22px !important;
-    overflow: visible !important;
-  }
+/* FINAL MOBILE BLUEPRINT OVERRIDE — 780x1110 redesign is authoritative. No independent mobile reflow. */
+@media (max-width:560px) and (orientation:portrait){
+  html,body,#root{width:100%!important;min-width:0!important;margin:0!important;padding:0!important;background:#02050b!important}
+  body.mx-arena-present{display:block!important;overflow-x:hidden!important;overflow-y:auto!important;background:#02050b!important}
+  .duel-shell.mx-portrait-stage{position:relative!important;display:block!important;grid-template:none!important;width:100vw!important;height:calc(100vw * 1110 / 780)!important;min-width:0!important;min-height:0!important;max-width:none!important;max-height:none!important;aspect-ratio:auto!important;margin:0 auto!important;padding:0!important;overflow:hidden!important;transform:none!important;box-sizing:border-box!important}
+  .duel-shell.mx-portrait-stage .duel-arena,.duel-shell.mx-portrait-stage .arena-wrap,.duel-shell.mx-portrait-stage .arena,.duel-shell.mx-portrait-stage .battlefield{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;overflow:visible!important;transform:none!important;box-sizing:border-box!important}
+  .duel-shell.mx-portrait-stage .mx-quit-match{position:absolute!important;left:3.59%!important;top:.72%!important;width:12.18%!important;height:5.68%!important;min-width:0!important;max-width:none!important;min-height:0!important;max-height:none!important;margin:0!important;padding:.55%!important;transform:none!important}
+  .duel-shell.mx-portrait-stage .mx-action-timer{position:absolute!important;left:45.90%!important;top:61.26%!important;width:9.23%!important;height:5.41%!important;min-width:0!important;max-width:none!important;min-height:0!important;max-height:none!important;right:auto!important;bottom:auto!important;margin:0!important;padding:.45%!important;transform:none!important}
+  .duel-shell.mx-portrait-stage .local-panel,.duel-shell.mx-portrait-stage .opponent-panel{position:absolute!important;top:10.18%!important;width:29.49%!important;height:13.06%!important;min-width:0!important;max-width:none!important;min-height:0!important;max-height:none!important;margin:0!important;padding:1%!important;transform:none!important;overflow:hidden!important}
+  .duel-shell.mx-portrait-stage .local-panel{left:1.28%!important;right:auto!important}.duel-shell.mx-portrait-stage .opponent-panel{left:71.03%!important;right:auto!important}
+  .duel-shell.mx-portrait-stage .opponent-hand,.duel-shell.mx-portrait-stage .enemy-hand,.duel-shell.mx-portrait-stage [data-zone="opponent-hand"],.duel-shell.mx-portrait-stage .opponent-hand-row,.duel-shell.mx-portrait-stage .opponent-cards,.duel-shell.mx-portrait-stage .remote-hand{position:absolute!important;left:34.23%!important;top:10.63%!important;width:34.10%!important;height:12.16%!important;max-width:none!important;max-height:none!important;min-height:0!important;margin:0!important;padding:0!important;overflow:hidden!important;transform:none!important}
+  .duel-shell.mx-portrait-stage .fighter-field{position:absolute!important;top:40.09%!important;height:52.52%!important;bottom:auto!important;width:44.74%!important;min-width:0!important;min-height:0!important;max-width:none!important;max-height:none!important;display:block!important;margin:0!important;padding:0!important;overflow:visible!important;transform:none!important}
+  .duel-shell.mx-portrait-stage .fighter-field.mx-field-left{left:2.56%!important;right:auto!important}.duel-shell.mx-portrait-stage .fighter-field.mx-field-right{left:53.85%!important;right:auto!important}
+  .duel-shell.mx-portrait-stage .effect-rack{position:absolute!important;top:0!important;width:25.93%!important;height:100%!important;display:grid!important;grid-template-rows:repeat(5,minmax(0,1fr))!important;gap:.7%!important;padding:0!important;margin:0!important;overflow:hidden!important;transform:none!important}
+  .duel-shell.mx-portrait-stage .mx-field-left .effect-rack{left:0!important;right:auto!important}.duel-shell.mx-portrait-stage .mx-field-right .effect-rack{right:0!important;left:auto!important}
+  .duel-shell.mx-portrait-stage .effect-card-slot{width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;overflow:hidden!important}
+  .duel-shell.mx-portrait-stage .effect-card-slot .zone-card-button,.duel-shell.mx-portrait-stage .effect-card-slot .digital-card{width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;margin:0!important;object-fit:contain!important}
+  .duel-shell.mx-portrait-stage .vs-battle-row{position:absolute!important;top:14.92%!important;width:57.35%!important;height:41.17%!important;max-width:none!important;min-width:0!important;margin:0!important;padding:0!important;display:grid!important;place-items:center!important;gap:0!important;overflow:visible!important;transform:none!important}
+  .duel-shell.mx-portrait-stage .mx-field-left .vs-battle-row{left:39.77%!important;right:auto!important}.duel-shell.mx-portrait-stage .mx-field-right .vs-battle-row{left:0!important;right:auto!important}
+  .duel-shell.mx-portrait-stage .v9-vs-card,.duel-shell.mx-portrait-stage .vs-inspect-button,.duel-shell.mx-portrait-stage .v9-vs-card .vs-inspect-button{width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;min-width:0!important;min-height:0!important;margin:0!important;padding:0!important;aspect-ratio:auto!important;transform:none!important;overflow:visible!important}
+  .duel-shell.mx-portrait-stage .vs-inspect-button .digital-card{display:block!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:contain!important}
+  .duel-shell.mx-portrait-stage .mx-card-position,.duel-shell.mx-portrait-stage .position-control,.duel-shell.mx-portrait-stage .stance-control,.duel-shell.mx-portrait-stage [data-zone="position"]{position:absolute!important;top:8.75%!important;width:57.35%!important;height:5.49%!important;margin:0!important;padding:0!important;transform:none!important;display:flex!important;align-items:center!important;justify-content:center!important}
+  .duel-shell.mx-portrait-stage .mx-field-left :is(.mx-card-position,.position-control,.stance-control,[data-zone="position"]){left:39.77%!important}.duel-shell.mx-portrait-stage .mx-field-right :is(.mx-card-position,.position-control,.stance-control,[data-zone="position"]){left:0!important}
+  .duel-shell.mx-portrait-stage .fighter-stats,.duel-shell.mx-portrait-stage .stat-row,.duel-shell.mx-portrait-stage .vs-stats{position:absolute!important;top:57.46%!important;width:65.13%!important;height:12.18%!important;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:3.5%!important;margin:0!important;padding:0!important;transform:none!important;overflow:hidden!important}
+  .duel-shell.mx-portrait-stage .mx-field-left :is(.fighter-stats,.stat-row,.vs-stats){left:35.45%!important}.duel-shell.mx-portrait-stage .mx-field-right :is(.fighter-stats,.stat-row,.vs-stats){left:0!important}
+  .duel-shell.mx-portrait-stage .p1-x,.duel-shell.mx-portrait-stage .p2-x{position:absolute!important;top:24.05%!important;width:11.67%!important;height:12.61%!important;max-width:none!important;max-height:none!important;margin:0!important;transform:none!important;overflow:visible!important}
+  .duel-shell.mx-portrait-stage .p1-x{left:2.18%!important;right:auto!important}.duel-shell.mx-portrait-stage .p2-x{left:87.56%!important;right:auto!important}
+  .duel-shell.mx-portrait-stage [data-motion-anchor$="-discard"],.duel-shell.mx-portrait-stage .p1-discard,.duel-shell.mx-portrait-stage .p2-discard{position:absolute!important;top:29.46%!important;width:12.05%!important;height:12.61%!important;margin:0!important;transform:none!important}
+  .duel-shell.mx-portrait-stage .p1-discard{left:28.08%!important}.duel-shell.mx-portrait-stage .p2-discard{left:60.77%!important}
+  .duel-shell.mx-portrait-stage [data-motion-anchor="master"]{position:absolute!important;left:45%!important;top:27.21%!important;width:11.92%!important;height:12.79%!important;margin:0!important;transform:none!important;overflow:visible!important}
+  .duel-shell.mx-portrait-stage .hand-area{position:absolute!important;left:18.85%!important;top:82.70%!important;width:62.95%!important;height:16.04%!important;min-height:0!important;max-height:none!important;right:auto!important;bottom:auto!important;margin:0!important;padding:0!important;overflow:hidden!important;transform:none!important}
+  .duel-shell.mx-portrait-stage .player-hand,.duel-shell.mx-portrait-stage .hand-scroll,.duel-shell.mx-portrait-stage .hand-fan{width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;max-width:100%!important;max-height:100%!important;margin:0!important;padding:0!important;box-sizing:border-box!important}
+  .duel-shell.mx-portrait-stage .hand-fan,.duel-shell.mx-portrait-stage .player-hand{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:.7%!important;align-items:stretch!important;justify-items:stretch!important;overflow:hidden!important}
+  .duel-shell.mx-portrait-stage .player-hand .hand-card-wrap,.duel-shell.mx-portrait-stage .hand-card-wrap{display:block!important;flex:none!important;width:100%!important;height:100%!important;min-width:0!important;max-width:none!important;min-height:0!important;max-height:none!important;margin:0!important;padding:0!important;aspect-ratio:auto!important;transform:none!important;overflow:visible!important}
+  .duel-shell.mx-portrait-stage .hand-card-wrap .digital-card{display:block!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;aspect-ratio:420/595!important;object-fit:contain!important}
+  .duel-shell.mx-portrait-stage :is(.turn-status,.turn-status-line,.status-line,.round-status,.game-status,.battle-status,.mx-turn-status,.mx-status-line){position:absolute!important;left:18%!important;top:1%!important;width:64%!important;min-height:0!important;margin:0!important;padding:0!important;text-align:center!important;white-space:normal!important;overflow:visible!important;transform:none!important}
+  body.mx-arena-present #mx-audio-controls{position:absolute!important;left:85%!important;right:auto!important;top:1.5%!important;width:11.41%!important;min-width:0!important;margin:0!important;transform:none!important}
+  body.mx-arena-present #mx-audio-controls [data-audio-toggle]{width:100%!important;height:auto!important;aspect-ratio:89/62!important;min-width:0!important;max-width:none!important;padding:0!important}
 }
