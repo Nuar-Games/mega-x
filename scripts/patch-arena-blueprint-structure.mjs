@@ -3,31 +3,78 @@ import fs from 'node:fs'
 const appPath = 'src/App.tsx'
 let app = fs.readFileSync(appPath, 'utf8')
 
-const opening = '<section className="duel-shell">'
-if (!app.includes('mx-blueprint-stage')) {
-  const start = app.indexOf(opening)
-  if (start < 0) throw new Error('blueprint rebuild: duel-shell opening not found')
-
-  const contentStart = start + opening.length
-  const tagRe = /<section\b[^>]*>|<\/section>/g
-  tagRe.lastIndex = contentStart
+function replaceDivBlock(source, opening, replacement) {
+  const start = source.indexOf(opening)
+  if (start < 0) throw new Error(`arena rebuild: opening not found: ${opening}`)
+  const tagRe = /<div\b[^>]*>|<\/div>/g
+  tagRe.lastIndex = start + opening.length
   let depth = 1
-  let closeStart = -1
+  let closeEnd = -1
   let match
-  while ((match = tagRe.exec(app))) {
-    if (match[0].startsWith('</section')) depth -= 1
-    else depth += 1
-    if (depth === 0) {
-      closeStart = match.index
-      break
-    }
+  while ((match = tagRe.exec(source))) {
+    if (match[0].startsWith('</div')) depth -= 1
+    else if (!match[0].endsWith('/>')) depth += 1
+    if (depth === 0) { closeEnd = tagRe.lastIndex; break }
   }
-  if (closeStart < 0) throw new Error('blueprint rebuild: duel-shell closing section not found')
-
-  const rebuiltOpen = '<section className="duel-shell mx-blueprint-shell">\n            <div className="mx-blueprint-stage">'
-  const rebuiltClose = '            </div>\n          </section>'
-  app = app.slice(0, start) + rebuiltOpen + app.slice(contentStart, closeStart) + rebuiltClose + app.slice(closeStart + '</section>'.length)
+  if (closeEnd < 0) throw new Error('arena rebuild: closing div not found')
+  return source.slice(0, start) + replacement + source.slice(closeEnd)
 }
 
+const board = String.raw`<div className={\`mx-arena-board phase-${game.phase.toLowerCase()} ${game.phase === 'EFFECT' && game.effectTurn === localViewer ? 'phase-effect-local' : ''}\`}>
+              <div className="mx-arena-backdrop" aria-hidden="true"><i /><i /><i /></div>
+              <div className={`fighter-identity fighter-identity-left ${activePlayer === 0 ? 'is-active' : ''}`}>
+                <span>X FIGHTER 1</span><strong>{playerDisplayName(0)}</strong>{activePlayer === 0 && <em>AKTIF</em>}
+              </div>
+              <div className={`fighter-identity fighter-identity-right ${activePlayer === 1 ? 'is-active' : ''}`}>
+                <span>X FIGHTER 2</span><strong>{playerDisplayName(1)}</strong>{activePlayer === 1 && <em>AKTIF</em>}
+              </div>
+
+              {passToPlayer === null && game.phase === 'SET_VS' && setupPlayer === localViewer && <div className="arena-vs-prompt"><strong>PILIH KAD VS</strong></div>}
+              {passToPlayer === null && game.phase === 'EFFECT' && game.effectTurn === localViewer && <div className="arena-command-prompt"><strong>PILIH KAD EFFECT</strong></div>}
+
+              <section className="mx-fighter-side mx-side-left fighter-field">
+                <div className={`fighter-turn-energy fighter-turn-energy-left ${activePlayer === 0 ? 'is-active' : ''}`} aria-hidden="true" />
+                <div className="stat-fx-layer" aria-live="polite">{statFx.filter((fx) => fx.player === 0).map((fx) => <span key={fx.id} className={`stat-fx stat-${fx.stat.toLowerCase()}`}>{fx.stat} {fx.delta > 0 ? '+' : ''}{fx.delta}</span>)}</div>
+                <aside className={`mx-effect-column effect-rack ${game.phase === 'EFFECT' && game.effectTurn === 0 ? 'is-valid-destination' : ''}`} data-motion-anchor="p1-effect">
+                  {Array.from({ length: 5 }, (_, i) => { const effect = game.players[0].effects[i]; return <div key={`p1-effect-${i}`} className="effect-card-slot"><span>EFFECT {i + 1}</span>{effect && <button data-card-id={effect.card.id} className={`zone-card-button ${isCardArriving(effect.card.id, 'p1-effect') ? 'is-arrival-hidden' : ''}`} onClick={() => setFocusedCard(effect.card)}><CardView card={effect.card} /></button>}</div> })}
+                </aside>
+                <div className="mx-vs-module">
+                  <div className="mx-position-strip"><span>POSISI KAD</span><strong>{game.players[0].vs?.position ?? '—'}</strong></div>
+                  <div className="vs-battle-row"><div data-motion-anchor="p1-vs" className={`v9-vs-card mx-vs-card-slot ${impactFx?.attacker === 0 ? `is-attacking stage-${impactFx.stage.toLowerCase()}` : ''} ${impactFx?.defender === 0 ? `is-hit stage-${impactFx.stage.toLowerCase()}` : ''} ${isCardArriving(game.players[0].vs?.card.id, 'p1-vs') ? 'is-arrival-hidden' : ''}`}><VSZone title="" vs={game.players[0].vs} stats={currentStats[0]} hidden={!revealRoundOneVS && game.round === 1} onInspect={(card) => setFocusedCard(card)} /></div></div>
+                  <div className="mx-stat-strip"><LiveStats stats={isCardArriving(game.players[0].vs?.card.id, 'p1-vs') ? null : currentStats[0]} side="left" /></div>
+                </div>
+              </section>
+
+              <div className={`center-clash ${impactFx ? `is-combat stage-${impactFx.stage.toLowerCase()}` : ''}`} aria-hidden="true"><div className="arena-ring-fx" /><div className="vs-emblem"><span>VS</span></div>{impactFx && <div className="combat-callout">SERANG!</div>}</div>
+
+              <section className="mx-fighter-side mx-side-right fighter-field">
+                <div className={`fighter-turn-energy fighter-turn-energy-right ${activePlayer === 1 ? 'is-active' : ''}`} aria-hidden="true" />
+                <div className="stat-fx-layer" aria-live="polite">{statFx.filter((fx) => fx.player === 1).map((fx) => <span key={fx.id} className={`stat-fx stat-${fx.stat.toLowerCase()}`}>{fx.stat} {fx.delta > 0 ? '+' : ''}{fx.delta}</span>)}</div>
+                <div className="mx-vs-module">
+                  <div className="mx-position-strip"><span>POSISI KAD</span><strong>{game.players[1].vs?.position ?? '—'}</strong></div>
+                  <div className="vs-battle-row"><div data-motion-anchor="p2-vs" className={`v9-vs-card mx-vs-card-slot ${impactFx?.attacker === 1 ? `is-attacking stage-${impactFx.stage.toLowerCase()}` : ''} ${impactFx?.defender === 1 ? `is-hit stage-${impactFx.stage.toLowerCase()}` : ''} ${isCardArriving(game.players[1].vs?.card.id, 'p2-vs') ? 'is-arrival-hidden' : ''}`}><VSZone title="" vs={game.players[1].vs} stats={currentStats[1]} hidden={!revealRoundOneVS && game.round === 1} onInspect={(card) => setFocusedCard(card)} /></div></div>
+                  <div className="mx-stat-strip"><LiveStats stats={isCardArriving(game.players[1].vs?.card.id, 'p2-vs') ? null : currentStats[1]} side="right" /></div>
+                </div>
+                <aside className={`mx-effect-column effect-rack ${game.phase === 'EFFECT' && game.effectTurn === 1 ? 'is-valid-destination' : ''}`} data-motion-anchor="p2-effect">
+                  {Array.from({ length: 5 }, (_, i) => { const effect = game.players[1].effects[i]; return <div key={`p2-effect-${i}`} className="effect-card-slot"><span>EFFECT {i + 1}</span>{effect && <button data-card-id={effect.card.id} className={`zone-card-button ${isCardArriving(effect.card.id, 'p2-effect') ? 'is-arrival-hidden' : ''}`} onClick={() => setFocusedCard(effect.card)}><CardView card={effect.card} /></button>}</div> })}
+                </aside>
+              </section>
+
+              <div className="pile-cluster score-pile p1-x" data-motion-anchor="p1-x"><button className="support-zone pile-button x-pile" onClick={() => setPileView({ title: 'X FIGHTER 1 · ZON X', cards: game.players[0].x })}><span>ZON X</span>{visiblePileTop(game.players[0].x, 'p1-x') ? <CardView card={visiblePileTop(game.players[0].x, 'p1-x')!} /> : <span className="empty-pile">CAPTURE</span>}</button><span key={`p1-score-${game.players[0].x.length}`} className="pile-counter x-counter score-pulse">{displayedPileCount('p1-x', game.players[0].x.length)}</span></div>
+              <div className="pile-cluster p1-discard" data-motion-anchor="p1-discard"><button className="support-zone pile-button" onClick={() => setPileView({ title: 'X FIGHTER 1 · ZON TEPI', cards: game.players[0].discard })}><span>ZON TEPI</span>{visiblePileTop(game.players[0].discard, 'p1-discard') ? <CardView card={visiblePileTop(game.players[0].discard, 'p1-discard')!} /> : <span className="empty-pile">BUANG</span>}</button></div>
+              <div className={`pile-cluster master-pile ${/shuffle/i.test(game.message) ? 'is-shuffling' : ''}`} data-motion-anchor="master"><div className="support-zone deck-pile"><img src="/cards/back-game.webp" alt="Master Deck" /><span className="deck-card-title">MASTER DECK</span></div><span className="pile-counter">{displayedDeckCount}</span></div>
+              <div className="pile-cluster p2-discard" data-motion-anchor="p2-discard"><button className="support-zone pile-button" onClick={() => setPileView({ title: 'X FIGHTER 2 · ZON TEPI', cards: game.players[1].discard })}><span>ZON TEPI</span>{visiblePileTop(game.players[1].discard, 'p2-discard') ? <CardView card={visiblePileTop(game.players[1].discard, 'p2-discard')!} /> : <span className="empty-pile">BUANG</span>}</button></div>
+              <div className="pile-cluster score-pile p2-x" data-motion-anchor="p2-x"><button className="support-zone pile-button x-pile" onClick={() => setPileView({ title: 'X FIGHTER 2 · ZON X', cards: game.players[1].x })}><span>ZON X</span>{visiblePileTop(game.players[1].x, 'p2-x') ? <CardView card={visiblePileTop(game.players[1].x, 'p2-x')!} /> : <span className="empty-pile">CAPTURE</span>}</button><span key={`p2-score-${game.players[1].x.length}`} className="pile-counter x-counter score-pulse">{displayedPileCount('p2-x', game.players[1].x.length)}</span></div>
+
+              {impactFx && <div className={`combat-screen-fx stage-${impactFx.stage.toLowerCase()}`} aria-hidden="true"><i className="combat-flash" /><i className="combat-shock combat-shock-one" /><i className="combat-shock combat-shock-two" /><i className="combat-slash combat-slash-one" /><i className="combat-slash combat-slash-two" /></div>}
+              {motionFx && <div className={`motion-card-fx ${motionFx.kind.toLowerCase()} ${motionFx.from} ${motionFx.to}`} style={motionStyle(motionFx)} key={`${motionFx.card.id}-${motionFx.kind}-${motionFx.to}`}>{motionFx.kind === 'DRAW' ? <div className="digital-card card-back motion-hidden-card"><img src="/cards/back-game.webp" alt="Kad diambil secara tertutup" /></div> : <CardView card={motionFx.card} />}<strong>{motionFx.kind === 'CAPTURE' ? 'ZON X!' : motionFx.kind === 'DESTROY' ? 'DIMUSNAHKAN!' : motionFx.kind === 'DISCARD' ? 'BUANG!' : motionFx.kind === 'RETURN' ? 'KEMBALI!' : motionFx.kind === 'ENTER_VS' ? 'X FIGHTER MASUK!' : motionFx.kind === 'SUPPORT' ? 'EFFECT AKTIF!' : 'AMBIL KAD!'}</strong></div>}
+            </div>`
+
+app = replaceDivBlock(app, '<div className="arena-wrap">', board)
+if (app.includes('mx-blueprint-stage')) throw new Error('arena rebuild: legacy wrapper survived')
+if (app.includes('<div className="arena-wrap">')) throw new Error('arena rebuild: legacy arena-wrap survived')
+if (!app.includes('className="mx-position-strip"')) throw new Error('arena rebuild: position strips missing')
+if ((app.match(/className=\{`mx-effect-column/g) || []).length !== 2) throw new Error('arena rebuild: two effect columns required')
+
 fs.writeFileSync(appPath, app)
-console.log('Rebuilt duel-shell around one mx-blueprint-stage structural coordinate map')
+console.log('Rebuilt Arena JSX: new board structure, explicit VS modules, effect columns and upper zone map')
