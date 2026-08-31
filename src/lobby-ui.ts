@@ -33,9 +33,22 @@ function enhanceRoster() {
   if (roster) roster.classList.add('mx-online-roster-scroll')
 }
 
+function fitChallengeHeadline() {
+  const screen = document.querySelector<HTMLElement>('.mx-online-screen')
+  if (!screen) return
+  const candidates = Array.from(screen.querySelectorAll<HTMLElement>('*'))
+  for (const element of candidates) {
+    const text = (element.textContent ?? '').replace(/\s+/g, ' ').trim().toUpperCase()
+    if (!/^X FIGHTER [12] IS CHA/.test(text)) continue
+    const childAlsoMatches = Array.from(element.children).some((child) => /^X FIGHTER [12] IS CHA/.test((child.textContent ?? '').replace(/\s+/g, ' ').trim().toUpperCase()))
+    if (!childAlsoMatches) element.classList.add('mx-challenge-headline-fit')
+  }
+}
+
 function enhanceLobby() {
   enhanceLeaderboard()
   enhanceRoster()
+  fitChallengeHeadline()
 }
 
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
@@ -43,7 +56,7 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
     enhanceLobby()
     document.addEventListener('pointerdown', closeAudioPanel, true)
     const observer = new MutationObserver(enhanceLobby)
-    observer.observe(document.documentElement, { childList: true, subtree: true })
+    observer.observe(document.documentElement, { childList: true, subtree: true, characterData: true })
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true })
   else boot()
