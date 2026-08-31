@@ -42,7 +42,7 @@ if(!audio.includes('private onMotionSfx')){
 // Per-event gain staging: combat impacts sit under music/voice instead of blasting at the
 // same level as every UI sound.
 const oldVolume=`audio.volume = this.settings.sfx; void audio.play()`
-const newVolume=`audio.volume = Math.min(1, this.settings.sfx * ({ card: 0.52, draw: 0.62, enter: 0.58, attack: 0.34, blocked: 0.42, destroy: 0.30 }[kind] ?? 0.7)); void audio.play()`
+const newVolume=`audio.volume = Math.min(1, this.settings.sfx * (({ card: 0.52, draw: 0.62, enter: 0.58, attack: 0.34, blocked: 0.42, destroy: 0.30 } as Partial<Record<MegaXSfx, number>>)[kind] ?? 0.7)); void audio.play()`
 if(!audio.includes(newVolume)){
   if(!audio.includes(oldVolume)) throw new Error('SFX volume assignment missing')
   audio=audio.replace(oldVolume,newVolume)
