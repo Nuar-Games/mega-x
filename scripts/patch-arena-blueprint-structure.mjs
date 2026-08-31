@@ -5,28 +5,86 @@ const fragmentPath = 'src/arena-blueprint.fragment'
 let app = fs.readFileSync(appPath, 'utf8')
 const board = fs.readFileSync(fragmentPath, 'utf8').trim()
 
-function replaceDivBlock(source, opening, replacement) {
-  const start = source.indexOf(opening)
-  if (start < 0) throw new Error(`arena rebuild: opening not found: ${opening}`)
-  const tagRe = /<div\b[^>]*>|<\/div>/g
-  tagRe.lastIndex = start + opening.length
+const shellOpen = '<section className="duel-shell">'
+const shellStart = app.indexOf(shellOpen)
+if (shellStart < 0) throw new Error('Arena rebuild: duel-shell opening not found')
+
+function balancedEnd(source, start, tag) {
+  const openEnd = source.indexOf('>', start)
+  if (openEnd < 0) return -1
+  const re = new RegExp(`<${tag}\\b[^>]*>|<\\/${tag}>`, 'g')
+  re.lastIndex = openEnd + 1
   let depth = 1
-  let closeEnd = -1
   let match
-  while ((match = tagRe.exec(source))) {
-    if (match[0].startsWith('</div')) depth -= 1
-    else if (!match[0].endsWith('/>')) depth += 1
-    if (depth === 0) { closeEnd = tagRe.lastIndex; break }
+  while ((match = re.exec(source))) {
+    if (match[0].startsWith(`</${tag}`)) depth -= 1
+    else depth += 1
+    if (depth === 0) return re.lastIndex
   }
-  if (closeEnd < 0) throw new Error('arena rebuild: closing div not found')
-  return source.slice(0, start) + board + source.slice(closeEnd)
+  return -1
 }
 
-app = replaceDivBlock(app, '<div className="arena-wrap">', board)
-if (app.includes('mx-blueprint-stage')) throw new Error('arena rebuild: legacy wrapper survived')
-if (app.includes('<div className="arena-wrap">')) throw new Error('arena rebuild: legacy arena-wrap survived')
-if ((app.match(/mx-position-strip/g) || []).length < 2) throw new Error('arena rebuild: both position strips required')
-if ((app.match(/mx-effect-column/g) || []).length < 2) throw new Error('arena rebuild: two effect columns required')
+const shellEnd = balancedEnd(app, shellStart, 'section')
+if (shellEnd < 0) throw new Error('Arena rebuild: duel-shell closing section not found')
+const legacyShell = app.slice(shellStart, shellEnd)
+
+function extractElement(token, required = true, fromIndex = 0) {
+  const tokenIndex = legacyShell.indexOf(token, fromIndex)
+  if (tokenIndex < 0) {
+    if (required) throw new Error(`Arena rebuild: ${token} not found`)
+    return null
+  }
+  const candidates = ['div', 'section', 'aside']
+    .map(tag => ({ tag, start: legacyShell.lastIndexOf(`<${tag}`, tokenIndex) }))
+    .filter(item => item.start >= 0)
+    .filter(item => legacyShell.slice(item.start, legacyShell.indexOf('>', item.start) + 1).includes(token))
+    .sort((a, b) => b.start - a.start)
+  if (!candidates.length) {
+    if (required) throw new Error(`Arena rebuild: opening element for ${token} not found`)
+    return null
+  }
+  const { tag, start } = candidates[0]
+  const end = balancedEnd(legacyShell, start, tag)
+  if (end < 0) throw new Error(`Arena rebuild: closing ${tag} for ${token} not found`)
+  return { text: legacyShell.slice(start, end), start, end }
+}
+
+function extractAll(token) {
+  const found = []
+  let cursor = 0
+  while (cursor < legacyShell.length) {
+    const tokenIndex = legacyShell.indexOf(token, cursor)
+    if (tokenIndex < 0) break
+    const item = extractElement(token, false, cursor)
+    if (!item) break
+    if (!found.some(existing => existing.start === item.start)) found.push(item)
+    cursor = Math.max(item.end, tokenIndex + token.length)
+  }
+  return found
+}
+
+const hud = extractElement('fighter-hud')
+const hands = extractAll('hand-area')
+if (hands.length < 2) throw new Error(`Arena rebuild: expected two hand renderers, found ${hands.length}`)
+
+const discard = extractElement('mx-discard-confirm-sheet', false)
+const motion = extractElement('motion-card-fx', false)
+const combat = extractElement('combat-screen-fx', false)
+
+const preserved = []
+if (discard) preserved.push(`{game.pendingSelfDiscard && game.pendingSelfDiscard.player === localViewer && (${discard.text})}`)
+preserved.push(hud.text)
+preserved.push(...hands.slice(0, 2).map(item => item.text))
+if (motion) preserved.push(`{motionFx && (${motion.text})}`)
+if (combat) preserved.push(`{combatFx && (${combat.text})}`)
+preserved.push(board)
+
+const rebuilt = `<section className="duel-shell">\n${preserved.join('\n')}\n</section>`
+app = app.slice(0, shellStart) + rebuilt + app.slice(shellEnd)
+
+if (app.includes('<div className="arena-wrap">') || app.includes('mx-blueprint-stage')) throw new Error('Arena rebuild: legacy arena wrapper survived')
+if (!app.includes('className="mx-arena-board"')) throw new Error('Arena rebuild: new board missing')
+if ((app.match(/mx-position-strip/g) || []).length < 2) throw new Error('Arena rebuild: both VS position rows missing')
 
 fs.writeFileSync(appPath, app)
-console.log('Rebuilt Arena JSX from authored portrait board source')
+console.log('Rebuilt complete duel-shell: retained only HUD, two hands, modal/motion islands, and authored Arena board')
