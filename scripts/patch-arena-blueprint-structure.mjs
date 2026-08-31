@@ -34,16 +34,15 @@ function extractElement(token, required = true, fromIndex = 0) {
     if (required) throw new Error(`Arena rebuild: ${token} not found`)
     return null
   }
-  const candidates = ['div', 'section', 'aside']
-    .map(tag => ({ tag, start: legacyShell.lastIndexOf(`<${tag}`, tokenIndex) }))
-    .filter(item => item.start >= 0)
-    .filter(item => legacyShell.slice(item.start, legacyShell.indexOf('>', item.start) + 1).includes(token))
-    .sort((a, b) => b.start - a.start)
-  if (!candidates.length) {
+  const start = legacyShell.lastIndexOf('<', tokenIndex)
+  const openEnd = legacyShell.indexOf('>', start)
+  const opening = start >= 0 && openEnd >= 0 ? legacyShell.slice(start, openEnd + 1) : ''
+  const tagMatch = opening.match(/^<([A-Za-z][A-Za-z0-9:-]*)\b/)
+  if (!tagMatch || !opening.includes(token)) {
     if (required) throw new Error(`Arena rebuild: opening element for ${token} not found`)
     return null
   }
-  const { tag, start } = candidates[0]
+  const tag = tagMatch[1]
   const end = balancedEnd(legacyShell, start, tag)
   if (end < 0) throw new Error(`Arena rebuild: closing ${tag} for ${token} not found`)
   return { text: legacyShell.slice(start, end), start, end }
@@ -56,7 +55,7 @@ function extractAll(token) {
     const tokenIndex = legacyShell.indexOf(token, cursor)
     if (tokenIndex < 0) break
     const item = extractElement(token, false, cursor)
-    if (!item) break
+    if (!item) { cursor = tokenIndex + token.length; continue }
     if (!found.some(existing => existing.start === item.start)) found.push(item)
     cursor = Math.max(item.end, tokenIndex + token.length)
   }
