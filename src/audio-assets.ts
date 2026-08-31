@@ -1,32 +1,23 @@
-export type MegaXSfx = 'ready' | 'ui' | 'card' | 'draw' | 'enter' | 'attack' | 'pass' | 'blocked' | 'destroy'
-export type MegaXVoice = 'ready' | 'fight' | 'round1' | 'round2' | 'round3' | 'round4' | 'round5' | 'winner' | 'youWin' | 'youLose' | 'gameOver'
-
-const KENNEY_SFX = 'https://cdn.jsdelivr.net/gh/euuuuuuan/voidclad-public@main/assets/sfx/kenney/'
-const KENNEY_UI = 'https://cdn.jsdelivr.net/gh/ETdoFresh/kenney.nl@master/kenney_interfacesounds/Audio/'
-const KENNEY_VOICE = 'https://cdn.jsdelivr.net/gh/ETdoFresh/kenney.nl@master/kenney_voiceoverfighter/Audio/'
-const CARDGAME = 'https://cdn.jsdelivr.net/gh/tegnike/aozora-islands@main/src/assets/audio/'
+export type MegaXSfx = 'card' | 'draw' | 'enter' | 'attack' | 'destroy' | 'zonX' | 'prompt' | 'arenaAppear'
+export type MegaXVoice = 'fight' | 'youWin'
 
 export const SFX_ASSETS: Record<MegaXSfx, string> = {
-  ready: `${KENNEY_SFX}laserLarge_000.ogg`,
-  ui: `${KENNEY_UI}confirmation_001.ogg`,
-  card: `${CARDGAME}sfx-select.ogg`,
-  draw: `${CARDGAME}sfx-card-draw.ogg`,
-  enter: `${CARDGAME}sfx-card-play.ogg`,
-  attack: `${CARDGAME}sfx-attack.ogg`,
-  pass: `${KENNEY_UI}back_002.ogg`,
-  blocked: `${CARDGAME}sfx-block.ogg`,
-  destroy: `${CARDGAME}sfx-damage.ogg`,
+  card: '/audio/replacements/card-selected.opus',
+  draw: '/audio/replacements/card-draw.opus',
+  enter: '/audio/replacements/effect-enter-field.opus',
+  attack: '/audio/replacements/card-attacking.opus',
+  destroy: '/audio/replacements/card-destroyed.opus',
+  zonX: '/audio/replacements/card-goes-to-zon-x.opus',
+  prompt: '/audio/replacements/prompt-needed.opus',
+  arenaAppear: '/audio/replacements/arena-appear.opus',
 }
 
 export const VOICE_ASSETS: Record<MegaXVoice, string> = {
-  ready: `${KENNEY_VOICE}ready.ogg`, fight: `${KENNEY_VOICE}fight.ogg`, round1: `${KENNEY_VOICE}round_1.ogg`, round2: `${KENNEY_VOICE}round_2.ogg`, round3: `${KENNEY_VOICE}round_3.ogg`, round4: `${KENNEY_VOICE}round_4.ogg`, round5: `${KENNEY_VOICE}round_5.ogg`, winner: `${KENNEY_VOICE}winner.ogg`, youWin: `${KENNEY_VOICE}you_win.ogg`, youLose: `${KENNEY_VOICE}you_lose.ogg`, gameOver: `${KENNEY_VOICE}game_over.ogg`,
+  fight: '/audio/replacements/fight.opus',
+  youWin: '/audio/replacements/player-win.opus',
 }
 
-export const LOBBY_PLAYLIST = [
-  '/audio/lobby/soft-lights-v1.opus',
-  '/audio/lobby/high-clouds-v1.opus',
-  '/audio/lobby/wishing-star-v1.opus',
-] as const
+export const LOBBY_TRACK = '/audio/replacements/lobby.opus' as const
 
 export const ARENA_TRACKS = [
   '/audio/arena/arena-c2-v1.opus',
