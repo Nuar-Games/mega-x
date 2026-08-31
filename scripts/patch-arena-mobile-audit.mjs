@@ -40,40 +40,16 @@ audio = audio.replace(
 )
 audio = audio.replace(`        if (text.includes('DIMUSNAHKAN') || text.includes('DESTROY')) this.playSfx('destroy')\n`, '')
 
-const marker = '/* Arena mobile audit pass */'
+const marker = '/* Arena interaction audit pass */'
 if (!css.includes(marker)) css += `
 ${marker}
-body:has(.duel-shell) #mx-audio-controls{top:58px!important;right:6px!important;z-index:1400!important}
-body:has(.duel-shell) #mx-audio-controls [data-audio-toggle]{width:34px!important;height:34px!important;font-size:15px!important;opacity:.9!important}
-body:has(.duel-shell) #mx-audio-controls [data-audio-panel]{min-width:148px!important;max-width:168px!important;padding:8px!important;gap:5px!important;font-size:11px!important}
-body:has(.duel-shell) #mx-audio-controls [data-audio-panel] input[type=range]{width:92px!important}
-
-.mx-discard-confirm-sheet{position:absolute;left:8px;right:8px;bottom:8px;z-index:1200;padding:10px;background:rgba(3,5,12,.97);border:2px solid #f2c960;border-radius:12px;box-shadow:0 0 0 1px #000,0 -8px 28px #000;display:grid;gap:8px}
-.mx-discard-confirm-head{display:flex;justify-content:space-between;align-items:center;gap:10px;color:#fff;font-size:13px;letter-spacing:.04em}.mx-discard-confirm-head span{color:#f2c960;font-weight:900;font-size:16px}
-.mx-discard-confirm-cards{display:flex;gap:7px;overflow-x:auto;padding:3px 1px 6px;touch-action:pan-x}.mx-discard-card{flex:0 0 78px;padding:0;border:2px solid transparent;border-radius:7px;background:transparent;opacity:.7;transform:translateY(0);transition:transform .12s ease,opacity .12s ease,border-color .12s ease}.mx-discard-card .digital-card{width:100%!important;height:auto!important}.mx-discard-card.is-selected{opacity:1;border-color:#ff4057;transform:translateY(-5px);box-shadow:0 0 16px rgba(255,64,87,.65)}
+.mx-discard-confirm-sheet{position:fixed;left:clamp(6px,2vw,18px);right:clamp(6px,2vw,18px);bottom:max(6px,env(safe-area-inset-bottom));z-index:1500;max-height:min(72dvh,560px);padding:clamp(8px,1.5vw,14px);background:rgba(3,5,12,.97);border:2px solid #f2c960;border-radius:12px;box-shadow:0 0 0 1px #000,0 -8px 28px #000;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:8px;overflow:hidden}
+.mx-discard-confirm-head{display:flex;justify-content:space-between;align-items:center;gap:10px;color:#fff;font-size:clamp(12px,2.5vw,16px);letter-spacing:.04em}.mx-discard-confirm-head span{color:#f2c960;font-weight:900;font-size:clamp(16px,3vw,22px)}
+.mx-discard-confirm-cards{display:flex;gap:clamp(6px,1vw,10px);overflow-x:auto;overflow-y:hidden;padding:6px 2px 10px;touch-action:pan-x;-webkit-overflow-scrolling:touch}.mx-discard-card{flex:0 0 clamp(72px,16vw,118px);padding:0;border:2px solid transparent;border-radius:7px;background:transparent;opacity:.7;transform:translateY(0);transition:transform .12s ease,opacity .12s ease,border-color .12s ease}.mx-discard-card .digital-card{width:100%!important;height:auto!important;aspect-ratio:420/595!important}.mx-discard-card.is-selected{opacity:1;border-color:#ff4057;transform:translateY(-5px);box-shadow:0 0 16px rgba(255,64,87,.65)}
 .mx-confirm-discard{min-height:44px;border:1px solid #ffe18a;border-radius:8px;background:linear-gradient(#f2c960,#b67c0b);color:#070707;font-weight:1000;letter-spacing:.08em}.mx-confirm-discard:disabled{filter:grayscale(1);opacity:.45}
-
-@media(max-width:560px) and (orientation:portrait){
-  .duel-shell .battlefield{top:72px!important;bottom:clamp(204px,29dvh,242px)!important;left:4px!important;right:4px!important}
-  .duel-shell .hand-area{height:clamp(198px,28dvh,232px)!important;min-height:clamp(198px,28dvh,232px)!important;max-height:clamp(198px,28dvh,232px)!important;padding-top:2px!important}
-  .duel-shell .player-hand .hand-card-wrap{height:clamp(168px,23dvh,200px)!important;margin-left:-18px!important}
-  .duel-shell .hand-fan{padding-left:8px!important;padding-right:8px!important}
-  .duel-shell .opponent-panel{top:74px!important;left:5px!important;max-width:25vw!important;transform:scale(.72)!important}
-  .duel-shell .local-panel{bottom:clamp(208px,29.5dvh,246px)!important;left:5px!important;max-width:25vw!important;transform:scale(.72)!important}
-  .duel-shell .fighter-field{min-width:0!important;overflow:hidden!important}
-  .duel-shell .vs-battle-row{min-width:0!important;gap:2px!important}
-  .duel-shell .v9-vs-card .vs-inspect-button,.duel-shell .vs-inspect-button{width:min(21vw,88px)!important;max-height:40%!important}
-  .duel-shell .effect-rack{gap:2px!important;padding-inline:2px!important}
-  .duel-shell .effect-card-slot{min-width:0!important;max-width:18vw!important}
-  .duel-shell .effect-card-slot>span{font-size:6px!important;line-height:1!important}
-  .duel-shell .center-clash{transform:scale(.78)!important}
-  .duel-shell [data-motion-anchor="master"]{transform:scale(.82)!important;transform-origin:center bottom!important}
-  .duel-shell [data-motion-anchor$="-discard"]{transform:scale(.78)!important;transform-origin:center bottom!important}
-  .mx-discard-confirm-sheet{bottom:max(6px,env(safe-area-inset-bottom));left:5px;right:5px;padding:8px}.mx-discard-card{flex-basis:72px}
-}
 `
 
 fs.writeFileSync(appPath, app)
 fs.writeFileSync(cssPath, css)
 fs.writeFileSync(audioPath, audio)
-console.log('Applied arena mobile audit: compact controls, event SFX, layout bands, and explicit discard confirmation')
+console.log('Applied Arena interaction fixes without owning responsive geometry')
