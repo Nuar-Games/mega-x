@@ -147,7 +147,8 @@ function refreshZoneCounters(shell: HTMLElement) {
     const numeric = existingText.match(/\b(\d+)\b/)
     const score = Number(numeric?.[1] ?? faceCards)
     const previous = previousScores.get(zone)
-    badge.textContent = String(score)
+    const nextText = String(score)
+    if (badge.textContent !== nextText) badge.textContent = nextText
     if (previous !== undefined && previous !== score) pulseClass(zone, 'mx-score-changed', 620)
     previousScores.set(zone, score)
   })
