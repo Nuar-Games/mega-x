@@ -11,9 +11,9 @@ let audio=fs.readFileSync(audioPath,'utf8')
 // animated by the original keyframes, so the coin visually stops flipping.
 css=css.replace(' .mega-coin{will-change:transform!important;contain:layout paint style!important;transform:translateZ(0)}\n','')
 
-// The production screenshot also shows the waiting title overflowing its frame.
+// Keep the mobile toss title inside its frame without clipping the font metrics.
 const coinMarker='/* Production coin hotfix */'
-if(!css.includes(coinMarker)) css+=`\n${coinMarker}\n@media(max-width:560px){\n .coin-choice-panel.mx-coin-waiting,.coin-panel-shell .coin-choice-panel.mx-coin-waiting{box-sizing:border-box!important;width:calc(100vw - 34px)!important;max-width:430px!important;padding:20px 14px!important;overflow:hidden!important}\n .coin-choice-panel.mx-coin-waiting h2,.coin-panel-shell .mx-coin-waiting h2{display:block!important;width:100%!important;max-width:100%!important;margin:0 auto!important;padding:0!important;font-size:clamp(20px,6.1vw,27px)!important;line-height:1.05!important;letter-spacing:0!important;white-space:normal!important;overflow-wrap:normal!important;word-break:normal!important;text-align:center!important}\n}\n`
+if(!css.includes(coinMarker)) css+=`\n${coinMarker}\n@media(max-width:560px){\n .coin-choice-panel.mx-coin-waiting,.coin-panel-shell .coin-choice-panel.mx-coin-waiting{box-sizing:border-box!important;width:calc(100vw - 34px)!important;max-width:430px!important;padding:22px 16px!important;overflow:hidden!important}\n .coin-choice-panel.mx-coin-waiting h2,.coin-panel-shell .mx-coin-waiting h2{display:block!important;width:100%!important;max-width:100%!important;margin:0 auto!important;padding:.08em 0!important;font-size:clamp(20px,6.1vw,27px)!important;line-height:1.18!important;letter-spacing:0!important;white-space:normal!important;overflow:visible!important;overflow-wrap:normal!important;word-break:normal!important;text-align:center!important}\n .coin-stage-result .coin-result-banner{line-height:1.18!important;padding-block:11px!important;overflow:visible!important}\n}\n`
 
 // DOM mutation observation is unreliable for DRAW because React can reuse the motion node.
 // Dispatch from the actual motionFx state after the arena-flow duration patch has run.
@@ -51,4 +51,4 @@ if(!audio.includes(newVolume)){
 fs.writeFileSync(appPath,app)
 fs.writeFileSync(cssPath,css)
 fs.writeFileSync(audioPath,audio)
-console.log('Applied production jank hotfix: original coin motion, state-driven card SFX, sane gains, readable toss title')
+console.log('Applied production jank hotfix: original coin motion, state-driven card SFX, sane gains, unclipped toss title')
