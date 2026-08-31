@@ -14,7 +14,6 @@ must(audio.includes('audio.loop = true'), 'selected arena track must loop')
 must(audio.includes('ARENA_BAG_KEY'), 'non-repeating arena shuffle bag missing')
 must(audio.includes('fadeInMusic'), 'arena fade-in missing')
 must(audio.includes('duckArenaMusic'), 'arena ducking missing')
-must(audio.includes('VOICE_DUCK_GAIN = 0.5'), 'voice duck target missing')
 must(audio.includes('SFX_DUCK_GAIN = 0.7'), 'combat SFX duck target missing')
 
 must(assets.includes("export const LOBBY_TRACK = '/audio/replacements/lobby.opus'"), 'single replacement lobby track missing')
@@ -33,6 +32,15 @@ must(audio.includes('SFX_BASE_GAIN = 0.64'), 'normalized SFX playback gain missi
 must(audio.includes("playSfx('zonX')"), 'Zon X SFX trigger missing')
 must(audio.includes("playSfx('prompt')"), 'prompt SFX trigger missing')
 must(audio.includes("playSfx('arenaAppear')"), 'arena appearance SFX trigger missing')
+must(audio.includes("playSfx('fight')"), 'replacement fight SFX trigger missing')
+must(audio.includes("playSfx('win')"), 'replacement win SFX trigger missing')
+
+must(!assets.includes('VOICE_ASSETS'), 'legacy announcer asset map must stay removed')
+must(!assets.includes('MegaXVoice'), 'legacy announcer type must stay removed')
+must(!audio.includes('playVoice'), 'legacy announcer playback must stay removed')
+must(!audio.includes('voicePool'), 'legacy announcer pool must stay removed')
+must(!audio.includes('VOICE_DUCK_GAIN'), 'legacy announcer ducking must stay removed')
+must(!audio.includes('data-audio-voice'), 'legacy VOICE slider must stay removed')
 
 const arenaHeader = (vercel.headers ?? []).find((entry) => String(entry.source ?? '').startsWith('/audio/arena/'))
 must(Boolean(arenaHeader), 'arena immutable cache route missing')
