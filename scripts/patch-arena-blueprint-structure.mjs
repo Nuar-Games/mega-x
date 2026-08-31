@@ -48,23 +48,32 @@ function extractElement(token, required = true, fromIndex = 0) {
   return { text: legacyShell.slice(start, end), start, end }
 }
 
-function extractAll(token) {
-  const found = []
-  let cursor = 0
-  while (cursor < legacyShell.length) {
-    const tokenIndex = legacyShell.indexOf(token, cursor)
-    if (tokenIndex < 0) break
-    const item = extractElement(token, false, cursor)
-    if (!item) { cursor = tokenIndex + token.length; continue }
-    if (!found.some(existing => existing.start === item.start)) found.push(item)
-    cursor = Math.max(item.end, tokenIndex + token.length)
+function extractHandCalls() {
+  const calls = []
+  const re = /<([A-Z][A-Za-z0-9]*(?:Hand|hand)[A-Za-z0-9]*)\b/g
+  let match
+  while ((match = re.exec(legacyShell))) {
+    const start = match.index
+    const name = match[1]
+    const selfClose = legacyShell.indexOf('/>', start)
+    const nextOpen = legacyShell.indexOf('<', start + 1)
+    if (selfClose >= 0 && (nextOpen < 0 || selfClose < nextOpen)) {
+      calls.push({ text: legacyShell.slice(start, selfClose + 2), start, end: selfClose + 2, name })
+      re.lastIndex = selfClose + 2
+      continue
+    }
+    const end = balancedEnd(legacyShell, start, name)
+    if (end > start) {
+      calls.push({ text: legacyShell.slice(start, end), start, end, name })
+      re.lastIndex = end
+    }
   }
-  return found
+  return calls.filter((item, index, list) => list.findIndex(other => other.start === item.start) === index)
 }
 
 const hud = extractElement('fighter-hud')
-const hands = extractAll('hand-area')
-if (hands.length < 2) throw new Error(`Arena rebuild: expected two hand renderers, found ${hands.length}`)
+const handCalls = extractHandCalls()
+if (handCalls.length < 2) throw new Error(`Arena rebuild: expected two hand component calls, found ${handCalls.length} (${handCalls.map(item => item.name).join(', ') || 'none'})`)
 
 const discard = extractElement('mx-discard-confirm-sheet', false)
 const motion = extractElement('motion-card-fx', false)
@@ -73,7 +82,7 @@ const combat = extractElement('combat-screen-fx', false)
 const preserved = []
 if (discard) preserved.push(`{game.pendingSelfDiscard && game.pendingSelfDiscard.player === localViewer && (${discard.text})}`)
 preserved.push(hud.text)
-preserved.push(...hands.slice(0, 2).map(item => item.text))
+preserved.push(...handCalls.slice(0, 2).map(item => item.text))
 if (motion) preserved.push(`{motionFx && (${motion.text})}`)
 if (combat) preserved.push(`{combatFx && (${combat.text})}`)
 preserved.push(board)
@@ -86,4 +95,4 @@ if (!app.includes('className="mx-arena-board"')) throw new Error('Arena rebuild:
 if ((app.match(/mx-position-strip/g) || []).length < 2) throw new Error('Arena rebuild: both VS position rows missing')
 
 fs.writeFileSync(appPath, app)
-console.log('Rebuilt complete duel-shell: retained only HUD, two hands, modal/motion islands, and authored Arena board')
+console.log(`Rebuilt complete duel-shell with ${handCalls.slice(0, 2).map(item => item.name).join(' + ')} and authored Arena board`)
