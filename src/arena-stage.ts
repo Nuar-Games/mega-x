@@ -126,6 +126,20 @@ function markFieldSides(shell: HTMLElement) {
   })
 }
 
+function markRenderedHands(shell: HTMLElement) {
+  const candidates = Array.from(shell.querySelectorAll<HTMLElement>('[data-motion-anchor$="-hand"],.hand-area'))
+  const roots = candidates.filter((candidate) => !candidates.some((other) => other !== candidate && other.contains(candidate)))
+  roots.forEach((root) => {
+    const images = Array.from(root.querySelectorAll<HTMLImageElement>('img'))
+    const hasBack = images.some((img) => /(?:back-game|card-back)/i.test(img.getAttribute('src') ?? '')) || Boolean(root.querySelector('.card-back'))
+    const hasFace = images.some((img) => CARD_SRC.test(img.getAttribute('src') ?? '')) || Boolean(root.querySelector('.hand-card-wrap .digital-card:not(.card-back)'))
+    root.classList.toggle('mx-runtime-opponent-hand', hasBack && !hasFace)
+    root.classList.toggle('mx-runtime-local-hand', hasFace)
+    if (hasBack && !hasFace) root.classList.remove('mx-runtime-local-hand')
+    if (hasFace) root.classList.remove('mx-runtime-opponent-hand')
+  })
+}
+
 function pulseClass(target: Element, className: string, duration = 520) {
   target.classList.remove(className)
   void (target as HTMLElement).offsetWidth
@@ -187,6 +201,7 @@ function mountArena() {
   if (!shell) return
   shell.classList.add('mx-portrait-stage')
   markFieldSides(shell)
+  markRenderedHands(shell)
   refreshZoneCounters(shell)
   refreshDeckFeedback(shell)
   markPhase(shell)
