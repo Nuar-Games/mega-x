@@ -37,6 +37,24 @@ function fitCanvas(shell: HTMLElement) {
   canvas.style.transform = `translateX(-50%) scale(${scale})`
 }
 
+function syncResultOutcome(shell: HTMLElement) {
+  const localName = shell.querySelector<HTMLElement>('.mx3-fighter.is-local strong')?.textContent?.trim()
+  if (!localName) return
+  const fighterNames = Array.from(shell.querySelectorAll<HTMLElement>('.mx3-fighter strong')).map((node) => node.textContent?.trim()).filter((value): value is string => Boolean(value))
+  const outcomeNodes = Array.from(document.querySelectorAll<HTMLElement>('body *')).filter((node) => node.children.length === 0 && node.textContent?.trim().toUpperCase() === 'MENANG!')
+  for (const outcome of outcomeNodes) {
+    let panel: HTMLElement | null = outcome.parentElement
+    while (panel && panel !== document.body && !/PERLAWANAN\s+TAMAT/i.test(panel.textContent ?? '')) panel = panel.parentElement
+    if (!panel || panel === document.body) continue
+    const panelText = panel.textContent ?? ''
+    const winnerName = fighterNames.find((name) => panelText.includes(name))
+    if (!winnerName) continue
+    outcome.textContent = winnerName === localName ? 'MENANG!' : 'KALAH'
+    panel.classList.toggle('mx3-result-loss', winnerName !== localName)
+    panel.classList.toggle('mx3-result-win', winnerName === localName)
+  }
+}
+
 function mountArena() {
   const shell = document.querySelector<HTMLElement>(SHELL)
   document.body.classList.toggle('mx3-arena-present', Boolean(shell))
@@ -45,6 +63,7 @@ function mountArena() {
   shell.classList.add('mx3-stage')
   fitCanvas(shell)
   refreshFeedback(shell)
+  syncResultOutcome(shell)
 }
 
 const observer = new MutationObserver(() => mountArena())
