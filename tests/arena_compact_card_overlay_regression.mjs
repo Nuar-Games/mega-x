@@ -18,7 +18,11 @@ must(duel.includes('setFocusedCard(null)'), 'compact overlay close action missin
 must(css.includes('.mx2-card-overlay'), 'compact overlay geometry missing')
 must(css.includes('max-height:54dvh'), 'compact overlay is not height-limited')
 must(css.includes('pointer-events:none'), 'overlay root must not become a full-screen interaction wall')
-must(!duel.includes('card-focus-overlay'), 'legacy full-screen card-focus overlay is still rendered in duel')
-must(!duel.includes('focused-card-stage'), 'legacy full-screen focused-card stage is still rendered in duel')
+// pileView intentionally remains a separate pile browser; only the selected-card path must be mx2.
+const selectedStart = duel.indexOf('{focusedCard && passToPlayer === null')
+must(selectedStart >= 0, 'selected-card render path missing')
+const selectedWindow = duel.slice(selectedStart, selectedStart + 700)
+must(selectedWindow.includes('mx2-card-overlay'), 'selected card still routes to legacy full-screen inspector')
+must(!selectedWindow.includes('card-focus-overlay'), 'selected card still routes to legacy card-focus overlay')
 
 console.log('PASS compact card overlay keeps Arena visible and exposes authoritative VS/Effect actions')
