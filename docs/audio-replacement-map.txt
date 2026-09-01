@@ -7,7 +7,7 @@ card destroyed -> /audio/replacements/card-destroyed.opus
 card goes to Zon X -> /audio/replacements/card-goes-to-zon-x.opus
 prompt needed -> /audio/replacements/prompt-needed.opus
 arena appear -> /audio/replacements/arena-appear.opus
-fight -> /audio/replacements/fight.opus
 player win -> /audio/replacements/player-win.opus
 lobby -> /audio/replacements/lobby.opus (single looping lobby track)
+FIGHT audio/announcer: removed entirely.
 Legacy voice announcer system: removed.
