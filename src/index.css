@@ -5,28 +5,6 @@ html,body,#root{min-height:100%;}
 #mx-audio-controls [data-audio-panel]{max-width:min(82vw,260px)!important}
 #mx-audio-controls [data-audio-toggle]{display:block!important}
 
-/* Lobby: keep chat reachable without sacrificing the Top 20. */
-.mx-leaderboard.mx-ranks-collapsible:not(.mx-ranks-expanded) .mx-rank-stack{display:none!important}
-.mx-rank-toggle{
-  width:100%;
-  min-height:42px;
-  margin:10px 0 0;
-  border:1px solid rgba(255,214,74,.55);
-  background:rgba(10,14,24,.92);
-  color:#ffd64a;
-  font:800 13px/1.1 'Barlow Condensed',Impact,sans-serif;
-  letter-spacing:.08em;
-  cursor:pointer;
-}
-.mx-online-roster.mx-online-roster-scroll{
-  max-height:300px!important;
-  overflow-y:auto!important;
-  overflow-x:hidden!important;
-  overscroll-behavior:contain!important;
-  touch-action:pan-y!important;
-  -webkit-overflow-scrolling:touch!important;
-}
-
 /* Mobile challenge title: tag the actual rendered title, regardless of source element type. */
 .mx-challenge-headline-fit{
   display:block!important;
@@ -61,7 +39,6 @@ html,body,#root{min-height:100%;}
 @media(max-width:560px){
   #mx-audio-controls{top:8px!important;right:8px!important}
   #mx-audio-controls [data-audio-panel]{max-width:min(78vw,230px)!important}
-  .mx-online-roster.mx-online-roster-scroll{max-height:230px!important}
   .mx-challenge-headline-fit{font-size:clamp(24px,7.1vw,34px)!important;letter-spacing:.01em!important}
   .duel-shell.mx-portrait-stage .fighter-identity span{font-size:clamp(6px,1.75vw,10px)!important}
   .duel-shell.mx-portrait-stage .fighter-identity strong{font-size:clamp(10px,2.65vw,15px)!important}

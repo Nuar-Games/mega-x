@@ -1,10 +1,6 @@
 /* MEGA-X lobby containment and release cleanup. Arena intentionally untouched. */
 .mx-online-screen.mx-lobby-shell{position:relative!important}
 
-/* Temporarily removed actions stay removed even during React repaint. */
-.mx-online-screen button[data-lobby-disabled],
-.mx-lobby-shell button[data-lobby-disabled]{display:none!important}
-
 /* Fights played: centered in the header lane without stealing the player identity space. */
 .mx-fights-played{
   position:absolute!important;
@@ -30,8 +26,7 @@
 .mx-fights-played strong{font:1000 20px/1 'Barlow Condensed',Impact,sans-serif!important;color:#fff2a0!important;text-shadow:0 0 10px rgba(255,207,55,.34)!important;font-variant-numeric:tabular-nums!important}
 
 /* Online X Fighters must never turn the page into an endless roster. */
-.mx-online-roster,
-.mx-online-roster.mx-online-roster-scroll{
+.mx-online-roster{
   height:300px!important;
   max-height:300px!important;
   min-height:0!important;
@@ -45,14 +40,13 @@
 }
 
 /* Global chat gets the same fixed-panel behavior instead of growing with message history. */
-.mx-global-chat-fixed{
+.mx-lobby-right{
   min-height:0!important;
   height:430px!important;
   max-height:430px!important;
   overflow:hidden!important;
 }
-.mx-global-chat-fixed .mx-global-chat-scroll,
-.mx-global-chat-scroll{
+.mx-global-chat-feed{
   min-height:0!important;
   height:340px!important;
   max-height:340px!important;
@@ -92,16 +86,16 @@
 
 @media(max-width:900px){
   .mx-fights-played{top:10px!important;min-width:136px!important;height:42px!important;padding:5px 12px!important}
-  .mx-online-roster,.mx-online-roster.mx-online-roster-scroll{height:260px!important;max-height:260px!important;overflow-y:auto!important;padding-right:5px!important}
-  .mx-global-chat-fixed{height:390px!important;max-height:390px!important}
-  .mx-global-chat-fixed .mx-global-chat-scroll,.mx-global-chat-scroll{height:300px!important;max-height:300px!important;overflow-y:auto!important}
+  .mx-online-roster{height:260px!important;max-height:260px!important;overflow-y:auto!important;padding-right:5px!important}
+  .mx-lobby-right{height:390px!important;max-height:390px!important}
+  .mx-global-chat-feed{height:300px!important;max-height:300px!important;overflow-y:auto!important}
 }
 
 @media(max-width:560px){
   .mx-fights-played{top:8px!important;min-width:118px!important;height:38px!important;padding:4px 9px!important}
   .mx-fights-played span{font-size:8px!important}.mx-fights-played strong{font-size:17px!important}
-  .mx-online-roster,.mx-online-roster.mx-online-roster-scroll{height:230px!important;max-height:230px!important}
-  .mx-global-chat-fixed{height:355px!important;max-height:355px!important}
-  .mx-global-chat-fixed .mx-global-chat-scroll,.mx-global-chat-scroll{height:270px!important;max-height:270px!important}
+  .mx-online-roster{height:230px!important;max-height:230px!important}
+  .mx-lobby-right{height:355px!important;max-height:355px!important}
+  .mx-global-chat-feed{height:270px!important;max-height:270px!important}
   .mx-rank-card{min-height:98px!important;padding:10px 8px!important}.mx-rank-card>b{font-size:27px!important}.mx-rank-card>strong{font-size:17px!important}.mx-rank-card>span{font-size:14px!important}
 }

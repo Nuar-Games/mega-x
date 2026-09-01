@@ -15,48 +15,6 @@ function closeAudioPanel(event?: Event) {
   panel.hidden = true
 }
 
-function removeDeferredLobbyButtons() {
-  const blocked = new Set(['FIND MATCH', 'INBOX', 'MAIL'])
-  document.querySelectorAll<HTMLButtonElement>('.mx-online-screen button, .mx-lobby-shell button').forEach((button) => {
-    const label = (button.textContent ?? '').replace(/\s+/g, ' ').trim().toUpperCase()
-    if (blocked.has(label)) button.remove()
-  })
-}
-
-function renameLeaderboard() {
-  document.querySelectorAll<HTMLElement>('.mx-leaderboard h1,.mx-leaderboard h2,.mx-leaderboard h3,.mx-leaderboard [class*="title" i]').forEach((node) => {
-    const label = (node.textContent ?? '').replace(/\s+/g, ' ').trim().toUpperCase()
-    if (/^TOP\s+(?:10|20)\s+X\s+FIGHTERS$/.test(label)) node.textContent = 'TOP X FIGHTERS'
-  })
-}
-
-function enhanceLeaderboard() {
-  const board = document.querySelector<HTMLElement>('.mx-leaderboard')
-  const stack = board?.querySelector<HTMLElement>('.mx-rank-stack')
-  if (!board || !stack) return
-
-  board.classList.add('mx-ranks-collapsible')
-  if (board.querySelector('[data-mx-rank-toggle]')) return
-
-  const toggle = document.createElement('button')
-  toggle.type = 'button'
-  toggle.dataset.mxRankToggle = 'true'
-  toggle.className = 'mx-rank-toggle'
-  toggle.textContent = 'VIEW #4–#20'
-  toggle.setAttribute('aria-expanded', 'false')
-  toggle.addEventListener('click', () => {
-    const expanded = board.classList.toggle('mx-ranks-expanded')
-    toggle.textContent = expanded ? 'HIDE #4–#20' : 'VIEW #4–#20'
-    toggle.setAttribute('aria-expanded', String(expanded))
-  })
-  board.insertBefore(toggle, stack)
-}
-
-function enhanceRoster() {
-  const roster = document.querySelector<HTMLElement>('.mx-online-roster')
-  if (roster) roster.classList.add('mx-online-roster-scroll')
-}
-
 function chatIsNearBottom(list: HTMLElement) {
   return list.scrollHeight - list.scrollTop - list.clientHeight <= 32
 }
@@ -87,30 +45,8 @@ function wireChatAutoscroll(list: HTMLElement) {
 }
 
 function enhanceGlobalChat() {
-  const screen = document.querySelector<HTMLElement>('.mx-online-screen, .mx-lobby-shell')
-  if (!screen) return
-  const heading = Array.from(screen.querySelectorAll<HTMLElement>('h1,h2,h3,h4,[class*="title" i]')).find((node) =>
-    (node.textContent ?? '').replace(/\s+/g, ' ').trim().toUpperCase() === 'GLOBAL CHAT')
-  if (!heading) return
-
-  let panel: HTMLElement | null = heading.parentElement
-  for (let depth = 0; panel && panel !== screen && depth < 4; depth += 1) {
-    if (panel.querySelector('input,textarea,form')) break
-    panel = panel.parentElement
-  }
-  if (!panel || panel === screen) panel = heading.parentElement
-  if (!panel) return
-  panel.classList.add('mx-global-chat-fixed')
-
-  const candidates = Array.from(panel.querySelectorAll<HTMLElement>('div,section,ul,ol')).filter((node) => {
-    if (node === panel || node.contains(heading) || node.querySelector('input,textarea,form')) return false
-    return node.children.length >= 3
-  })
-  const list = candidates.sort((a, b) => b.children.length - a.children.length)[0]
-  if (list) {
-    list.classList.add('mx-global-chat-scroll')
-    wireChatAutoscroll(list)
-  }
+  const list = document.querySelector<HTMLElement>('.mx-lobby-right .mx-global-chat-feed')
+  if (list) wireChatAutoscroll(list)
 }
 
 function fitChallengeHeadline() {
@@ -168,10 +104,6 @@ async function refreshFightCounter(force = false) {
 }
 
 function enhanceLobby() {
-  removeDeferredLobbyButtons()
-  renameLeaderboard()
-  enhanceLeaderboard()
-  enhanceRoster()
   enhanceGlobalChat()
   fitChallengeHeadline()
   ensureFightCounter()
