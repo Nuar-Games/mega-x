@@ -41,7 +41,7 @@ function syncResultOutcome(shell: HTMLElement) {
   const localName = shell.querySelector<HTMLElement>('.mx3-fighter.is-local strong')?.textContent?.trim()
   if (!localName) return
   const fighterNames = Array.from(shell.querySelectorAll<HTMLElement>('.mx3-fighter strong')).map((node) => node.textContent?.trim()).filter((value): value is string => Boolean(value))
-  const outcomeNodes = Array.from(document.querySelectorAll<HTMLElement>('body *')).filter((node) => node.children.length === 0 && ['MENANG!','KALAH'].includes(node.textContent?.trim().toUpperCase() ?? ''))
+  const outcomeNodes: HTMLElement[] = Array.from(document.querySelectorAll<HTMLElement>('body *')).filter((node) => node.children.length === 0 && ['MENANG!','KALAH'].includes(node.textContent?.trim().toUpperCase() ?? ''))
   for (const outcome of outcomeNodes) {
     let panel: HTMLElement | null = outcome.parentElement
     while (panel && panel !== document.body && !/PERLAWANAN\s+TAMAT/i.test(panel.textContent ?? '')) panel = panel.parentElement
@@ -58,7 +58,7 @@ function syncResultOutcome(shell: HTMLElement) {
     if (outcome.textContent !== nextOutcome) outcome.textContent = nextOutcome
 
     if (isLoss) {
-      const identityNodes = Array.from(panel.querySelectorAll<HTMLElement>('*')).filter((node) => node.children.length === 0 && node.textContent?.trim() === winnerName)
+      const identityNodes: HTMLElement[] = Array.from(panel.querySelectorAll<HTMLElement>('*')).filter((node) => node.children.length === 0 && node.textContent?.trim() === winnerName)
       for (const identity of identityNodes) if (identity.textContent !== localName) identity.textContent = localName
     }
 
