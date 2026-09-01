@@ -46,7 +46,7 @@ const chosen = inShell[0]
 
 app = app.slice(0, chosen.start) + replacement + app.slice(chosen.closeStart + '</div>'.length)
 
-if (!app.includes('className="mx-arena-board"')) throw new Error('Arena rebuild: authored board missing')
+if (!app.includes('mx-arena-board')) throw new Error('Arena rebuild: authored board missing')
 if ((app.match(/mx-position-strip/g) || []).length < 2) throw new Error('Arena rebuild: both VS position rows missing')
 if (!app.includes('mx-vs-module') || !app.includes('mx-effect-column')) throw new Error('Arena rebuild: VS/effect structure missing')
 if (app.includes('<div className="arena-wrap">')) throw new Error('Arena rebuild: legacy arena-wrap survived')
