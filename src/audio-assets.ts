@@ -1,11 +1,12 @@
-export type MegaXSfx = 'card' | 'draw' | 'enter' | 'attack' | 'destroy' | 'zonX' | 'prompt' | 'win'
+export type MegaXSfx = 'card' | 'draw' | 'enter' | 'vsEnter' | 'attack' | 'destroy' | 'zonX' | 'prompt' | 'win'
 
-const SFX_REV = '20260901-final2'
+const SFX_REV = '20260901-final3'
 
 export const SFX_ASSETS: Record<MegaXSfx, string> = {
   card: `/audio/replacements/card-selected.opus?v=${SFX_REV}`,
   draw: `/audio/replacements/card-draw.opus?v=${SFX_REV}`,
   enter: `/audio/replacements/effect-enter-field.opus?v=${SFX_REV}`,
+  vsEnter: `/audio/replacements/card-enter-vs.opus?v=${SFX_REV}`,
   attack: `/audio/replacements/card-attacking.opus?v=${SFX_REV}`,
   destroy: `/audio/replacements/card-destroyed.opus?v=${SFX_REV}`,
   zonX: `/audio/replacements/card-goes-to-zon-x.opus?v=${SFX_REV}`,
