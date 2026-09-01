@@ -18,10 +18,11 @@ assert(/\.mx-online-roster\s*\{[^}]*height:\s*300px!important[^}]*overflow-y:\s*
 assert(/\.mx-lobby-right\s*\{[^}]*height:\s*430px!important[^}]*overflow:\s*hidden!important/s.test(css), 'Global Chat panel lacks a fixed-height boundary')
 assert(/\.mx-global-chat-feed\s*\{[^}]*height:\s*340px!important[^}]*overflow-y:\s*auto!important/s.test(css), 'Global Chat feed lacks an internal vertical scroller')
 
-assert(!ui.includes('VIEW #4–#20'), 'obsolete collapsible leaderboard control is still active')
-assert(!ui.includes('mx-ranks-collapsible'), 'obsolete collapsed leaderboard state is still active')
+assert(ui.includes("toggle.textContent = 'VIEW #4–#20'"), 'collapsible leaderboard control is missing')
+assert(ui.includes("board.classList.add('mx-ranks-collapsible')"), 'collapsed leaderboard state is missing')
+assert(fs.readFileSync('src/index.css', 'utf8').includes('.mx-leaderboard.mx-ranks-collapsible:not(.mx-ranks-expanded) .mx-rank-stack'), 'leaderboard stack is not collapsed by default')
 assert(!ui.includes('removeDeferredLobbyButtons'), 'Lobby actions are still removed by mutation-time text matching')
 assert(!ui.includes('renameLeaderboard'), 'leaderboard title is still rewritten after render')
 assert(ui.includes('/rest/v1/rpc/get_completed_fight_count'), 'fight counter is not connected to the completed-fight aggregate')
 
-console.log('PASS Lobby uses bounded panels, authoritative markup, three-line top cards, and the real fight count')
+console.log('PASS Lobby uses bounded panels, collapsible ranking, authoritative markup, three-line top cards, and the real fight count')

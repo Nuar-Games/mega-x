@@ -15,6 +15,28 @@ function closeAudioPanel(event?: Event) {
   panel.hidden = true
 }
 
+function enhanceLeaderboard() {
+  const board = document.querySelector<HTMLElement>('.mx-leaderboard')
+  const stack = board?.querySelector<HTMLElement>('.mx-rank-stack')
+  if (!board || !stack) return
+
+  board.classList.add('mx-ranks-collapsible')
+  if (board.querySelector('[data-mx-rank-toggle]')) return
+
+  const toggle = document.createElement('button')
+  toggle.type = 'button'
+  toggle.dataset.mxRankToggle = 'true'
+  toggle.className = 'mx-rank-toggle'
+  toggle.textContent = 'VIEW #4–#20'
+  toggle.setAttribute('aria-expanded', 'false')
+  toggle.addEventListener('click', () => {
+    const expanded = board.classList.toggle('mx-ranks-expanded')
+    toggle.textContent = expanded ? 'HIDE #4–#20' : 'VIEW #4–#20'
+    toggle.setAttribute('aria-expanded', String(expanded))
+  })
+  board.insertBefore(toggle, stack)
+}
+
 function chatIsNearBottom(list: HTMLElement) {
   return list.scrollHeight - list.scrollTop - list.clientHeight <= 32
 }
@@ -104,6 +126,7 @@ async function refreshFightCounter(force = false) {
 }
 
 function enhanceLobby() {
+  enhanceLeaderboard()
   enhanceGlobalChat()
   fitChallengeHeadline()
   ensureFightCounter()

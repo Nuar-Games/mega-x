@@ -5,6 +5,20 @@ html,body,#root{min-height:100%;}
 #mx-audio-controls [data-audio-panel]{max-width:min(82vw,260px)!important}
 #mx-audio-controls [data-audio-toggle]{display:block!important}
 
+/* Lobby: show the Top 3 first and reveal #4–#20 on demand. */
+.mx-leaderboard.mx-ranks-collapsible:not(.mx-ranks-expanded) .mx-rank-stack{display:none!important}
+.mx-rank-toggle{
+  width:100%;
+  min-height:42px;
+  margin:10px 0 0;
+  border:1px solid rgba(255,214,74,.55);
+  background:rgba(10,14,24,.92);
+  color:#ffd64a;
+  font:800 13px/1.1 'Barlow Condensed',Impact,sans-serif;
+  letter-spacing:.08em;
+  cursor:pointer;
+}
+
 /* Mobile challenge title: tag the actual rendered title, regardless of source element type. */
 .mx-challenge-headline-fit{
   display:block!important;
