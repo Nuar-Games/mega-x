@@ -46,12 +46,22 @@ function syncResultOutcome(shell: HTMLElement) {
     let panel: HTMLElement | null = outcome.parentElement
     while (panel && panel !== document.body && !/PERLAWANAN\s+TAMAT/i.test(panel.textContent ?? '')) panel = panel.parentElement
     if (!panel || panel === document.body) continue
+
+    const storedWinner = panel.dataset.mx3WinnerName?.trim()
     const panelText = panel.textContent ?? ''
-    const winnerName = fighterNames.find((name) => panelText.includes(name))
+    const winnerName = storedWinner || fighterNames.find((name) => panelText.includes(name))
     if (!winnerName) continue
-    const nextOutcome = winnerName === localName ? 'MENANG!' : 'KALAH'
-    if (outcome.textContent !== nextOutcome) outcome.textContent = nextOutcome
+    if (!storedWinner) panel.dataset.mx3WinnerName = winnerName
+
     const isLoss = winnerName !== localName
+    const nextOutcome = isLoss ? 'KALAH' : 'MENANG!'
+    if (outcome.textContent !== nextOutcome) outcome.textContent = nextOutcome
+
+    if (isLoss) {
+      const identityNodes = Array.from(panel.querySelectorAll<HTMLElement>('*')).filter((node) => node.children.length === 0 && node.textContent?.trim() === winnerName)
+      for (const identity of identityNodes) if (identity.textContent !== localName) identity.textContent = localName
+    }
+
     if (panel.classList.contains('mx3-result-loss') !== isLoss) panel.classList.toggle('mx3-result-loss', isLoss)
     if (panel.classList.contains('mx3-result-win') === isLoss) panel.classList.toggle('mx3-result-win', !isLoss)
   }
