@@ -103,7 +103,7 @@ function addToRule(selector, declarations) {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   const re = new RegExp(`(${escaped}\\{[^}]*)(\\})`)
   if (!re.test(stage)) throw new Error(`Arena final lock: CSS rule missing ${selector}`)
-  stage = stage.replace(re, `$1${declarations}$2`)
+  stage = stage.replace(re, (_whole, body, close) => `${body}${body.trimEnd().endsWith(';') ? '' : ';'}${declarations}${close}`)
 }
 
 addToRule('.mx3-status', 'font-size:11px!important;line-height:1.04!important;padding:4px 12px!important;')
