@@ -62,6 +62,10 @@ function syncResultOutcome(shell: HTMLElement) {
       for (const identity of identityNodes) if (identity.textContent !== localName) identity.textContent = localName
     }
 
+    for (const button of Array.from(panel.querySelectorAll<HTMLButtonElement>('button'))) {
+      if ((button.textContent ?? '').replace(/\s+/g, ' ').trim().toUpperCase() === 'RETURN TO LOBBY') button.classList.add('mx3-result-return')
+    }
+
     if (panel.classList.contains('mx3-result-loss') !== isLoss) panel.classList.toggle('mx3-result-loss', isLoss)
     if (panel.classList.contains('mx3-result-win') === isLoss) panel.classList.toggle('mx3-result-win', !isLoss)
   }
