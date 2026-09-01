@@ -41,7 +41,7 @@ function syncResultOutcome(shell: HTMLElement) {
   const localName = shell.querySelector<HTMLElement>('.mx3-fighter.is-local strong')?.textContent?.trim()
   if (!localName) return
   const fighterNames = Array.from(shell.querySelectorAll<HTMLElement>('.mx3-fighter strong')).map((node) => node.textContent?.trim()).filter((value): value is string => Boolean(value))
-  const outcomeNodes = Array.from(document.querySelectorAll<HTMLElement>('body *')).filter((node) => node.children.length === 0 && node.textContent?.trim().toUpperCase() === 'MENANG!')
+  const outcomeNodes = Array.from(document.querySelectorAll<HTMLElement>('body *')).filter((node) => node.children.length === 0 && ['MENANG!','KALAH'].includes(node.textContent?.trim().toUpperCase() ?? ''))
   for (const outcome of outcomeNodes) {
     let panel: HTMLElement | null = outcome.parentElement
     while (panel && panel !== document.body && !/PERLAWANAN\s+TAMAT/i.test(panel.textContent ?? '')) panel = panel.parentElement
@@ -49,9 +49,11 @@ function syncResultOutcome(shell: HTMLElement) {
     const panelText = panel.textContent ?? ''
     const winnerName = fighterNames.find((name) => panelText.includes(name))
     if (!winnerName) continue
-    outcome.textContent = winnerName === localName ? 'MENANG!' : 'KALAH'
-    panel.classList.toggle('mx3-result-loss', winnerName !== localName)
-    panel.classList.toggle('mx3-result-win', winnerName === localName)
+    const nextOutcome = winnerName === localName ? 'MENANG!' : 'KALAH'
+    if (outcome.textContent !== nextOutcome) outcome.textContent = nextOutcome
+    const isLoss = winnerName !== localName
+    if (panel.classList.contains('mx3-result-loss') !== isLoss) panel.classList.toggle('mx3-result-loss', isLoss)
+    if (panel.classList.contains('mx3-result-win') === isLoss) panel.classList.toggle('mx3-result-win', !isLoss)
   }
 }
 
