@@ -257,7 +257,7 @@ class MegaXAudio {
   private onMotionSfx = (event: Event) => {
     const kind = (event as CustomEvent<{ kind?: string }>).detail?.kind
     if (kind === 'DRAW') this.playSfx('draw')
-    else if (kind === 'ENTER_VS' || kind === 'SUPPORT') this.playSfx('enter')
+    else if (kind === 'SUPPORT') this.playSfx('enter')
     else if (kind === 'DESTROY') this.playSfx('destroy')
     else if (kind === 'CAPTURE') this.playSfx('zonX')
   }
@@ -268,11 +268,11 @@ class MegaXAudio {
       if (this.music?.paused) this.stopMusic()
       this.startSceneMusic(this.scene)
     }
-    const target = event.target instanceof Element ? event.target.closest('button, .digital-card, .mx2-effect-card, .mx2-hand-card') : null
+    const target = event.target instanceof Element ? event.target.closest('button, .digital-card, .mx3-effect, .mx3-hand-card') : null
     if (!target) return
     const label = (target.textContent ?? '').replace(/\s+/g, ' ').trim().toUpperCase()
     if (label.includes('ATTACK') || label === 'SERANG') { this.playSfx('attack'); return }
-    if (target.matches('.digital-card, .mx2-effect-card, .mx2-hand-card') || target.querySelector('.digital-card')) this.playSfx('card')
+    if (target.matches('.digital-card, .mx3-effect, .mx3-hand-card') || target.querySelector('.digital-card')) this.playSfx('card')
   }
 
   private maybePlayPrompt(text: string) {
