@@ -1,31 +1,24 @@
-/* MEGA-X Arena action layer — visual feedback only. Never owns geometry. */
-.duel-shell.mx-portrait-stage .mx-card-inspector__actions{display:flex!important;gap:6px!important;margin-top:8px!important;padding:0!important;width:100%!important;box-sizing:border-box!important}
-.duel-shell.mx-portrait-stage .mx-card-inspector__actions button{flex:1 1 0!important;min-height:34px!important;border-radius:7px!important;border:1px solid rgba(255,255,255,.2)!important;background:#161c28!important;color:#fff!important;font:900 clamp(10px,1.8cqw,14px)/1 system-ui,sans-serif!important;letter-spacing:.05em!important;padding:6px!important}
-.duel-shell.mx-portrait-stage .mx-card-inspector__actions [data-mx-play]{border-color:#ffe16a!important;background:linear-gradient(180deg,#f4d45f,#b88113)!important;color:#090a0d!important;box-shadow:0 0 14px rgba(255,221,85,.22)!important}
-.duel-shell.mx-portrait-stage .mx-card-inspector__actions [hidden]{display:none!important}
+/* MEGA-X ARENA 2 action feedback — mx2 presentation only. */
+@keyframes mx2Playable{0%,100%{filter:drop-shadow(0 0 4px rgba(255,216,68,.28))}50%{filter:drop-shadow(0 0 13px rgba(255,222,82,.9))}}
+@keyframes mx2Target{0%,100%{box-shadow:inset 0 0 0 1px rgba(255,226,89,.35),0 0 4px rgba(255,218,64,.15)}50%{box-shadow:inset 0 0 0 2px rgba(255,236,130,.9),0 0 18px rgba(255,215,55,.7)}}
+@keyframes mx2Score{0%{transform:scale(1)}35%{transform:scale(1.22);filter:brightness(1.8)}100%{transform:scale(1)}}
+@keyframes mx2Attack{0%,100%{filter:drop-shadow(0 0 4px rgba(255,67,56,.3))}50%{filter:drop-shadow(0 0 18px rgba(255,70,55,.95))}}
+@keyframes mx2Deck{0%{filter:brightness(1)}40%{filter:brightness(1.6)}100%{filter:brightness(1)}}
+@keyframes mx2ImpactBurst{0%{opacity:0;transform:scale(.7)}28%{opacity:1;transform:scale(1.08)}100%{opacity:0;transform:scale(1.25)}}
+@keyframes mx2Entry{0%{opacity:1;filter:brightness(2)}65%{opacity:.35}100%{opacity:0}}
 
-@keyframes mxPhaseGlow{0%,100%{filter:drop-shadow(0 0 2px rgba(255,216,65,.22))}50%{filter:drop-shadow(0 0 12px rgba(255,216,65,.9))}}
-@keyframes mxTargetPulse{0%,100%{box-shadow:0 0 0 1px rgba(255,225,85,.3),0 0 5px rgba(255,225,85,.18)}50%{box-shadow:0 0 0 2px rgba(255,235,120,.95),0 0 20px rgba(255,215,50,.82)}}
-@keyframes mxZoneScoreFlash{0%{transform:scale(1);filter:brightness(1)}35%{transform:scale(1.18);filter:brightness(1.8)}100%{transform:scale(1);filter:brightness(1)}}
-@keyframes mxDeckCountFlash{0%{transform:scale(1)}40%{transform:scale(1.12);filter:brightness(1.6)}100%{transform:scale(1);filter:brightness(1)}}
-@keyframes mxPlayConfirm{0%{filter:brightness(1)}40%{filter:brightness(1.45) drop-shadow(0 0 14px rgba(255,218,62,.85))}100%{filter:brightness(1)}}
-@keyframes mxAttackReady{0%,100%{filter:drop-shadow(0 0 3px rgba(255,72,52,.25))}50%{filter:drop-shadow(0 0 15px rgba(255,72,52,.9))}}
+.duel-shell.mx2-stage .mx2-entry-flash{position:absolute!important;inset:0!important;z-index:1450!important;pointer-events:none!important;background:radial-gradient(circle,#fff 0 2%,rgba(80,184,255,.5) 3% 14%,transparent 48%)!important;animation:mx2Entry .55s ease-out forwards!important}.duel-shell.mx2-stage .mx2-entry-flash i{position:absolute!important;left:50%!important;top:50%!important;width:70%!important;height:1px!important;background:linear-gradient(90deg,transparent,#fff7b0,transparent)!important;transform:translate(-50%,-50%) rotate(24deg)!important;box-shadow:0 0 20px rgba(92,188,255,.8)!important}.duel-shell.mx2-stage .mx2-entry-flash i:nth-child(2){transform:translate(-50%,-50%) rotate(-24deg)!important}
+.duel-shell.mx2-stage .mx2-hand-card.is-playable{animation:mx2Playable .9s ease-in-out infinite!important}
+.duel-shell.mx2-stage .mx2-phase-attack .mx2-command-attack{animation:mx2Attack .68s ease-in-out infinite!important}
+.duel-shell.mx2-stage .mx2-effect-rail.is-live .mx2-effect-slot:not(.is-filled){animation:mx2Target .85s ease-in-out infinite!important}
+.duel-shell.mx2-stage .mx2-x-zone.mx2-score-changed .mx2-score-core{animation:mx2Score .58s cubic-bezier(.2,.85,.25,1) 1!important}
+.duel-shell.mx2-stage [data-motion-anchor="master"].mx2-deck-changed{animation:mx2Deck .46s ease-out 1!important}
+.duel-shell.mx2-stage .mx2-impact{animation:mx2ImpactBurst .42s ease-out 1!important}
+.duel-shell.mx2-stage .mx2-vs-frame.is-attacking{animation:mx2Attack .42s ease-out 1!important}
+.duel-shell.mx2-stage .mx2-vs-frame.is-hit{animation:mx2Target .34s ease-out 1!important}
+.duel-shell.mx2-stage .mx2-motion-enter_vs{filter:drop-shadow(0 0 14px rgba(79,185,255,.76))!important}
+.duel-shell.mx2-stage .mx2-motion-support{filter:drop-shadow(0 0 12px rgba(255,221,73,.62))!important}
+.duel-shell.mx2-stage .mx2-motion-destroy{filter:drop-shadow(0 0 14px rgba(255,62,49,.78))!important}
+.duel-shell.mx2-stage .mx2-motion-capture{filter:drop-shadow(0 0 16px rgba(255,226,72,.84))!important}
 
-.duel-shell.mx-portrait-stage.mx-phase-vs .hand-card-wrap:not(:has(button:disabled)),.duel-shell.mx-portrait-stage.mx-phase-effect .hand-card-wrap:not(:has(button:disabled)){animation:mxPhaseGlow .9s ease-in-out infinite!important}
-.duel-shell.mx-portrait-stage.mx-phase-target .zone-card-button:not(:disabled),.duel-shell.mx-portrait-stage.mx-phase-target .vs-inspect-button:not(:disabled){animation:mxTargetPulse .72s ease-in-out infinite!important;position:relative!important;z-index:300!important}
-.duel-shell.mx-portrait-stage.mx-phase-attack button:not(:disabled)[class*="attack"],.duel-shell.mx-portrait-stage.mx-phase-attack button:not(:disabled)[aria-label*="ATK" i]{animation:mxAttackReady .68s ease-in-out infinite!important}
-.duel-shell.mx-portrait-stage.mx-phase-opponent .hand-area{filter:brightness(.58) saturate(.7)!important;transition:filter .18s ease!important}
-.duel-shell.mx-portrait-stage.mx-phase-opponent .opponent-panel{animation:mxPhaseGlow .9s ease-in-out infinite!important}
-.duel-shell.mx-portrait-stage.mx-play-confirm .hand-area{animation:mxPlayConfirm .34s ease-out 1!important}
-.duel-shell.mx-portrait-stage .p1-x.mx-score-changed .mx-zone-x-count,.duel-shell.mx-portrait-stage .p2-x.mx-score-changed .mx-zone-x-count{animation:mxZoneScoreFlash .6s cubic-bezier(.2,.85,.25,1) 1!important}
-.duel-shell.mx-portrait-stage [data-motion-anchor="master"].mx-deck-changed{animation:mxDeckCountFlash .46s ease-out 1!important}
-
-/* Existing authoritative card-motion events get clean short emphasis; state never waits for animation. */
-.duel-shell.mx-portrait-stage .motion-card-fx.enter_vs{animation-duration:.42s!important;filter:drop-shadow(0 0 12px rgba(78,181,255,.7))!important}
-.duel-shell.mx-portrait-stage .motion-card-fx.support{animation-duration:.38s!important;filter:drop-shadow(0 0 10px rgba(255,219,70,.55))!important}
-.duel-shell.mx-portrait-stage .motion-card-fx.destroy{animation-duration:.24s!important;filter:drop-shadow(0 0 12px rgba(255,58,44,.72))!important}
-.duel-shell.mx-portrait-stage .motion-card-fx.capture{animation-duration:.43s!important;filter:drop-shadow(0 0 14px rgba(255,225,70,.8))!important}
-.duel-shell.mx-portrait-stage .motion-card-fx.draw{animation-duration:.18s!important}
-.duel-shell.mx-portrait-stage .combat-screen-fx.stage-impact{animation-duration:.34s!important}
-
-@media (prefers-reduced-motion:reduce){.duel-shell.mx-portrait-stage *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+@media(prefers-reduced-motion:reduce){.duel-shell.mx2-stage *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}

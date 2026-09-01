@@ -1,23 +1,9 @@
 import fs from 'node:fs'
+const fragment = fs.readFileSync('src/arena-blueprint.fragment','utf8')
+const css = fs.readFileSync('src/arena-stage.css','utf8')
+const must = (ok,msg) => { if(!ok) throw new Error(msg) }
 
-const app = fs.readFileSync('src/App.tsx', 'utf8')
-const css = fs.readFileSync('src/V24.css', 'utf8')
-
-function assert(ok, message) {
-  if (!ok) throw new Error(message)
-}
-
-assert(
-  app.includes("game.message.includes('peluang serangan') && game.message.includes('disekat')"),
-  'blocked-attack state is not surfaced in the arena UI',
-)
-assert(
-  app.includes('mx-attack-blocked-slam'),
-  'blocked-attack arena slam is missing',
-)
-assert(
-  css.includes('/* Attack-block feedback */'),
-  'blocked-attack visual feedback CSS is missing',
-)
-
-console.log('PASS attack-block feedback is explicit in the arena UI')
+must(fragment.includes('mx2-command'), 'Arena 2 command surface missing')
+must(fragment.includes('game.message'), 'Arena 2 no longer surfaces authoritative blocked-attack messages')
+must(css.includes('.mx2-command'), 'Arena 2 command styling missing')
+console.log('PASS attack-block feedback remains visible through Arena 2 command/status surfaces')

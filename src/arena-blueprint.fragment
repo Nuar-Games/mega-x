@@ -1,88 +1,132 @@
-<div className={`mx-arena-board phase-${game.phase.toLowerCase()} ${game.phase === 'EFFECT' && game.effectTurn === localViewer ? 'phase-effect-local' : ''}`}>
-  <div className="mx-arena-backdrop" aria-hidden="true"><i /><i /><i /></div>
+<>
+  <header className="mx2-hud">
+    {activeOnlineMatch && game.phase !== 'GAME_OVER' && <button className="mx2-quit" disabled={matchNetworkBusy} onClick={quitOnlineMatch}>QUIT MATCH</button>}
+    <div className="mx2-round-block">
+      <div className="mx2-round">PUSINGAN {game.round}</div>
+      {actionTimerVisible && <div className={`mx2-timer ${actionSecondsLeft <= 5 ? 'is-critical' : actionSecondsLeft <= 10 ? 'is-danger' : actionSecondsLeft <= 15 ? 'is-warning' : ''}`}><span>{actionTimerIndex === localViewer ? 'YOUR TURN' : 'OPPONENT TURN'}</span><strong>{actionSecondsLeft}</strong></div>}
+    </div>
+    <div className="mx2-status" role="status">{activeOnlineMatch && onlineMessage ? onlineMessage : game.message}</div>
+  </header>
 
-  <div className={`fighter-identity fighter-identity-left ${activePlayer === 0 ? 'is-active' : ''}`}>
-    <span className="fighter-id-side">X FIGHTER 1</span>
-    <strong>{playerDisplayName(0)}</strong>
-    {activePlayer === 0 && <em>AKTIF</em>}
-  </div>
-  <div className={`fighter-identity fighter-identity-right ${activePlayer === 1 ? 'is-active' : ''}`}>
-    <span className="fighter-id-side">X FIGHTER 2</span>
-    <strong>{playerDisplayName(1)}</strong>
-    {activePlayer === 1 && <em>AKTIF</em>}
-  </div>
-
-  <div className="pile-cluster score-pile p1-x" data-motion-anchor="p1-x">
-    <button className="support-zone pile-button x-pile" onClick={() => setPileView({ title: 'X FIGHTER 1 · ZON X', cards: game.players[0].x })}>
-      <span>ZON X</span>{visiblePileTop(game.players[0].x, 'p1-x') ? <CardView card={visiblePileTop(game.players[0].x, 'p1-x')!} /> : <span className="empty-pile">CAPTURE</span>}
-    </button>
-    <span key={`p1-score-${game.players[0].x.length}`} className="pile-counter x-counter score-pulse">{displayedPileCount('p1-x', game.players[0].x.length)}</span>
-  </div>
-  <div className="pile-cluster p1-discard" data-motion-anchor="p1-discard">
-    <button className="support-zone pile-button" onClick={() => setPileView({ title: 'X FIGHTER 1 · ZON TEPI', cards: game.players[0].discard })}>
-      <span>ZON TEPI</span>{visiblePileTop(game.players[0].discard, 'p1-discard') ? <CardView card={visiblePileTop(game.players[0].discard, 'p1-discard')!} /> : <span className="empty-pile">BUANG</span>}
-    </button>
-  </div>
-  <div className={`pile-cluster master-pile ${/shuffle/i.test(game.message) ? 'is-shuffling' : ''}`} data-motion-anchor="master">
-    <div className="support-zone deck-pile"><img src="/cards/back-game.webp" alt="Master Deck" /><span className="deck-card-title">MASTER DECK</span></div>
-    <span className="pile-counter">{displayedDeckCount}</span>
-  </div>
-  <div className="pile-cluster p2-discard" data-motion-anchor="p2-discard">
-    <button className="support-zone pile-button" onClick={() => setPileView({ title: 'X FIGHTER 2 · ZON TEPI', cards: game.players[1].discard })}>
-      <span>ZON TEPI</span>{visiblePileTop(game.players[1].discard, 'p2-discard') ? <CardView card={visiblePileTop(game.players[1].discard, 'p2-discard')!} /> : <span className="empty-pile">BUANG</span>}
-    </button>
-  </div>
-  <div className="pile-cluster score-pile p2-x" data-motion-anchor="p2-x">
-    <button className="support-zone pile-button x-pile" onClick={() => setPileView({ title: 'X FIGHTER 2 · ZON X', cards: game.players[1].x })}>
-      <span>ZON X</span>{visiblePileTop(game.players[1].x, 'p2-x') ? <CardView card={visiblePileTop(game.players[1].x, 'p2-x')!} /> : <span className="empty-pile">CAPTURE</span>}
-    </button>
-    <span key={`p2-score-${game.players[1].x.length}`} className="pile-counter x-counter score-pulse">{displayedPileCount('p2-x', game.players[1].x.length)}</span>
+  <div className="mx2-opponent-hand" data-motion-anchor={`p${topPlayer + 1}-hand`} aria-label="Tangan lawan">
+    {Array.from({ length: Math.max(0, game.players[topPlayer].hand.length - arrivalCount(`p${topPlayer + 1}-hand`)) }, (_, i) => <div key={`mx2-opp-${i}`} className="mx2-back-slot"><img src="/cards/back-game.webp" alt="Kad lawan" /></div>)}
   </div>
 
-  <section className="mx-fighter-side mx-side-left" data-side="p1">
-    <aside className={`mx-effect-column ${game.phase === 'EFFECT' && game.effectTurn === 0 ? 'is-valid-destination' : ''}`} data-motion-anchor="p1-effect" aria-label="X Fighter 1 Effect Zone">
+  <div className={`mx2-arena mx2-phase-${game.phase.toLowerCase()} ${game.phase === 'EFFECT' && game.effectTurn === localViewer ? 'mx2-phase-local' : ''}`}>
+    <div className="mx2-backdrop" aria-hidden="true"><i /><i /><i /></div>
+
+    <div className={`mx2-fighter-bar mx2-fighter-left ${activePlayer === 0 ? 'is-active' : ''}`}>
+      <span>X FIGHTER 1</span><strong>{playerDisplayName(0)}</strong>{activePlayer === 0 && <em>AKTIF</em>}
+    </div>
+    <div className={`mx2-fighter-bar mx2-fighter-right ${activePlayer === 1 ? 'is-active' : ''}`}>
+      <span>X FIGHTER 2</span><strong>{playerDisplayName(1)}</strong>{activePlayer === 1 && <em>AKTIF</em>}
+    </div>
+
+    <section className="mx2-upper-zone mx2-x-zone mx2-p1-x" data-motion-anchor="p1-x">
+      <button className="mx2-zone-button" onClick={() => setPileView({ title: 'X FIGHTER 1 · ZON X', cards: game.players[0].x })}>
+        <span className="mx2-zone-title">ZON X</span>
+        <div className="mx2-zone-card">{visiblePileTop(game.players[0].x, 'p1-x') ? <CardView card={visiblePileTop(game.players[0].x, 'p1-x')!} /> : <b>CAPTURE</b>}</div>
+        <strong className="mx2-score-core">{displayedPileCount('p1-x', game.players[0].x.length)}</strong>
+      </button>
+    </section>
+    <section className="mx2-upper-zone mx2-discard-zone mx2-p1-discard" data-motion-anchor="p1-discard">
+      <button className="mx2-zone-button" onClick={() => setPileView({ title: 'X FIGHTER 1 · ZON TEPI', cards: game.players[0].discard })}>
+        <span className="mx2-zone-title">ZON TEPI</span>
+        <div className="mx2-discard-core">{visiblePileTop(game.players[0].discard, 'p1-discard') ? <CardView card={visiblePileTop(game.players[0].discard, 'p1-discard')!} /> : <b>BUANG</b>}</div>
+      </button>
+    </section>
+    <section className={`mx2-upper-zone mx2-deck-zone ${/shuffle/i.test(game.message) ? 'is-shuffling' : ''}`} data-motion-anchor="master">
+      <div className="mx2-deck-core"><img src="/cards/back-game.webp" alt="Master Deck" /><span>MASTER<br/>DECK</span><strong>{displayedDeckCount}</strong></div>
+    </section>
+    <section className="mx2-upper-zone mx2-discard-zone mx2-p2-discard" data-motion-anchor="p2-discard">
+      <button className="mx2-zone-button" onClick={() => setPileView({ title: 'X FIGHTER 2 · ZON TEPI', cards: game.players[1].discard })}>
+        <span className="mx2-zone-title">ZON TEPI</span>
+        <div className="mx2-discard-core">{visiblePileTop(game.players[1].discard, 'p2-discard') ? <CardView card={visiblePileTop(game.players[1].discard, 'p2-discard')!} /> : <b>BUANG</b>}</div>
+      </button>
+    </section>
+    <section className="mx2-upper-zone mx2-x-zone mx2-p2-x" data-motion-anchor="p2-x">
+      <button className="mx2-zone-button" onClick={() => setPileView({ title: 'X FIGHTER 2 · ZON X', cards: game.players[1].x })}>
+        <span className="mx2-zone-title">ZON X</span>
+        <div className="mx2-zone-card">{visiblePileTop(game.players[1].x, 'p2-x') ? <CardView card={visiblePileTop(game.players[1].x, 'p2-x')!} /> : <b>CAPTURE</b>}</div>
+        <strong className="mx2-score-core">{displayedPileCount('p2-x', game.players[1].x.length)}</strong>
+      </button>
+    </section>
+
+    <aside className={`mx2-effect-rail mx2-effect-left ${game.phase === 'EFFECT' && game.effectTurn === 0 ? 'is-live' : ''}`} data-motion-anchor="p1-effect" aria-label="X Fighter 1 Effect Zone">
       {Array.from({ length: 5 }, (_, i) => {
         const effect = game.players[0].effects[i]
-        return <div key={`p1-effect-${i}`} className="effect-card-slot"><span>EFFECT {i + 1}</span>{effect && <button data-card-id={effect.card.id} className={`zone-card-button ${isCardArriving(effect.card.id, 'p1-effect') ? 'is-arrival-hidden' : ''}`} onClick={() => setFocusedCard(effect.card)}><CardView card={effect.card} /></button>}</div>
+        return <div key={`mx2-p1-effect-${i}`} className={`mx2-effect-slot ${effect ? 'is-filled' : ''}`}><span>{i + 1}</span>{effect ? <button className={`mx2-effect-card ${isCardArriving(effect.card.id, 'p1-effect') ? 'is-arrival-hidden' : ''}`} onClick={() => setFocusedCard(effect.card)}><CardView card={effect.card} /></button> : <b>EFFECT</b>}</div>
       })}
     </aside>
-    <div className="mx-vs-module">
-      <div className="mx-position-strip"><span>POSISI KAD</span><strong>X FIGHTER 1</strong></div>
-      <div className="vs-battle-row">
-        <div data-motion-anchor="p1-vs" className={`v9-vs-card mx-vs-card-slot ${impactFx?.attacker === 0 ? `is-attacking stage-${impactFx.stage.toLowerCase()}` : ''} ${impactFx?.defender === 0 ? `is-hit stage-${impactFx.stage.toLowerCase()}` : ''} ${isCardArriving(game.players[0].vs?.card.id, 'p1-vs') ? 'is-arrival-hidden' : ''}`}>
-          <VSZone title="" vs={game.players[0].vs} stats={currentStats[0]} hidden={!revealRoundOneVS && game.round === 1} onInspect={(card) => setFocusedCard(card)} />
-        </div>
-      </div>
-      <div className="mx-stat-strip"><LiveStats stats={isCardArriving(game.players[0].vs?.card.id, 'p1-vs') ? null : currentStats[0]} side="left" /></div>
-    </div>
-  </section>
 
-  <section className="mx-fighter-side mx-side-right" data-side="p2">
-    <div className="mx-vs-module">
-      <div className="mx-position-strip"><span>POSISI KAD</span><strong>X FIGHTER 2</strong></div>
-      <div className="vs-battle-row reverse">
-        <div data-motion-anchor="p2-vs" className={`v9-vs-card mx-vs-card-slot ${impactFx?.attacker === 1 ? `is-attacking stage-${impactFx.stage.toLowerCase()}` : ''} ${impactFx?.defender === 1 ? `is-hit stage-${impactFx.stage.toLowerCase()}` : ''} ${isCardArriving(game.players[1].vs?.card.id, 'p2-vs') ? 'is-arrival-hidden' : ''}`}>
-          <VSZone title="" vs={game.players[1].vs} stats={currentStats[1]} hidden={!revealRoundOneVS && game.round === 1} onInspect={(card) => setFocusedCard(card)} />
-        </div>
+    <section className="mx2-vs-side mx2-vs-left">
+      <div className="mx2-position-bar"><span>POSISI KAD</span><strong>{game.players[0].vs?.position ?? '—'}</strong></div>
+      <div className={`mx2-vs-frame ${game.players[0].vs ? 'is-filled' : 'is-empty'} ${impactFx?.attacker === 0 ? 'is-attacking' : ''} ${impactFx?.defender === 0 ? 'is-hit' : ''}`} data-motion-anchor="p1-vs">
+        {game.players[0].vs ? (!revealRoundOneVS && game.round === 1 ? <div className="mx2-hidden-vs"><img src="/cards/back-game.webp" alt="VS tersembunyi" /></div> : <button className={`mx2-vs-card ${isCardArriving(game.players[0].vs?.card.id, 'p1-vs') ? 'is-arrival-hidden' : ''}`} onClick={() => setFocusedCard(game.players[0].vs!.card)}><CardView card={game.players[0].vs!.card} /></button>) : <div className="mx2-vs-empty">VS</div>}
       </div>
-      <div className="mx-stat-strip"><LiveStats stats={isCardArriving(game.players[1].vs?.card.id, 'p2-vs') ? null : currentStats[1]} side="right" /></div>
-    </div>
-    <aside className={`mx-effect-column ${game.phase === 'EFFECT' && game.effectTurn === 1 ? 'is-valid-destination' : ''}`} data-motion-anchor="p2-effect" aria-label="X Fighter 2 Effect Zone">
+      <div className="mx2-stats">
+        <div className="mx2-stat mx2-atk"><span>ATK</span><strong>{(currentStats[0] as any)?.atk ?? (game.players[0].vs?.card as any)?.atk ?? '—'}</strong></div>
+        <div className="mx2-stat mx2-def"><span>DEF</span><strong>{(currentStats[0] as any)?.def ?? (game.players[0].vs?.card as any)?.def ?? '—'}</strong></div>
+        <div className="mx2-stat mx2-sta"><span>STA</span><strong>{(currentStats[0] as any)?.sta ?? (game.players[0].vs?.card as any)?.sta ?? '—'}</strong></div>
+      </div>
+    </section>
+
+    <div className={`mx2-clash ${impactFx ? 'is-impact' : ''}`} aria-hidden="true"><span>VS</span></div>
+
+    <section className="mx2-vs-side mx2-vs-right">
+      <div className="mx2-position-bar"><span>POSISI KAD</span><strong>{game.players[1].vs?.position ?? '—'}</strong></div>
+      <div className={`mx2-vs-frame ${game.players[1].vs ? 'is-filled' : 'is-empty'} ${impactFx?.attacker === 1 ? 'is-attacking' : ''} ${impactFx?.defender === 1 ? 'is-hit' : ''}`} data-motion-anchor="p2-vs">
+        {game.players[1].vs ? (!revealRoundOneVS && game.round === 1 ? <div className="mx2-hidden-vs"><img src="/cards/back-game.webp" alt="VS tersembunyi" /></div> : <button className={`mx2-vs-card ${isCardArriving(game.players[1].vs?.card.id, 'p2-vs') ? 'is-arrival-hidden' : ''}`} onClick={() => setFocusedCard(game.players[1].vs!.card)}><CardView card={game.players[1].vs!.card} /></button>) : <div className="mx2-vs-empty">VS</div>}
+      </div>
+      <div className="mx2-stats">
+        <div className="mx2-stat mx2-atk"><span>ATK</span><strong>{(currentStats[1] as any)?.atk ?? (game.players[1].vs?.card as any)?.atk ?? '—'}</strong></div>
+        <div className="mx2-stat mx2-def"><span>DEF</span><strong>{(currentStats[1] as any)?.def ?? (game.players[1].vs?.card as any)?.def ?? '—'}</strong></div>
+        <div className="mx2-stat mx2-sta"><span>STA</span><strong>{(currentStats[1] as any)?.sta ?? (game.players[1].vs?.card as any)?.sta ?? '—'}</strong></div>
+      </div>
+    </section>
+
+    <aside className={`mx2-effect-rail mx2-effect-right ${game.phase === 'EFFECT' && game.effectTurn === 1 ? 'is-live' : ''}`} data-motion-anchor="p2-effect" aria-label="X Fighter 2 Effect Zone">
       {Array.from({ length: 5 }, (_, i) => {
         const effect = game.players[1].effects[i]
-        return <div key={`p2-effect-${i}`} className="effect-card-slot"><span>EFFECT {i + 1}</span>{effect && <button data-card-id={effect.card.id} className={`zone-card-button ${isCardArriving(effect.card.id, 'p2-effect') ? 'is-arrival-hidden' : ''}`} onClick={() => setFocusedCard(effect.card)}><CardView card={effect.card} /></button>}</div>
+        return <div key={`mx2-p2-effect-${i}`} className={`mx2-effect-slot ${effect ? 'is-filled' : ''}`}><span>{i + 1}</span>{effect ? <button className={`mx2-effect-card ${isCardArriving(effect.card.id, 'p2-effect') ? 'is-arrival-hidden' : ''}`} onClick={() => setFocusedCard(effect.card)}><CardView card={effect.card} /></button> : <b>EFFECT</b>}</div>
       })}
     </aside>
+
+    {impactFx && <div className={`mx2-impact mx2-impact-${impactFx.stage.toLowerCase()}`} aria-hidden="true"><i /><i /><strong>SERANG!</strong></div>}
+    {motionFx && <div className={`mx2-motion mx2-motion-${motionFx.kind.toLowerCase()} ${motionFx.from} ${motionFx.to}`} style={motionStyle(motionFx)} key={`${motionFx.card.id}-${motionFx.kind}-${motionFx.to}`}>{motionFx.kind === 'DRAW' ? <div className="mx2-motion-back"><img src="/cards/back-game.webp" alt="Kad diambil secara tertutup" /></div> : <CardView card={motionFx.card} />}<strong>{motionFx.kind === 'CAPTURE' ? 'ZON X!' : motionFx.kind === 'DESTROY' ? 'DIMUSNAHKAN!' : motionFx.kind === 'DISCARD' ? 'BUANG!' : motionFx.kind === 'RETURN' ? 'KEMBALI!' : motionFx.kind === 'ENTER_VS' ? 'X FIGHTER MASUK!' : motionFx.kind === 'SUPPORT' ? 'EFFECT AKTIF!' : 'AMBIL KAD!'}</strong></div>}
+  </div>
+
+  <section className={`mx2-command ${passToPlayer !== null ? 'is-locked' : ''}`} aria-live="polite">
+    <div className="mx2-command-copy">
+      {passToPlayer !== null ? 'PILIHAN SEDANG DISELESAIKAN' : game.phase === 'SET_VS' && setupPlayer === localViewer ? 'PILIH KAD VS' : game.phase === 'EFFECT' && game.effectTurn === localViewer ? 'PILIH KAD EFFECT' : game.phase === 'ATTACK' && game.attackTurn === localViewer ? 'SERANG ATAU PASS' : game.phase === 'GAME_OVER' ? 'PERLAWANAN TAMAT' : game.message}
+    </div>
+    <div className="mx2-command-actions">
+      {canBegin && passToPlayer === null && (!activeOnlineMatch || localViewer === game.firstPlayer) && <button className="mx2-command-primary" onClick={beginRound}>MULA PUSINGAN</button>}
+      {game.phase === 'EFFECT' && game.effectTurn !== null && passToPlayer === null && (!activeOnlineMatch || game.effectTurn === localViewer) && <>
+        {game.round > 1 && game.players[game.effectTurn].vs && !game.players[game.effectTurn].vs!.positionChangedThisRound && !hasActiveEffect(game, other(game.effectTurn), 6) && !game.effectActionTaken[game.effectTurn] && <button onClick={() => switchPosition(game.effectTurn!)}>TUKAR POSISI</button>}
+        <button className="mx2-command-end" onClick={requestEndEffectTurn}>{game.effectActionTaken[game.effectTurn] ? 'TAMAT GILIRAN' : 'TAMAT TANPA EFFECT'}</button>
+      </>}
+      {game.phase === 'ATTACK' && game.attackTurn !== null && passToPlayer === null && (!activeOnlineMatch || game.attackTurn === localViewer) && <>
+        {game.players[game.attackTurn].vs?.position === 'ATK' && <button className="mx2-command-attack" onClick={() => attack(game.attackTurn!)}>SERANG</button>}
+        <button className="mx2-command-pass" onClick={() => passAttack(game.attackTurn!)}>PASS</button>
+      </>}
+      {game.phase === 'GAME_OVER' && !activeOnlineMatch && <button onClick={resetToCoin}>PERLAWANAN BARU</button>}
+    </div>
   </section>
 
-  {passToPlayer === null && game.phase === 'SET_VS' && setupPlayer === localViewer && <div className="arena-vs-prompt"><strong>PILIH KAD VS</strong></div>}
-  {passToPlayer === null && game.phase === 'EFFECT' && game.effectTurn === localViewer && <div className="arena-command-prompt"><strong>PILIH KAD EFFECT</strong></div>}
-
-  <div className={`center-clash ${impactFx ? `is-combat stage-${impactFx.stage.toLowerCase()}` : ''}`} aria-hidden="true">
-    <div className="arena-ring-fx" />
-    <div className="vs-emblem"><span>VS</span></div>
-    {impactFx && <div className="combat-callout">SERANG!</div>}
-  </div>
-  {impactFx && <div className={`combat-screen-fx stage-${impactFx.stage.toLowerCase()}`} aria-hidden="true"><i className="combat-flash" /><i className="combat-shock combat-shock-one" /><i className="combat-shock combat-shock-two" /><i className="combat-slash combat-slash-one" /><i className="combat-slash combat-slash-two" /></div>}
-  {motionFx && <div className={`motion-card-fx ${motionFx.kind.toLowerCase()} ${motionFx.from} ${motionFx.to}`} style={motionStyle(motionFx)} key={`${motionFx.card.id}-${motionFx.kind}-${motionFx.to}`}>{motionFx.kind === 'DRAW' ? <div className="digital-card card-back motion-hidden-card"><img src="/cards/back-game.webp" alt="Kad diambil secara tertutup" /></div> : <CardView card={motionFx.card} />}<strong>{motionFx.kind === 'CAPTURE' ? 'ZON X!' : motionFx.kind === 'DESTROY' ? 'DIMUSNAHKAN!' : motionFx.kind === 'DISCARD' ? 'BUANG!' : motionFx.kind === 'RETURN' ? 'KEMBALI!' : motionFx.kind === 'ENTER_VS' ? 'X FIGHTER MASUK!' : motionFx.kind === 'SUPPORT' ? 'EFFECT AKTIF!' : 'AMBIL KAD!'}</strong></div>}
-</div>
+  <section className={`mx2-local-hand ${passToPlayer !== null ? 'is-locked' : ''}`} data-motion-anchor={`p${bottomPlayer + 1}-hand`} aria-label="Tangan anda">
+    <div className="mx2-hand-head"><span>TANGAN ANDA</span><strong>{Math.max(0, game.players[bottomPlayer].hand.length - arrivalCount(`p${bottomPlayer + 1}-hand`))}</strong></div>
+    <div className="mx2-hand-grid">
+      {game.players[bottomPlayer].hand.map((card) => {
+        const arriving = arrivingIdsForZone(`p${bottomPlayer + 1}-hand`).includes(card.id)
+        const canSet = game.phase === 'SET_VS' && game.needsVS[bottomPlayer] && (activeOnlineMatch ? true : setupPlayer === bottomPlayer) && !pendingChoice && passToPlayer === null
+        const canEffect = game.phase === 'EFFECT' && game.effectTurn === bottomPlayer && !pendingChoice && passToPlayer === null
+        return <article key={card.id} className={`mx2-hand-card ${arriving ? 'is-arrival-hidden' : ''} ${canSet || canEffect ? 'is-playable' : ''}`}>
+          <button className="mx2-hand-face" onClick={() => setFocusedCard(card)}><CardView card={card} /></button>
+          {canSet && <div className="mx2-hand-actions"><button className="mx2-set-atk" onClick={() => setVS(bottomPlayer, card.id, 'ATK')}>ATK</button><button className="mx2-set-def" onClick={() => setVS(bottomPlayer, card.id, 'DEF')}>DEF</button></div>}
+          {canEffect && <div className="mx2-hand-actions"><button className="mx2-play-effect" onClick={() => playEffect(bottomPlayer, card.id)}>EFFECT</button></div>}
+        </article>
+      })}
+    </div>
+  </section>
+</>

@@ -1,4 +1,4 @@
-export type MegaXSfx = 'card' | 'draw' | 'enter' | 'attack' | 'destroy' | 'zonX' | 'prompt' | 'arenaAppear' | 'fight' | 'win'
+export type MegaXSfx = 'card' | 'draw' | 'enter' | 'attack' | 'destroy' | 'zonX' | 'prompt' | 'arenaAppear' | 'win'
 
 export const SFX_ASSETS: Record<MegaXSfx, string> = {
   card: '/audio/replacements/card-selected.opus',
@@ -9,7 +9,6 @@ export const SFX_ASSETS: Record<MegaXSfx, string> = {
   zonX: '/audio/replacements/card-goes-to-zon-x.opus',
   prompt: '/audio/replacements/prompt-needed.opus',
   arenaAppear: '/audio/replacements/arena-appear.opus',
-  fight: '/audio/replacements/fight.opus',
   win: '/audio/replacements/player-win.opus',
 }
 

@@ -2,10 +2,8 @@ import fs from 'node:fs'
 
 const appPath = 'src/App.tsx'
 const cssPath = 'src/V24.css'
-const audioPath = 'src/audio.ts'
 let app = fs.readFileSync(appPath, 'utf8')
 let css = fs.readFileSync(cssPath, 'utf8')
-let audio = fs.readFileSync(audioPath, 'utf8')
 
 function mustReplace(source, from, to, label) {
   if (!source.includes(from)) throw new Error(`arena audit patch target missing: ${label}`)
@@ -22,24 +20,6 @@ if (!app.includes('className="mx-discard-confirm-sheet"')) {
   app = mustReplace(app, sectionTag, sheet, 'duel discard sheet insertion')
 }
 
-audio = audio.replace(
-  `    if (label.includes('ATTACK') || label === 'SERANG') { this.playSfx('attack'); return }\n`,
-  '',
-)
-
-if (!audio.includes('private playArenaEventSfx')) {
-  const mutationMarker = `  private onMutations = (mutations: MutationRecord[]) => {`
-  const helper = `  private playArenaEventSfx(node: Node) {\n    if (!(node instanceof Element)) return\n    const candidates: Element[] = [node, ...Array.from(node.querySelectorAll('.motion-card-fx, .combat-screen-fx'))]\n    for (const element of candidates) {\n      if (!(element instanceof HTMLElement) || element.dataset.mxSfxFired === '1') continue\n      let kind: MegaXSfx | null = null\n      if (element.matches('.motion-card-fx.draw')) kind = 'draw'\n      else if (element.matches('.motion-card-fx.enter_vs, .motion-card-fx.support')) kind = 'enter'\n      else if (element.matches('.motion-card-fx.destroy')) kind = 'destroy'\n      else if (element.matches('.combat-screen-fx.stage-impact')) kind = 'attack'\n      if (!kind) continue\n      element.dataset.mxSfxFired = '1'\n      this.playSfx(kind)\n    }\n  }\n\n`
-  if (!audio.includes(mutationMarker)) throw new Error('arena audit audio mutation marker missing')
-  audio = audio.replace(mutationMarker, helper + mutationMarker)
-}
-
-audio = audio.replace(
-  `      for (const node of nodes) {\n        const text = (node.textContent ?? '').replace(/\\s+/g, ' ').toUpperCase()`,
-  `      for (const node of nodes) {\n        this.playArenaEventSfx(node)\n        const text = (node.textContent ?? '').replace(/\\s+/g, ' ').toUpperCase()`,
-)
-audio = audio.replace(`        if (text.includes('DIMUSNAHKAN') || text.includes('DESTROY')) this.playSfx('destroy')\n`, '')
-
 const marker = '/* Arena interaction audit pass */'
 if (!css.includes(marker)) css += `
 ${marker}
@@ -51,5 +31,4 @@ ${marker}
 
 fs.writeFileSync(appPath, app)
 fs.writeFileSync(cssPath, css)
-fs.writeFileSync(audioPath, audio)
-console.log('Applied Arena interaction fixes without owning responsive geometry')
+console.log('Applied discard interaction audit without Arena presentation or audio ownership')

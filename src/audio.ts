@@ -22,7 +22,6 @@ const SFX_GAIN: Partial<Record<MegaXSfx, number>> = {
   zonX: 0.88,
   prompt: 0.78,
   arenaAppear: 0.82,
-  fight: 0.86,
   win: 0.88,
 }
 
@@ -46,7 +45,6 @@ class MegaXAudio {
   private arenaTrack: string | null = null
   private lastPrompt = ''
   private lastPromptAt = 0
-  private fightPlayedForMatch = false
   private lastWinAt = 0
 
   start() {
@@ -73,8 +71,8 @@ class MegaXAudio {
   }
 
   private detectScene(): Scene {
-    if (this.coinTossVisible()) return 'coinToss'
     if (document.querySelector('.duel-shell')) return 'match'
+    if (this.coinTossVisible()) return 'coinToss'
     if (document.querySelector('.mx-online-screen, .online-lobby, .mx-lobby, [data-screen="online"]')) return 'lobby'
     return 'silent'
   }
@@ -84,7 +82,6 @@ class MegaXAudio {
     if (!force && next === this.scene) return
     const previous = this.scene
     this.scene = next
-    if (next === 'match' && previous !== 'match') this.fightPlayedForMatch = false
 
     if (previous === 'coinToss' && next === 'match' && this.music) {
       this.fadeOutMusic(COIN_FADE_MS, () => {
@@ -243,7 +240,7 @@ class MegaXAudio {
 
   private playSfx(kind: MegaXSfx) {
     if (!this.unlocked || this.settings.muted || this.settings.sfx <= 0) return
-    if (this.scene === 'match' && (kind === 'attack' || kind === 'destroy' || kind === 'zonX' || kind === 'fight' || kind === 'win')) this.duckArenaMusic(SFX_DUCK_GAIN, 520)
+    if (this.scene === 'match' && (kind === 'attack' || kind === 'destroy' || kind === 'zonX' || kind === 'win')) this.duckArenaMusic(SFX_DUCK_GAIN, 520)
     this.preloadSfx(kind)
     const pool = this.sfxPool.get(kind) ?? []
     const audio = pool.find((item) => item.paused || item.ended) ?? pool[0]
@@ -267,11 +264,15 @@ class MegaXAudio {
 
   private onClick = (event: Event) => {
     if (!this.unlocked) this.unlock()
-    const target = event.target instanceof Element ? event.target.closest('button, .digital-card, .zone-card-button, .hand-card-wrap') : null
+    else if (!this.settings.muted && this.scene !== 'silent' && (!this.music || this.music.paused)) {
+      if (this.music?.paused) this.stopMusic()
+      this.startSceneMusic(this.scene)
+    }
+    const target = event.target instanceof Element ? event.target.closest('button, .digital-card, .mx2-effect-card, .mx2-hand-card') : null
     if (!target) return
     const label = (target.textContent ?? '').replace(/\s+/g, ' ').trim().toUpperCase()
     if (label.includes('ATTACK') || label === 'SERANG') { this.playSfx('attack'); return }
-    if (target.matches('.digital-card, .zone-card-button, .hand-card-wrap') || target.querySelector('.digital-card')) this.playSfx('card')
+    if (target.matches('.digital-card, .mx2-effect-card, .mx2-hand-card') || target.querySelector('.digital-card')) this.playSfx('card')
   }
 
   private maybePlayPrompt(text: string) {
@@ -296,7 +297,6 @@ class MegaXAudio {
         if (!text) continue
         this.maybePlayPrompt(text)
         const now = performance.now()
-        if (/\bFIGHT\b/.test(text) && !this.fightPlayedForMatch) { this.fightPlayedForMatch = true; this.playSfx('fight') }
         if (/YOU WIN|ANDA MENANG/.test(text) && now - this.lastWinAt > 1300) { this.lastWinAt = now; this.playSfx('win') }
       }
     }
