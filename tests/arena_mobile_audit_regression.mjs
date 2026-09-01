@@ -12,11 +12,15 @@ must(!pkg.scripts.build.includes('patch-single-fight.mjs'),'obsolete FIGHT patch
 must(stage.includes('MEGA-X ARENA MX3'),'Arena MX3 stage is not authoritative')
 must(fragment.includes('mx3-canvas')&&fragment.includes('mx3-local-hand'),'Arena MX3 fragment missing')
 must(main.includes("import './arena-stage.css'")&&!main.includes('arena-action.css')&&!main.includes('arena-overlay.css'),'Arena MX3 must have one Arena stylesheet')
-const requiredAssets=["card: '/audio/replacements/card-selected.opus'","draw: '/audio/replacements/card-draw.opus'","enter: '/audio/replacements/effect-enter-field.opus'","attack: '/audio/replacements/card-attacking.opus'","destroy: '/audio/replacements/card-destroyed.opus'","zonX: '/audio/replacements/card-goes-to-zon-x.opus'","prompt: '/audio/replacements/prompt-needed.opus'","arenaAppear: '/audio/replacements/arena-appear.opus'","win: '/audio/replacements/player-win.opus'"]
-for(const asset of requiredAssets) must(assets.includes(asset),`replacement audio asset missing: ${asset}`)
+const requiredAssets=['card-selected.opus','card-draw.opus','effect-enter-field.opus','card-attacking.opus','card-destroyed.opus','card-goes-to-zon-x.opus','prompt-needed.opus','arena-appear.opus','player-win.opus']
+for(const asset of requiredAssets) must(assets.includes(`/audio/replacements/${asset}`),`replacement audio asset missing: ${asset}`)
+must(assets.includes('SFX_REV'),'replacement SFX cache revision missing')
+must(!fs.existsSync('public/audio/replacements/fight.opus'),'FIGHT audio file remains in production tree')
 must(!assets.includes('fight.opus'),'FIGHT announcer asset mapping remains')
 must(!audio.includes("playSfx('fight')"),'FIGHT announcer playback remains')
 must(!audio.includes('playVoice'),'legacy announcer playback remains')
+must(audio.includes("else if (kind === 'SUPPORT') this.playSfx('enter')"),'Effect entry SFX mapping missing')
+must(!audio.includes("kind === 'ENTER_VS' || kind === 'SUPPORT'"),'VS placement still incorrectly uses Effect entry SFX')
 must(app.includes("new CustomEvent('mega-x:motion'"),'motion state does not dispatch gameplay audio events')
 must(app.includes('CONFIRM DISCARD')&&app.includes('selectedDiscardIds'),'Spudur discard interaction missing')
-console.log('PASS Arena MX3 audit: fixed diagram presentation, one stylesheet, replacement SFX, no FIGHT announcer')
+console.log('PASS Arena MX3 audit: fixed diagram presentation, one stylesheet, authoritative replacement SFX, no FIGHT audio')
