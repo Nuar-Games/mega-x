@@ -3,6 +3,7 @@ import fs from 'node:fs'
 const appPath = 'src/App.tsx'
 const fragmentPath = 'src/arena-blueprint.fragment'
 let app = fs.readFileSync(appPath, 'utf8')
+if (!app.includes("from './arena-card-info.ts'")) app = `import { CARD_INFO } from './arena-card-info.ts'\n${app}`
 const replacement = fs.readFileSync(fragmentPath, 'utf8').trim()
 const shellStart = app.indexOf('<section className="duel-shell">')
 if (shellStart < 0) throw new Error('Arena MX3 rebuild: duel-shell missing')
@@ -62,13 +63,13 @@ const compactFocus = `{focusedCard && passToPlayer === null && pendingChoice ===
       <button className="mx3-card-overlay-close" type="button" aria-label="Tutup" onClick={() => setFocusedCard(null)}>×</button>
       <div className="mx3-card-overlay-side">
         <span className="mx3-card-overlay-kicker">KAD TERPILIH</span>
-        <strong className="mx3-card-overlay-name">{focusedCard.name}</strong>
+        <strong className="mx3-card-overlay-name">{CARD_INFO[focusedCard.id]?.name ?? focusedCard.name}</strong>
         <div className="mx3-card-overlay-stats">
-          <span>ATK <b>{(focusedCard as any).atk ?? '—'}</b></span>
-          <span>DEF <b>{(focusedCard as any).def ?? '—'}</b></span>
-          <span>STA <b>{(focusedCard as any).sta ?? '—'}</b></span>
+          <span>ATK <b>{CARD_INFO[focusedCard.id]?.atk ?? (focusedCard as any).atk ?? '—'}</b></span>
+          <span>DEF <b>{CARD_INFO[focusedCard.id]?.def ?? (focusedCard as any).def ?? '—'}</b></span>
+          <span>STA <b>{CARD_INFO[focusedCard.id]?.sta ?? (focusedCard as any).sta ?? '—'}</b></span>
         </div>
-        <p className="mx3-card-overlay-effect">{(focusedCard as any).effect ?? ''}</p>
+        <p className="mx3-card-overlay-effect">{CARD_INFO[focusedCard.id]?.effect ?? 'TIADA EFFECT.'}</p>
         <div className="mx3-card-overlay-actions">
           {game.players[bottomPlayer].hand.some((card) => card.id === focusedCard.id) && game.phase === 'SET_VS' && game.needsVS[bottomPlayer] && (activeOnlineMatch ? true : setupPlayer === bottomPlayer) && !pendingChoice && passToPlayer === null && <><button type="button" onClick={() => { setVS(bottomPlayer, focusedCard.id, 'ATK'); setFocusedCard(null) }}>ATK</button><button type="button" onClick={() => { setVS(bottomPlayer, focusedCard.id, 'DEF'); setFocusedCard(null) }}>DEF</button></>}
           {game.players[bottomPlayer].hand.some((card) => card.id === focusedCard.id) && game.phase === 'EFFECT' && game.effectTurn === bottomPlayer && !pendingChoice && passToPlayer === null && <button type="button" onClick={() => { playEffect(bottomPlayer, focusedCard.id); setFocusedCard(null) }}>PLAY EFFECT</button>}
@@ -100,10 +101,11 @@ if (!app.includes('mx3-canvas')) throw new Error('Arena MX3 rebuild: new fixed c
 if (!app.includes('mx3-local-hand') || !app.includes('mx3-opponent-hand')) throw new Error('Arena MX3 rebuild: new hands missing')
 if (!app.includes('mx3-vs-left') || !app.includes('mx3-effects-left')) throw new Error('Arena MX3 rebuild: battlefield missing')
 if (!app.includes('mx3-card-overlay-panel')) throw new Error('Arena MX3 rebuild: compact card overlay missing')
+if (!app.includes('CARD_INFO[focusedCard.id]?.effect')) throw new Error('Arena MX3 rebuild: authoritative card info missing')
 if (app.includes('mx3-card-overlay-preview')) throw new Error('Arena MX3 rebuild: selected-card image preview survived')
 if (!app.includes('mx3-begin-round') || !app.includes('onClick={beginRound}')) throw new Error('Arena MX3 rebuild: round progression control missing')
 if (app.includes('<div className="arena-wrap">')) throw new Error('Arena MX3 rebuild: legacy board survived')
 if (app.includes('<header className="fighter-hud">')) throw new Error('Arena MX3 rebuild: legacy HUD survived')
 if (/className="mx2-|className={`mx2-/.test(app.slice(shellStart))) throw new Error('Arena MX3 rebuild: mx2 presentation survived in duel')
 fs.writeFileSync(appPath, app)
-console.log(`Rebuilt duel presentation as fixed 780x1110 Arena MX3; restored beginRound; replaced ${focusCount} focused-card path(s) with text-only UI`)
+console.log(`Rebuilt duel presentation as fixed 780x1110 Arena MX3; restored beginRound; authoritative text-only card info; replaced ${focusCount} focused-card path(s)`)
