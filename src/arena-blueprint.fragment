@@ -4,14 +4,14 @@
     <div className="mx3-status" role="status">{activeOnlineMatch && onlineMessage ? onlineMessage : game.message}</div>
     <button className="mx3-audio" type="button" onClick={() => document.querySelector<HTMLButtonElement>('#mx-audio-controls button')?.click()}>AUDIO</button>
 
-    <section className={`mx3-fighter mx3-fighter-left ${activePlayer === 0 ? 'is-active' : ''}`}>
+    <section className={`mx3-fighter mx3-fighter-left ${activePlayer === 0 ? 'is-active' : ''} ${bottomPlayer === 0 ? 'is-local' : ''}`}>
       <span>X FIGHTER 1</span><strong>{playerDisplayName(0)}</strong><em>RANK</em>
     </section>
-    <section className={`mx3-fighter mx3-fighter-right ${activePlayer === 1 ? 'is-active' : ''}`}>
+    <section className={`mx3-fighter mx3-fighter-right ${activePlayer === 1 ? 'is-active' : ''} ${bottomPlayer === 1 ? 'is-local' : ''}`}>
       <span>X FIGHTER 2</span><strong>{playerDisplayName(1)}</strong><em>RANK</em>
     </section>
 
-    <section className="mx3-opponent-hand" data-motion-anchor={`p${topPlayer + 1}-hand`}>
+    <section className={`mx3-opponent-hand ${(game.phase === 'SET_VS' && game.needsVS[topPlayer]) || (game.phase === 'EFFECT' && game.effectTurn === topPlayer) ? 'is-live' : ''}`} data-motion-anchor={`p${topPlayer + 1}-hand`}>
       <div className="mx3-hand-row">
         {Array.from({ length: Math.max(0, game.players[topPlayer].hand.length - arrivalCount(`p${topPlayer + 1}-hand`)) }, (_, i) => <div key={`mx3-opp-${i}`} className="mx3-card-back"><img src="/cards/back-game.webp" alt="Kad lawan" /></div>)}
       </div>
@@ -30,27 +30,32 @@
     <aside className={`mx3-effects mx3-effects-left ${game.phase === 'EFFECT' && game.effectTurn === 0 ? 'is-live' : ''}`} data-motion-anchor="p1-effect">{Array.from({ length: 5 }, (_, i) => { const effect = game.players[0].effects[i]; return <div key={`mx3-p1-e-${i}`} className={`mx3-effect ${effect ? 'is-filled' : ''}`}><b>{i + 1}<small>EFFECT</small></b>{effect && <button onClick={() => setFocusedCard(effect.card)}><CardView card={effect.card}/></button>}</div> })}</aside>
     <aside className={`mx3-effects mx3-effects-right ${game.phase === 'EFFECT' && game.effectTurn === 1 ? 'is-live' : ''}`} data-motion-anchor="p2-effect">{Array.from({ length: 5 }, (_, i) => { const effect = game.players[1].effects[i]; return <div key={`mx3-p2-e-${i}`} className={`mx3-effect ${effect ? 'is-filled' : ''}`}><b>{i + 1}<small>EFFECT</small></b>{effect && <button onClick={() => setFocusedCard(effect.card)}><CardView card={effect.card}/></button>}</div> })}</aside>
 
-    <button className="mx3-position mx3-position-left" onClick={() => { if (game.round > 1 && game.effectTurn === 0 && game.players[0].vs && !game.players[0].vs!.positionChangedThisRound && !hasActiveEffect(game, other(0), 6) && !game.effectActionTaken[0]) switchPosition(0) }}>POSISI {game.players[0].vs?.position ?? '—'}</button>
-    <button className="mx3-position mx3-position-right" onClick={() => { if (game.round > 1 && game.effectTurn === 1 && game.players[1].vs && !game.players[1].vs!.positionChangedThisRound && !hasActiveEffect(game, other(1), 6) && !game.effectActionTaken[1]) switchPosition(1) }}>POSISI {game.players[1].vs?.position ?? '—'}</button>
+    <button className={`mx3-position mx3-position-left ${game.phase === 'EFFECT' && game.effectTurn === 0 ? 'is-live' : ''}`} onClick={() => { if (game.round > 1 && game.effectTurn === 0 && game.players[0].vs && !game.players[0].vs!.positionChangedThisRound && !hasActiveEffect(game, other(0), 6) && !game.effectActionTaken[0]) switchPosition(0) }}>POSISI {game.players[0].vs?.position ?? '—'}</button>
+    <button className={`mx3-position mx3-position-right ${game.phase === 'EFFECT' && game.effectTurn === 1 ? 'is-live' : ''}`} onClick={() => { if (game.round > 1 && game.effectTurn === 1 && game.players[1].vs && !game.players[1].vs!.positionChangedThisRound && !hasActiveEffect(game, other(1), 6) && !game.effectActionTaken[1]) switchPosition(1) }}>POSISI {game.players[1].vs?.position ?? '—'}</button>
 
-    {(canBegin || game.phase === 'SET_VS' || game.phase === 'EFFECT' || game.phase === 'ATTACK') && <section className={`mx3-phase-prompt ${canBegin ? 'is-ready' : ''}`}>
+    {(
+      (canBegin && passToPlayer === null && (!activeOnlineMatch || localViewer === game.firstPlayer)) ||
+      (game.phase === 'SET_VS' && game.needsVS[bottomPlayer] && (activeOnlineMatch || setupPlayer === bottomPlayer)) ||
+      (game.phase === 'EFFECT' && game.effectTurn === bottomPlayer) ||
+      (game.phase === 'ATTACK' && game.attackTurn === bottomPlayer)
+    ) && <section className={`mx3-phase-prompt ${canBegin ? 'is-ready' : ''}`}>
       <strong>{canBegin ? 'VS SEDIA' : game.phase === 'SET_VS' ? 'PILIH KAD VS' : game.phase === 'EFFECT' ? 'PILIH KAD EFFECT' : 'SERANG / PASS'}</strong>
       <div>
         {canBegin && passToPlayer === null && (!activeOnlineMatch || localViewer === game.firstPlayer) && <button className="mx3-begin-round" onClick={beginRound}>MULA PUSINGAN</button>}
-        {game.phase === 'EFFECT' && game.effectTurn === localViewer && <button onClick={requestEndEffectTurn}>{game.effectActionTaken[game.effectTurn] ? 'TAMAT GILIRAN' : 'TAMAT TANPA EFFECT'}</button>}
-        {game.phase === 'ATTACK' && game.attackTurn === localViewer && <>{game.players[game.attackTurn].vs?.position === 'ATK' && <button onClick={() => attack(game.attackTurn!)}>SERANG</button>}<button onClick={() => passAttack(game.attackTurn!)}>PASS</button></>}
+        {game.phase === 'EFFECT' && game.effectTurn === bottomPlayer && <button onClick={requestEndEffectTurn}>{game.effectActionTaken[game.effectTurn] ? 'TAMAT GILIRAN' : 'TAMAT TANPA EFFECT'}</button>}
+        {game.phase === 'ATTACK' && game.attackTurn === bottomPlayer && <>{game.players[game.attackTurn].vs?.position === 'ATK' && <button onClick={() => attack(game.attackTurn!)}>SERANG</button>}<button onClick={() => passAttack(game.attackTurn!)}>PASS</button></>}
       </div>
     </section>}
 
-    <section className={`mx3-vs mx3-vs-left ${impactFx?.attacker === 0 ? 'is-attacking' : ''} ${impactFx?.defender === 0 ? 'is-hit' : ''}`} data-motion-anchor="p1-vs">{game.players[0].vs ? (!revealRoundOneVS && game.round === 1 ? <img src="/cards/back-game.webp" alt="VS tersembunyi"/> : <button onClick={() => setFocusedCard(game.players[0].vs!.card)}><CardView card={game.players[0].vs!.card}/></button>) : <span>KAD VS X FIGHTER 1</span>}</section>
-    <section className={`mx3-vs mx3-vs-right ${impactFx?.attacker === 1 ? 'is-attacking' : ''} ${impactFx?.defender === 1 ? 'is-hit' : ''}`} data-motion-anchor="p2-vs">{game.players[1].vs ? (!revealRoundOneVS && game.round === 1 ? <img src="/cards/back-game.webp" alt="VS tersembunyi"/> : <button onClick={() => setFocusedCard(game.players[1].vs!.card)}><CardView card={game.players[1].vs!.card}/></button>) : <span>KAD VS X FIGHTER 2</span>}</section>
+    <section className={`mx3-vs mx3-vs-left ${(game.phase === 'SET_VS' && game.needsVS[0]) || (game.phase === 'ATTACK' && game.attackTurn === 0) ? 'is-live' : ''} ${impactFx?.attacker === 0 ? 'is-attacking' : ''} ${impactFx?.defender === 0 ? 'is-hit' : ''}`} data-motion-anchor="p1-vs">{game.players[0].vs ? (!revealRoundOneVS && game.round === 1 ? <img src="/cards/back-game.webp" alt="VS tersembunyi"/> : <button onClick={() => setFocusedCard(game.players[0].vs!.card)}><CardView card={game.players[0].vs!.card}/></button>) : <span>KAD VS X FIGHTER 1</span>}</section>
+    <section className={`mx3-vs mx3-vs-right ${(game.phase === 'SET_VS' && game.needsVS[1]) || (game.phase === 'ATTACK' && game.attackTurn === 1) ? 'is-live' : ''} ${impactFx?.attacker === 1 ? 'is-attacking' : ''} ${impactFx?.defender === 1 ? 'is-hit' : ''}`} data-motion-anchor="p2-vs">{game.players[1].vs ? (!revealRoundOneVS && game.round === 1 ? <img src="/cards/back-game.webp" alt="VS tersembunyi"/> : <button onClick={() => setFocusedCard(game.players[1].vs!.card)}><CardView card={game.players[1].vs!.card}/></button>) : <span>KAD VS X FIGHTER 2</span>}</section>
 
     <div className={`mx3-timer ${actionSecondsLeft <= 10 ? 'is-danger' : ''}`}><strong>{actionTimerVisible ? actionSecondsLeft : '—'}</strong><span>TIMER</span></div>
 
-    <div className="mx3-stats mx3-stats-left"><div className="mx3-atk"><span>ATK</span><strong>{(currentStats[0] as any)?.atk ?? (game.players[0].vs?.card as any)?.atk ?? '—'}</strong></div><div className="mx3-def"><span>DEF</span><strong>{(currentStats[0] as any)?.def ?? (game.players[0].vs?.card as any)?.def ?? '—'}</strong></div><div className="mx3-sta"><span>STA</span><strong>{(currentStats[0] as any)?.sta ?? (game.players[0].vs?.card as any)?.sta ?? '—'}</strong></div></div>
-    <div className="mx3-stats mx3-stats-right"><div className="mx3-atk"><span>ATK</span><strong>{(currentStats[1] as any)?.atk ?? (game.players[1].vs?.card as any)?.atk ?? '—'}</strong></div><div className="mx3-def"><span>DEF</span><strong>{(currentStats[1] as any)?.def ?? (game.players[1].vs?.card as any)?.def ?? '—'}</strong></div><div className="mx3-sta"><span>STA</span><strong>{(currentStats[1] as any)?.sta ?? (game.players[1].vs?.card as any)?.sta ?? '—'}</strong></div></div>
+    <div className={`mx3-stats mx3-stats-left ${game.phase === 'ATTACK' && game.attackTurn === 0 ? 'is-live' : ''}`}><div className="mx3-atk"><span>ATK</span><strong>{(currentStats[0] as any)?.atk ?? (game.players[0].vs?.card as any)?.atk ?? '—'}</strong></div><div className="mx3-def"><span>DEF</span><strong>{(currentStats[0] as any)?.def ?? (game.players[0].vs?.card as any)?.def ?? '—'}</strong></div><div className="mx3-sta"><span>STA</span><strong>{(currentStats[0] as any)?.sta ?? (game.players[0].vs?.card as any)?.sta ?? '—'}</strong></div></div>
+    <div className={`mx3-stats mx3-stats-right ${game.phase === 'ATTACK' && game.attackTurn === 1 ? 'is-live' : ''}`}><div className="mx3-atk"><span>ATK</span><strong>{(currentStats[1] as any)?.atk ?? (game.players[1].vs?.card as any)?.atk ?? '—'}</strong></div><div className="mx3-def"><span>DEF</span><strong>{(currentStats[1] as any)?.def ?? (game.players[1].vs?.card as any)?.def ?? '—'}</strong></div><div className="mx3-sta"><span>STA</span><strong>{(currentStats[1] as any)?.sta ?? (game.players[1].vs?.card as any)?.sta ?? '—'}</strong></div></div>
 
-    <section className="mx3-local-hand" data-motion-anchor={`p${bottomPlayer + 1}-hand`}>
+    <section className={`mx3-local-hand ${(game.phase === 'SET_VS' && game.needsVS[bottomPlayer]) || (game.phase === 'EFFECT' && game.effectTurn === bottomPlayer) ? 'is-live' : ''}`} data-motion-anchor={`p${bottomPlayer + 1}-hand`}>
       <div className="mx3-hand-label">TANGAN ANDA · {Math.max(0, game.players[bottomPlayer].hand.length - arrivalCount(`p${bottomPlayer + 1}-hand`))} KAD</div>
       <div className="mx3-hand-row">{game.players[bottomPlayer].hand.slice(0,5).map((card) => {
         const arriving = arrivingIdsForZone(`p${bottomPlayer + 1}-hand`).includes(card.id)
