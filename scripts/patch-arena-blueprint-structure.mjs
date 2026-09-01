@@ -2,7 +2,9 @@ import fs from 'node:fs'
 
 const appPath = 'src/App.tsx'
 const fragmentPath = 'src/arena-blueprint.fragment'
+const stagePath = 'src/arena-stage.css'
 let app = fs.readFileSync(appPath, 'utf8')
+let stage = fs.readFileSync(stagePath, 'utf8')
 if (!app.includes("from './arena-card-info.ts'")) app = `import { CARD_INFO } from './arena-card-info.ts'\n${app}`
 const replacement = fs.readFileSync(fragmentPath, 'utf8').trim()
 const shellStart = app.indexOf('<section className="duel-shell">')
@@ -97,6 +99,27 @@ app = app.replace(oldOnlineStatus, '')
 const oldIntro = `{arenaIntro && <div className="arena-transition-final" aria-hidden="true"><div className="arena-door arena-door-left"></div><div className="arena-door arena-door-right"></div><div className="arena-transition-flash"></div><div className="arena-transition-fight">FIGHT!</div></div>}`
 app = app.replace(oldIntro, '')
 
+function addToRule(selector, declarations) {
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const re = new RegExp(`(${escaped}\\{[^}]*)(\\})`)
+  if (!re.test(stage)) throw new Error(`Arena final lock: CSS rule missing ${selector}`)
+  stage = stage.replace(re, `$1${declarations}$2`)
+}
+
+addToRule('.mx3-status', 'font-size:11px!important;line-height:1.04!important;padding:4px 12px!important;')
+addToRule('.mx3-opponent-hand', 'left:210px!important;width:360px!important;')
+addToRule('.mx3-opponent-hand .mx3-hand-row', 'width:360px!important;gap:4px!important;')
+addToRule('.mx3-card-back', 'width:68px!important;')
+addToRule('.mx3-opponent-hand .mx3-hand-label', 'width:360px!important;overflow:hidden!important;contain:paint!important;')
+addToRule('.mx3-phase-prompt', 'left:250px!important;top:470px!important;width:280px!important;height:54px!important;gap:4px!important;padding:4px!important;animation:mx3PromptBob .9s ease-in-out infinite alternate!important;')
+addToRule('.mx3-phase-prompt strong', 'font-size:15px!important;')
+addToRule('.mx3-phase-prompt button', 'height:24px!important;padding:0 10px!important;font-size:10px!important;')
+addToRule('.mx3-center-vs', "left:337px!important;top:538px!important;width:106px!important;height:66px!important;padding:0!important;background:url('/ui/vs.webp') center/contain no-repeat!important;filter:drop-shadow(0 0 10px rgba(255,190,28,.75))!important;")
+addToRule('.mx3-center-vs span', 'display:none!important;')
+addToRule('.mx3-center-vs i', 'display:none!important;')
+if (!stage.includes('@keyframes mx3PromptBob')) stage += `\n@keyframes mx3PromptBob{from{transform:translateY(0) scale(.985);filter:brightness(.96);box-shadow:0 0 8px rgba(211,174,59,.18)}to{transform:translateY(-5px) scale(1.015);filter:brightness(1.18);box-shadow:0 0 24px rgba(211,174,59,.50)}}\n`
+if (!stage.includes('.mx3-center-vs::before')) stage += `\n.mx3-center-vs::before{content:'';position:absolute;left:50%;top:50%;width:150px;height:150px;transform:translate(-50%,-50%);pointer-events:none;background:radial-gradient(circle,rgba(255,255,220,.95) 0 2px,rgba(255,207,68,.78) 3px 7px,rgba(255,167,24,.22) 8px 24px,transparent 55%);mix-blend-mode:screen;animation:mx3VsFlarePulse 1.25s ease-in-out infinite alternate}\n.mx3-center-vs::after{content:'';position:absolute;left:50%;top:50%;width:190px;height:3px;transform:translate(-50%,-50%) rotate(-8deg);pointer-events:none;background:linear-gradient(90deg,transparent,rgba(255,179,35,.18),#fff8c7,rgba(255,184,35,.72),transparent);box-shadow:0 0 12px rgba(255,173,24,.92);mix-blend-mode:screen;animation:mx3VsFlareSweep 1.8s ease-in-out infinite}\n@keyframes mx3VsFlarePulse{from{opacity:.46;transform:translate(-50%,-50%) scale(.82)}to{opacity:1;transform:translate(-50%,-50%) scale(1.08)}}\n@keyframes mx3VsFlareSweep{0%,100%{opacity:.35;transform:translate(-50%,-50%) rotate(-8deg) scaleX(.72)}50%{opacity:1;transform:translate(-50%,-50%) rotate(-8deg) scaleX(1.08)}}\n`
+
 if (!app.includes('mx3-canvas')) throw new Error('Arena MX3 rebuild: new fixed canvas missing')
 if (!app.includes('mx3-local-hand') || !app.includes('mx3-opponent-hand')) throw new Error('Arena MX3 rebuild: new hands missing')
 if (!app.includes('mx3-vs-left') || !app.includes('mx3-effects-left')) throw new Error('Arena MX3 rebuild: battlefield missing')
@@ -107,5 +130,8 @@ if (!app.includes('mx3-begin-round') || !app.includes('onClick={beginRound}')) t
 if (app.includes('<div className="arena-wrap">')) throw new Error('Arena MX3 rebuild: legacy board survived')
 if (app.includes('<header className="fighter-hud">')) throw new Error('Arena MX3 rebuild: legacy HUD survived')
 if (/className="mx2-|className={`mx2-/.test(app.slice(shellStart))) throw new Error('Arena MX3 rebuild: mx2 presentation survived in duel')
+if (!stage.includes("url('/ui/vs.webp')") || !stage.includes('mx3VsFlarePulse')) throw new Error('Arena final lock: supplied VS artwork/lens flare missing')
+if (!stage.includes('contain:paint')) throw new Error('Arena final lock: opponent hand containment missing')
 fs.writeFileSync(appPath, app)
-console.log(`Rebuilt duel presentation as fixed 780x1110 Arena MX3; restored beginRound; authoritative text-only card info; replaced ${focusCount} focused-card path(s)`)
+fs.writeFileSync(stagePath, stage)
+console.log(`Rebuilt fixed Arena MX3; final lock applied: supplied VS art + lens flare, compact bobbing prompt, smaller status copy, contained opponent hand; replaced ${focusCount} focused-card path(s)`)
