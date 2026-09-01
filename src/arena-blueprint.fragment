@@ -1,5 +1,9 @@
 <>
   <div className={`mx3-canvas phase-${game.phase.toLowerCase()} ${impactFx ? 'is-combat-live' : ''}`}>
+    <div className="mx3-particles" aria-hidden="true">
+      {Array.from({ length: 18 }, (_, i) => <span key={`mx3-particle-${i}`} />)}
+    </div>
+
     <button className="mx3-quit" disabled={matchNetworkBusy} onClick={quitOnlineMatch}>QUIT MATCH</button>
     <div className="mx3-status" role="status">{activeOnlineMatch && onlineMessage ? onlineMessage : game.message}</div>
     <button className="mx3-audio" type="button" onClick={() => document.querySelector<HTMLButtonElement>('#mx-audio-controls button')?.click()}>AUDIO</button>
