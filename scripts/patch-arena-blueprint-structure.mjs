@@ -22,6 +22,58 @@ function findClosingDiv(source, start) {
   return -1
 }
 
+function findBalancedJsxExpression(source, start) {
+  let depth = 0
+  let mode = 'code'
+  let returnMode = 'code'
+  const templateReturnDepth = []
+  for (let i = start; i < source.length; i += 1) {
+    const ch = source[i]
+    const next = source[i + 1]
+
+    if (mode === 'single' || mode === 'double') {
+      if (ch === '\\') { i += 1; continue }
+      if ((mode === 'single' && ch === "'") || (mode === 'double' && ch === '"')) mode = returnMode
+      continue
+    }
+    if (mode === 'line-comment') {
+      if (ch === '\n') mode = 'code'
+      continue
+    }
+    if (mode === 'block-comment') {
+      if (ch === '*' && next === '/') { mode = 'code'; i += 1 }
+      continue
+    }
+    if (mode === 'template') {
+      if (ch === '\\') { i += 1; continue }
+      if (ch === '`') { mode = 'code'; continue }
+      if (ch === '$' && next === '{') {
+        depth += 1
+        templateReturnDepth.push(depth - 1)
+        mode = 'code'
+        i += 1
+      }
+      continue
+    }
+
+    if (ch === '/' && next === '/') { mode = 'line-comment'; i += 1; continue }
+    if (ch === '/' && next === '*') { mode = 'block-comment'; i += 1; continue }
+    if (ch === "'") { returnMode = 'code'; mode = 'single'; continue }
+    if (ch === '"') { returnMode = 'code'; mode = 'double'; continue }
+    if (ch === '`') { mode = 'template'; continue }
+    if (ch === '{') { depth += 1; continue }
+    if (ch === '}') {
+      depth -= 1
+      if (templateReturnDepth.length && depth === templateReturnDepth[templateReturnDepth.length - 1]) {
+        templateReturnDepth.pop()
+        mode = 'template'
+      }
+      if (depth === 0) return i + 1
+    }
+  }
+  return -1
+}
+
 const headerStart = app.indexOf('<header className="fighter-hud">', shellStart)
 if (headerStart < 0) throw new Error('Arena 2 rebuild: legacy HUD start missing')
 const actionStart = app.indexOf('<div className="action-bar">', headerStart)
@@ -36,6 +88,40 @@ for (const required of ['fighter-hud','PlayerHand','arena-wrap','action-bar']) {
 
 app = app.slice(0, headerStart) + replacement + app.slice(actionEnd)
 
+// Card play now happens only through the compact selected-card overlay.
+app = app.replace(/\{canSet && <div className="mx2-hand-actions"><button className="mx2-set-atk"[\s\S]*?<\/div>\}/, '')
+app = app.replace(/\{canEffect && <div className="mx2-hand-actions"><button className="mx2-play-effect"[\s\S]*?<\/div>\}/, '')
+
+const focusMarker = '{focusedCard && passToPlayer === null && pendingChoice === null && game.pendingBoardChoice === null'
+const focusStart = app.indexOf(focusMarker, headerStart + replacement.length)
+if (focusStart < 0) throw new Error('Arena 2 rebuild: legacy focused-card inspector missing')
+const focusEnd = findBalancedJsxExpression(app, focusStart)
+if (focusEnd < 0) throw new Error('Arena 2 rebuild: legacy focused-card inspector closing brace missing')
+const legacyFocus = app.slice(focusStart, focusEnd)
+if (!legacyFocus.includes('focusedCard')) throw new Error('Arena 2 rebuild: focused-card block identification failed')
+
+const compactFocus = `{focusedCard && passToPlayer === null && pendingChoice === null && game.pendingBoardChoice === null && (
+              <div className="mx2-card-overlay" role="dialog" aria-modal="false" aria-label="Maklumat kad terpilih">
+                <button className="mx2-card-overlay-dismiss" type="button" aria-label="Tutup maklumat kad" onClick={() => setFocusedCard(null)} />
+                <div className="mx2-card-overlay-panel">
+                  <button className="mx2-card-overlay-close" type="button" aria-label="Tutup" onClick={() => setFocusedCard(null)}>×</button>
+                  <div className="mx2-card-overlay-preview"><CardView card={focusedCard} /></div>
+                  <div className="mx2-card-overlay-side">
+                    <span className="mx2-card-overlay-kicker">KAD TERPILIH</span>
+                    <strong className="mx2-card-overlay-name">{focusedCard.name}</strong>
+                    <div className="mx2-card-overlay-actions">
+                      {game.players[bottomPlayer].hand.some((card) => card.id === focusedCard.id) && game.phase === 'SET_VS' && game.needsVS[bottomPlayer] && (activeOnlineMatch ? true : setupPlayer === bottomPlayer) && !pendingChoice && passToPlayer === null && <>
+                        <button className="mx2-overlay-atk" type="button" onClick={() => { setVS(bottomPlayer, focusedCard.id, 'ATK'); setFocusedCard(null) }}>ATK</button>
+                        <button className="mx2-overlay-def" type="button" onClick={() => { setVS(bottomPlayer, focusedCard.id, 'DEF'); setFocusedCard(null) }}>DEF</button>
+                      </>}
+                      {game.players[bottomPlayer].hand.some((card) => card.id === focusedCard.id) && game.phase === 'EFFECT' && game.effectTurn === bottomPlayer && !pendingChoice && passToPlayer === null && <button className="mx2-overlay-effect" type="button" onClick={() => { playEffect(bottomPlayer, focusedCard.id); setFocusedCard(null) }}>PLAY EFFECT</button>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}`
+app = app.slice(0, focusStart) + compactFocus + app.slice(focusEnd)
+
 const oldOnlineStatus = `{activeOnlineMatch && onlineMessage && <div className="mx-live-status mx-arena-status" role="status">{onlineMessage}</div>}`
 app = app.replace(oldOnlineStatus, '')
 const oldIntro = `{arenaIntro && <div className="arena-transition-final" aria-hidden="true"><div className="arena-door arena-door-left"></div><div className="arena-door arena-door-right"></div><div className="arena-transition-flash"></div><div className="arena-transition-fight">FIGHT!</div></div>}`
@@ -45,8 +131,9 @@ app = app.replace(oldIntro, newIntro)
 if (!app.includes('mx2-arena')) throw new Error('Arena 2 rebuild: new board missing')
 if (!app.includes('mx2-local-hand') || !app.includes('mx2-opponent-hand')) throw new Error('Arena 2 rebuild: new hands missing')
 if (!app.includes('mx2-vs-frame') || !app.includes('mx2-effect-rail')) throw new Error('Arena 2 rebuild: new battlefield missing')
+if (!app.includes('mx2-card-overlay-panel')) throw new Error('Arena 2 rebuild: compact card overlay missing')
 if (app.includes('<div className="arena-wrap">')) throw new Error('Arena 2 rebuild: rendered legacy board survived')
 if (app.includes('<header className="fighter-hud">')) throw new Error('Arena 2 rebuild: rendered legacy HUD survived')
 
 fs.writeFileSync(appPath, app)
-console.log('Replaced legacy HUD, hands, field and action bar with total mx2 Arena presentation')
+console.log('Replaced legacy HUD, hands, field, action bar and focused-card takeover with mx2 Arena presentation')
