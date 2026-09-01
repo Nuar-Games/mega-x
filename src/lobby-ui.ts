@@ -4,6 +4,8 @@ const SUPABASE_URL = ((import.meta as any).env?.VITE_SUPABASE_URL || 'https://mm
 const SUPABASE_KEY = ((import.meta as any).env?.VITE_SUPABASE_KEY || 'sb_publishable_EMVTyrv3gGmmouCiVix4dg__W3zuzMc') as string
 let fightCountBusy = false
 let lastFightCountAt = 0
+const chatMessageCounts = new WeakMap<HTMLElement, number>()
+const wiredChatLists = new WeakSet<HTMLElement>()
 
 function closeAudioPanel(event?: Event) {
   const root = document.getElementById('mx-audio-controls')
@@ -55,6 +57,35 @@ function enhanceRoster() {
   if (roster) roster.classList.add('mx-online-roster-scroll')
 }
 
+function chatIsNearBottom(list: HTMLElement) {
+  return list.scrollHeight - list.scrollTop - list.clientHeight <= 32
+}
+
+function scrollChatToBottom(list: HTMLElement) {
+  list.scrollTop = Math.max(0, list.scrollHeight - list.clientHeight)
+}
+
+function wireChatAutoscroll(list: HTMLElement) {
+  const messageCount = list.children.length
+  const previousCount = chatMessageCounts.get(list)
+
+  if (!wiredChatLists.has(list)) {
+    wiredChatLists.add(list)
+    list.dataset.mxChatPinned = 'true'
+    list.addEventListener('scroll', () => {
+      list.dataset.mxChatPinned = String(chatIsNearBottom(list))
+    }, { passive: true })
+    chatMessageCounts.set(list, messageCount)
+    requestAnimationFrame(() => scrollChatToBottom(list))
+    return
+  }
+
+  chatMessageCounts.set(list, messageCount)
+  if (previousCount !== undefined && messageCount > previousCount && list.dataset.mxChatPinned !== 'false') {
+    requestAnimationFrame(() => scrollChatToBottom(list))
+  }
+}
+
 function enhanceGlobalChat() {
   const screen = document.querySelector<HTMLElement>('.mx-online-screen, .mx-lobby-shell')
   if (!screen) return
@@ -76,7 +107,10 @@ function enhanceGlobalChat() {
     return node.children.length >= 3
   })
   const list = candidates.sort((a, b) => b.children.length - a.children.length)[0]
-  if (list) list.classList.add('mx-global-chat-scroll')
+  if (list) {
+    list.classList.add('mx-global-chat-scroll')
+    wireChatAutoscroll(list)
+  }
 }
 
 function fitChallengeHeadline() {
