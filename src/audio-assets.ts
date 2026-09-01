@@ -1,15 +1,17 @@
 export type MegaXSfx = 'card' | 'draw' | 'enter' | 'attack' | 'destroy' | 'zonX' | 'prompt' | 'arenaAppear' | 'win'
 
+const SFX_REV = '20260901-final1'
+
 export const SFX_ASSETS: Record<MegaXSfx, string> = {
-  card: '/audio/replacements/card-selected.opus',
-  draw: '/audio/replacements/card-draw.opus',
-  enter: '/audio/replacements/effect-enter-field.opus',
-  attack: '/audio/replacements/card-attacking.opus',
-  destroy: '/audio/replacements/card-destroyed.opus',
-  zonX: '/audio/replacements/card-goes-to-zon-x.opus',
-  prompt: '/audio/replacements/prompt-needed.opus',
-  arenaAppear: '/audio/replacements/arena-appear.opus',
-  win: '/audio/replacements/player-win.opus',
+  card: `/audio/replacements/card-selected.opus?v=${SFX_REV}`,
+  draw: `/audio/replacements/card-draw.opus?v=${SFX_REV}`,
+  enter: `/audio/replacements/effect-enter-field.opus?v=${SFX_REV}`,
+  attack: `/audio/replacements/card-attacking.opus?v=${SFX_REV}`,
+  destroy: `/audio/replacements/card-destroyed.opus?v=${SFX_REV}`,
+  zonX: `/audio/replacements/card-goes-to-zon-x.opus?v=${SFX_REV}`,
+  prompt: `/audio/replacements/prompt-needed.opus?v=${SFX_REV}`,
+  arenaAppear: `/audio/replacements/arena-appear.opus?v=${SFX_REV}`,
+  win: `/audio/replacements/player-win.opus?v=${SFX_REV}`,
 }
 
 export const LOBBY_TRACK = '/audio/replacements/lobby.opus' as const
