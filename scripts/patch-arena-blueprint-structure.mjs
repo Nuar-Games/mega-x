@@ -93,13 +93,6 @@ app = app.replace(/\{canSet && <div className="mx2-hand-actions"><button classNa
 app = app.replace(/\{canEffect && <div className="mx2-hand-actions"><button className="mx2-play-effect"[\s\S]*?<\/div>\}/, '')
 
 const focusMarker = '{focusedCard && passToPlayer === null && pendingChoice === null && game.pendingBoardChoice === null'
-const focusStart = app.indexOf(focusMarker, headerStart + replacement.length)
-if (focusStart < 0) throw new Error('Arena 2 rebuild: legacy focused-card inspector missing')
-const focusEnd = findBalancedJsxExpression(app, focusStart)
-if (focusEnd < 0) throw new Error('Arena 2 rebuild: legacy focused-card inspector closing brace missing')
-const legacyFocus = app.slice(focusStart, focusEnd)
-if (!legacyFocus.includes('focusedCard')) throw new Error('Arena 2 rebuild: focused-card block identification failed')
-
 const compactFocus = `{focusedCard && passToPlayer === null && pendingChoice === null && game.pendingBoardChoice === null && (
               <div className="mx2-card-overlay" role="dialog" aria-modal="false" aria-label="Maklumat kad terpilih">
                 <button className="mx2-card-overlay-dismiss" type="button" aria-label="Tutup maklumat kad" onClick={() => setFocusedCard(null)} />
@@ -120,7 +113,20 @@ const compactFocus = `{focusedCard && passToPlayer === null && pendingChoice ===
                 </div>
               </div>
             )}`
-app = app.slice(0, focusStart) + compactFocus + app.slice(focusEnd)
+
+let focusCount = 0
+let focusCursor = headerStart + replacement.length
+while (true) {
+  const focusStart = app.indexOf(focusMarker, focusCursor)
+  if (focusStart < 0) break
+  const focusEnd = findBalancedJsxExpression(app, focusStart)
+  if (focusEnd < 0) throw new Error('Arena 2 rebuild: legacy focused-card inspector closing brace missing')
+  const next = focusCount === 0 ? compactFocus : ''
+  app = app.slice(0, focusStart) + next + app.slice(focusEnd)
+  focusCount += 1
+  focusCursor = focusStart + next.length
+}
+if (focusCount === 0) throw new Error('Arena 2 rebuild: legacy focused-card inspector missing')
 
 const oldOnlineStatus = `{activeOnlineMatch && onlineMessage && <div className="mx-live-status mx-arena-status" role="status">{onlineMessage}</div>}`
 app = app.replace(oldOnlineStatus, '')
@@ -128,12 +134,17 @@ const oldIntro = `{arenaIntro && <div className="arena-transition-final" aria-hi
 const newIntro = `{arenaIntro && <div className="mx2-entry-flash" aria-hidden="true"><i></i><i></i></div>}`
 app = app.replace(oldIntro, newIntro)
 
+const duelAfter = app.slice(app.indexOf('<section className="duel-shell">'))
 if (!app.includes('mx2-arena')) throw new Error('Arena 2 rebuild: new board missing')
 if (!app.includes('mx2-local-hand') || !app.includes('mx2-opponent-hand')) throw new Error('Arena 2 rebuild: new hands missing')
 if (!app.includes('mx2-vs-frame') || !app.includes('mx2-effect-rail')) throw new Error('Arena 2 rebuild: new battlefield missing')
 if (!app.includes('mx2-card-overlay-panel')) throw new Error('Arena 2 rebuild: compact card overlay missing')
+if (duelAfter.includes('card-focus-overlay')) {
+  const index = duelAfter.indexOf('card-focus-overlay')
+  throw new Error(`Arena 2 rebuild: legacy card-focus overlay survived near: ${duelAfter.slice(Math.max(0,index-180), index+260).replace(/\s+/g,' ')}`)
+}
 if (app.includes('<div className="arena-wrap">')) throw new Error('Arena 2 rebuild: rendered legacy board survived')
 if (app.includes('<header className="fighter-hud">')) throw new Error('Arena 2 rebuild: rendered legacy HUD survived')
 
 fs.writeFileSync(appPath, app)
-console.log('Replaced legacy HUD, hands, field, action bar and focused-card takeover with mx2 Arena presentation')
+console.log(`Replaced legacy HUD, hands, field, action bar and ${focusCount} focused-card render path(s) with mx2 Arena presentation`)
