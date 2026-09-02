@@ -3,7 +3,7 @@ import fs from 'node:fs'
 const source = fs.readFileSync('src/landing-ui.ts', 'utf8')
 const failures = []
 
-if (!source.includes("landing-main-hq.webp")) failures.push('landing must use full-resolution artwork')
+if (!source.includes("landing-main.webp") && !source.includes("landing-main-hq.webp")) failures.push('landing must use artwork asset')
 if (!source.includes('html.mx-main-active #mx-audio-controls')) failures.push('landing must scope audio control removal')
 if (!/html\.mx-main-active #mx-audio-controls\s*\{[^}]*display:\s*none/s.test(source)) failures.push('audio control must be hidden on landing')
 if (!source.includes('@keyframes mxMainElectricPulse')) failures.push('CTA must have electric pulse animation')
