@@ -122,8 +122,9 @@ export async function signUpWithEmail(email: string, password: string) {
   })
   const payload = await readJson(response)
   const session = sessionFromAuthPayload(payload)
-  if (session) saveSession(session)
-  return { session, needsEmailConfirmation: !session }
+  if (!session) throw new Error('CHECK YOUR EMAIL TO CONFIRM YOUR ACCOUNT, THEN SIGN IN.')
+  saveSession(session)
+  return { session, needsEmailConfirmation: false }
 }
 
 export async function signInWithEmail(email: string, password: string) {
