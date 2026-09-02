@@ -15,6 +15,15 @@ function closeAudioPanel(event?: Event) {
   panel.hidden = true
 }
 
+function removeGoogleSignIn() {
+  const controls = Array.from(document.querySelectorAll<HTMLElement>('button, a, [role="button"]'))
+  for (const control of controls) {
+    const text = (control.textContent ?? '').replace(/\s+/g, ' ').trim().toUpperCase()
+    const aria = (control.getAttribute('aria-label') ?? '').trim().toUpperCase()
+    if (text.includes('GOOGLE') || aria.includes('GOOGLE')) control.remove()
+  }
+}
+
 function enhanceLeaderboard() {
   const board = document.querySelector<HTMLElement>('.mx-leaderboard')
   const stack = board?.querySelector<HTMLElement>('.mx-rank-stack')
@@ -126,6 +135,7 @@ async function refreshFightCounter(force = false) {
 }
 
 function enhanceLobby() {
+  removeGoogleSignIn()
   enhanceLeaderboard()
   enhanceGlobalChat()
   fitChallengeHeadline()
