@@ -1,3 +1,5 @@
+export {}
+
 const LANDING_ID = 'mx-main-landing'
 
 function textOf(node: Element | null) {
@@ -122,8 +124,8 @@ style.textContent = `
 `
 document.head.appendChild(style)
 
-const observer = new MutationObserver(syncLanding)
-observer.observe(document.documentElement, { childList: true, subtree: true, characterData: true })
+const landingObserver = new MutationObserver(syncLanding)
+landingObserver.observe(document.documentElement, { childList: true, subtree: true, characterData: true })
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', syncLanding, { once: true })
