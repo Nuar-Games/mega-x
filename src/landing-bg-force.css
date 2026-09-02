@@ -1,40 +1,188 @@
+/* FINAL MAIN overrides — loaded after landing-polish.css */
 #mx-main-landing .mx-main-portrait{
   position:absolute;
   isolation:isolate;
   background:#030512 !important;
 }
 
-/* Use the actual arena image element as the background. This overrides the earlier polish file that hid it. */
+/* REAL supplied arena background. Use the existing img src; no nonexistent fixed asset. */
 #mx-main-landing .mx-main-portrait::before{
   content:none !important;
   display:none !important;
 }
-
 #mx-main-landing .mx-main-bg{
   display:block !important;
+  content:normal !important;
   position:absolute !important;
   inset:0 !important;
   z-index:0 !important;
   width:100% !important;
   height:100% !important;
-  content:url('/ui/landing/background-fixed.avif') !important;
   object-fit:fill !important;
   object-position:center center !important;
   transform:none !important;
   opacity:1 !important;
   visibility:visible !important;
-  filter:saturate(1.18) contrast(1.05) brightness(1.08) !important;
+  filter:saturate(1.22) contrast(1.08) brightness(1.08) !important;
 }
-
 #mx-main-landing .mx-main-vignette{
   z-index:1 !important;
-  background:linear-gradient(180deg,rgba(2,3,15,.01) 0%,rgba(2,3,15,.01) 55%,rgba(1,2,10,.08) 82%,rgba(1,2,8,.16) 100%) !important;
+  background:linear-gradient(180deg,rgba(2,3,15,.00) 0%,rgba(2,3,15,.01) 58%,rgba(1,2,10,.08) 82%,rgba(1,2,8,.18) 100%) !important;
+}
+#mx-main-landing .mx-main-energy{z-index:2 !important;opacity:.08 !important}
+
+/* Strong visible MEGA-X lens flare */
+#mx-main-landing .mx-main-header{
+  z-index:12 !important;
+  isolation:isolate !important;
+  overflow:visible !important;
+}
+#mx-main-landing .mx-main-header::before{
+  content:"" !important;
+  position:absolute !important;
+  z-index:20 !important;
+  left:-4% !important;
+  top:34% !important;
+  width:108% !important;
+  height:4px !important;
+  pointer-events:none !important;
+  opacity:0;
+  transform:scaleX(.08);
+  transform-origin:center;
+  background:linear-gradient(90deg,transparent 0%,rgba(67,183,255,.05) 10%,rgba(95,203,255,.75) 31%,#fff 46%,#fff7a0 50%,#fff 54%,rgba(255,77,225,.74) 69%,transparent 100%) !important;
+  filter:drop-shadow(0 0 4px #fff) drop-shadow(0 0 10px #68c8ff) drop-shadow(0 0 18px rgba(255,70,221,.72)) !important;
+  mix-blend-mode:screen !important;
+  animation:mxFinalLogoFlare 3.8s ease-in-out infinite !important;
+}
+#mx-main-landing .mx-main-header::after{
+  content:"" !important;
+  position:absolute !important;
+  z-index:21 !important;
+  left:50% !important;
+  top:34% !important;
+  width:58px !important;
+  height:58px !important;
+  margin:-29px 0 0 -29px !important;
+  border-radius:50% !important;
+  pointer-events:none !important;
+  opacity:0;
+  background:radial-gradient(circle,#fff 0 7%,#fff7a5 10%,rgba(115,213,255,.96) 23%,rgba(255,85,224,.48) 42%,transparent 68%) !important;
+  filter:drop-shadow(0 0 9px #fff) drop-shadow(0 0 22px #69cfff) !important;
+  mix-blend-mode:screen !important;
+  animation:mxFinalLogoCore 3.8s ease-in-out infinite !important;
 }
 
-#mx-main-landing .mx-main-energy{z-index:2 !important;opacity:.10 !important}
-#mx-main-landing .mx-main-header{z-index:8 !important}
+/* CTA — arcade fight-start panel, not a generic glowing polygon */
+#mx-main-landing .mx-main-cta{
+  z-index:14 !important;
+  left:6% !important;
+  top:59% !important;
+  width:88% !important;
+  height:9.5% !important;
+  border:0 !important;
+  border-radius:0 !important;
+  padding:0 !important;
+  overflow:visible !important;
+  isolation:isolate !important;
+  clip-path:polygon(3.2% 0,96.8% 0,100% 18%,100% 82%,96.8% 100%,3.2% 100%,0 82%,0 18%) !important;
+  background:linear-gradient(180deg,#16072f 0%,#080315 49%,#120426 100%) !important;
+  box-shadow:0 12px 28px rgba(0,0,0,.62),0 0 18px rgba(132,79,255,.35) !important;
+  animation:mxFinalCtaPulse 1.55s ease-in-out infinite !important;
+}
+#mx-main-landing .mx-main-cta::before{
+  content:"" !important;
+  position:absolute !important;
+  inset:-3px !important;
+  z-index:-2 !important;
+  clip-path:inherit !important;
+  transform:none !important;
+  opacity:1 !important;
+  background:linear-gradient(90deg,#55d7ff 0%,#7669ff 18%,#ef42ea 43%,#ffd85b 50%,#ef42ea 57%,#7669ff 82%,#55d7ff 100%) !important;
+  background-size:220% 100% !important;
+  filter:drop-shadow(0 0 5px #fff) drop-shadow(0 0 10px #65d4ff) drop-shadow(0 0 18px rgba(229,55,255,.7)) !important;
+  mix-blend-mode:normal !important;
+  animation:mxFinalRailFlow 1.8s linear infinite !important;
+}
+#mx-main-landing .mx-main-cta::after{
+  content:"" !important;
+  position:absolute !important;
+  inset:4px !important;
+  z-index:0 !important;
+  clip-path:inherit !important;
+  background:
+    linear-gradient(100deg,transparent 0 34%,rgba(112,221,255,.04) 39%,rgba(255,255,255,.48) 47%,rgba(255,220,79,.34) 50%,rgba(255,255,255,.25) 53%,rgba(231,70,255,.05) 61%,transparent 66% 100%),
+    repeating-linear-gradient(180deg,rgba(255,255,255,.025) 0 1px,transparent 1px 5px),
+    radial-gradient(ellipse at 50% 50%,rgba(113,37,190,.32),transparent 56%),
+    linear-gradient(180deg,#170833,#080315 54%,#100522) !important;
+  background-size:260% 100%,100% 100%,100% 100%,100% 100% !important;
+  background-position:140% 0,0 0,0 0,0 0 !important;
+  filter:none !important;
+  animation:mxFinalSweep 1.75s cubic-bezier(.45,0,.2,1) infinite !important;
+}
+#mx-main-landing .mx-main-cta-core{
+  z-index:5 !important;
+  color:#fff6d8 !important;
+  font-size:clamp(1.55rem,6.15vw,3rem) !important;
+  font-weight:1000 !important;
+  letter-spacing:.035em !important;
+  text-shadow:0 2px 0 #683300,0 0 4px #fff,0 0 10px rgba(255,205,72,.95),0 0 20px rgba(255,70,225,.58) !important;
+  animation:mxFinalTextCharge 1.55s ease-in-out infinite !important;
+}
+
+/* Arcade spark rails using existing arc spans */
+#mx-main-landing .mx-main-cta-arc{
+  z-index:7 !important;
+  inset:-12% -1% !important;
+  opacity:1 !important;
+  background:none !important;
+  clip-path:none !important;
+  filter:none !important;
+  animation:none !important;
+  pointer-events:none !important;
+}
+#mx-main-landing .mx-main-cta-arc::before,
+#mx-main-landing .mx-main-cta-arc::after{
+  content:"" !important;
+  position:absolute !important;
+  width:31% !important;
+  height:3px !important;
+  opacity:0;
+  background:linear-gradient(90deg,transparent,#5fe7ff 18%,#fff 35%,#ef59ff 54%,#fff 72%,#ffe266 84%,transparent) !important;
+  filter:drop-shadow(0 0 4px #fff) drop-shadow(0 0 9px #61dcff) drop-shadow(0 0 13px #e54cff) !important;
+  clip-path:polygon(0 45%,12% 30%,20% 0,28% 62%,39% 35%,48% 80%,61% 25%,72% 67%,83% 12%,100% 45%,84% 58%,73% 43%,61% 100%,48% 54%,39% 76%,28% 40%,20% 95%,12% 62%,0 56%) !important;
+  animation:mxFinalSpark .86s steps(2,end) infinite !important;
+}
+#mx-main-landing .mx-main-cta-arc::before{left:1% !important;top:18% !important}
+#mx-main-landing .mx-main-cta-arc::after{right:1% !important;bottom:18% !important;animation-delay:-.31s !important}
+#mx-main-landing .arc-b{transform:none !important}
+#mx-main-landing .arc-b::before{right:1% !important;left:auto !important;top:18% !important;animation-delay:-.57s !important}
+#mx-main-landing .arc-b::after{left:1% !important;right:auto !important;bottom:18% !important;animation-delay:-.72s !important}
+#mx-main-landing .mx-main-cta:active{transform:scale(.965) !important;filter:brightness(1.32) !important}
+
+#mx-main-landing .mx-main-header{z-index:12 !important}
 #mx-main-landing .mx-main-heroes{z-index:4 !important}
 #mx-main-landing .mx-main-cards{z-index:5 !important}
-#mx-main-landing .mx-main-cta{z-index:10 !important}
 #mx-main-landing .mx-main-features{z-index:8 !important}
 #mx-main-landing .mx-main-footer{z-index:8 !important}
+
+@keyframes mxFinalLogoFlare{
+  0%,22%,100%{opacity:0;transform:scaleX(.08)}
+  30%{opacity:.35;transform:scaleX(.32)}
+  39%{opacity:1;transform:scaleX(1.05)}
+  47%{opacity:.55;transform:scaleX(.62)}
+  56%{opacity:0;transform:scaleX(.12)}
+}
+@keyframes mxFinalLogoCore{
+  0%,26%,100%{opacity:0;transform:scale(.22)}
+  38%{opacity:1;transform:scale(1.45)}
+  45%{opacity:.72;transform:scale(.86)}
+  55%{opacity:0;transform:scale(.28)}
+}
+@keyframes mxFinalCtaPulse{
+  0%,100%{transform:scale(1);filter:brightness(1)}
+  50%{transform:scale(1.016);filter:brightness(1.12)}
+}
+@keyframes mxFinalRailFlow{0%{background-position:0% 0}100%{background-position:220% 0}}
+@keyframes mxFinalSweep{0%,22%{background-position:145% 0,0 0,0 0,0 0}72%{background-position:-45% 0,0 0,0 0,0 0}100%{background-position:-65% 0,0 0,0 0,0 0}}
+@keyframes mxFinalTextCharge{0%,100%{transform:scale(1);filter:brightness(1)}48%{transform:scale(1.02);filter:brightness(1.16)}56%{transform:scale(1.006);filter:brightness(1.04)}}
+@keyframes mxFinalSpark{0%,18%,100%{opacity:0;transform:translateX(-4px) scaleX(.9)}20%{opacity:1;transform:translateX(1px) scaleX(1.05)}26%{opacity:.32;transform:translateX(-1px) scaleX(.96)}31%{opacity:1;transform:translateX(3px) scaleX(1.03)}36%,98%{opacity:0;transform:translateX(5px) scaleX(.92)}}
