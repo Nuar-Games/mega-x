@@ -90,9 +90,24 @@ function fitChallengeHeadline() {
   }
 }
 
+function getActualLobbyScreen() {
+  const board = document.querySelector<HTMLElement>('.mx-leaderboard')
+  const chat = document.querySelector<HTMLElement>('.mx-lobby-right .mx-global-chat-feed')
+  if (!board || !chat) return null
+  return board.closest<HTMLElement>('.mx-online-screen.mx-lobby-shell, .mx-lobby-shell')
+}
+
 function ensureFightCounter() {
-  const screen = document.querySelector<HTMLElement>('.mx-online-screen.mx-lobby-shell, .mx-lobby-shell')
-  if (!screen || screen.querySelector('[data-mx-fights-played]')) return
+  const screen = getActualLobbyScreen()
+  const existing = document.querySelector<HTMLElement>('[data-mx-fights-played]')
+  if (!screen) {
+    existing?.remove()
+    return
+  }
+  if (existing) {
+    if (existing.parentElement !== screen) screen.appendChild(existing)
+    return
+  }
   const counter = document.createElement('div')
   counter.className = 'mx-fights-played'
   counter.dataset.mxFightsPlayed = 'true'
