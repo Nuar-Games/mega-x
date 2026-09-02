@@ -20,7 +20,7 @@ function mountLanding() {
   root.hidden = true
   root.innerHTML = `
     <div class="mx-main-portrait">
-      <img class="mx-main-art" src="/ui/landing-main-hq.webp" alt="" draggable="false" />
+      <img class="mx-main-art" src="/ui/landing-main.webp" alt="" draggable="false" />
       <button class="mx-main-cta" type="button" aria-label="MAIN SEKARANG!"><span aria-hidden="true"></span></button>
     </div>
   `
