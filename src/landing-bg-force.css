@@ -1,0 +1,32 @@
+#mx-main-landing .mx-main-portrait{
+  position:absolute;
+  isolation:isolate;
+  background:#030512 !important;
+}
+
+#mx-main-landing .mx-main-portrait::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  background-image:url('/ui/landing/background-fixed.avif');
+  background-repeat:no-repeat;
+  background-position:center center;
+  background-size:100% 100%;
+  filter:saturate(1.2) contrast(1.08) brightness(1.12);
+  opacity:1;
+}
+
+#mx-main-landing .mx-main-vignette{
+  z-index:1 !important;
+  background:linear-gradient(180deg,rgba(2,3,15,.01) 0%,rgba(2,3,15,.01) 55%,rgba(1,2,10,.12) 82%,rgba(1,2,8,.25) 100%) !important;
+}
+
+#mx-main-landing .mx-main-energy{z-index:2 !important;opacity:.12 !important}
+#mx-main-landing .mx-main-header{z-index:8 !important}
+#mx-main-landing .mx-main-heroes{z-index:4 !important}
+#mx-main-landing .mx-main-cards{z-index:5 !important}
+#mx-main-landing .mx-main-cta{z-index:10 !important}
+#mx-main-landing .mx-main-features{z-index:8 !important}
+#mx-main-landing .mx-main-footer{z-index:8 !important}
