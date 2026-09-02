@@ -1,5 +1,3 @@
-import { getSavedSession } from './onlineAuth.ts'
-
 const SUPABASE_URL = ((import.meta as any).env?.VITE_SUPABASE_URL || 'https://mmtorfzxnidsczcdygbp.supabase.co') as string
 const SUPABASE_KEY = ((import.meta as any).env?.VITE_SUPABASE_KEY || 'sb_publishable_EMVTyrv3gGmmouCiVix4dg__W3zuzMc') as string
 let fightCountBusy = false
@@ -106,8 +104,7 @@ function ensureFightCounter() {
 async function refreshFightCounter(force = false) {
   ensureFightCounter()
   const counter = document.querySelector<HTMLElement>('[data-mx-fights-played] strong')
-  const session = getSavedSession()
-  if (!counter || !session || fightCountBusy) return
+  if (!counter || fightCountBusy) return
   const now = Date.now()
   if (!force && now - lastFightCountAt < 30_000) return
   fightCountBusy = true
@@ -116,7 +113,6 @@ async function refreshFightCounter(force = false) {
       method: 'POST',
       headers: {
         apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${session.accessToken}`,
         'Content-Type': 'application/json',
       },
       body: '{}',
