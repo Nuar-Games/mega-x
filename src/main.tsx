@@ -10,6 +10,7 @@ import './arena-stage.css'
 import './arena-stage.ts'
 import './lobby-final.css'
 import './landing-bg-force.css'
+import './landing-background-fallback.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <App />,
