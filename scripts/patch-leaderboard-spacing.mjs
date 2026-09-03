@@ -23,10 +23,40 @@ app = app.replace(
   "} else {\n        setOnlineScreen('LOBBY')\n      }",
 )
 
-app = app.replace(
-  /setOnlineSession\(session\)\s*const profile = await loadProfile\(session\)\s*setFighterProfile\(profile\)\s*if \(profile\?\.fighter_handle\) \{\s*setLeaderboardRows\(await getTop10Leaderboard\(session\)\)\s*setOnlineScreen\('LOBBY'\)\s*\} else setOnlineScreen\('HANDLE'\)/,
-  "setOnlineSession(session)\n      const profile = await loadProfile(session)\n      setFighterProfile(profile)\n      if (profile?.fighter_handle) {\n        setOnlineBusy(false)\n        setOnlineScreen('LOBBY')\n        void getTop10Leaderboard(session).then(setLeaderboardRows).catch(() => undefined)\n      } else {\n        setOnlineBusy(false)\n        setOnlineScreen('HANDLE')\n      }",
-)
+const submitReplacement = `async function submitEmailAuth() {
+    if (!authEmail || authPassword.length < 6 || onlineBusy) return
+    setOnlineBusy(true)
+    setOnlineMessage('')
+    try {
+      const session = authMode === 'SIGN_IN'
+        ? await signInWithEmail(authEmail, authPassword)
+        : (await signUpWithEmail(authEmail, authPassword)).session
+      if (!session) {
+        setOnlineMessage('CHECK YOUR EMAIL TO CONFIRM YOUR ACCOUNT.')
+        return
+      }
+      setOnlineSession(session)
+      const profile = await loadProfile(session)
+      setFighterProfile(profile)
+      if (profile?.fighter_handle) {
+        setOnlineBusy(false)
+        setOnlineScreen('LOBBY')
+        void getTop10Leaderboard(session).then(setLeaderboardRows).catch(() => undefined)
+      } else {
+        setOnlineBusy(false)
+        setOnlineScreen('HANDLE')
+      }
+    } catch (error) {
+      setOnlineMessage(error instanceof Error ? error.message.replaceAll('_', ' ') : 'SIGN IN FAILED')
+    } finally {
+      setOnlineBusy(false)
+    }
+  }
+  async function submitFighterHandle()`
+
+const submitPattern = /async function submitEmailAuth\(\) \{[\s\S]*?\n  \}\n  async function submitFighterHandle\(\)/
+if (!submitPattern.test(app)) throw new Error('final submitEmailAuth function anchor missing')
+app = app.replace(submitPattern, submitReplacement)
 
 fs.writeFileSync(appPath, app)
 
