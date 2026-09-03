@@ -1,4 +1,4 @@
-/* Final Lobby polish: compact mobile sign-out, Top 3 formatting, contact + footer. */
+/* Final Lobby polish: compact mobile sign-out, direct Top 3 layout, contact + footer. */
 .mx-lobby-contactbar{
   grid-area:contact!important;
   display:flex!important;
@@ -28,9 +28,7 @@
   white-space:nowrap!important;
 }
 .mx-lobby-email-icon,
-.mx-lobby-email-address{
-  display:none!important;
-}
+.mx-lobby-email-address{display:none!important}
 
 .mx-lobby-studio-footer{
   grid-area:footer!important;
@@ -55,8 +53,8 @@
   font:600 10px/1.3 system-ui,sans-serif!important;
 }
 
-/* Top 3: always rank / fighter name / points as three separate lines. */
-.mx-top-rank-fixed{
+/* React already renders Top 3 as b / strong / span. Force that exact markup into three rows. */
+.mx-commercial-lobby .mx-leaderboard .mx-top-three > .mx-rank-card{
   display:flex!important;
   flex-direction:column!important;
   flex-wrap:nowrap!important;
@@ -68,13 +66,15 @@
   text-align:center!important;
   grid-template-columns:none!important;
   grid-template-rows:none!important;
+  column-gap:0!important;
+  row-gap:8px!important;
 }
-.mx-top-rank-fixed > .mx-top-rank-number,
-.mx-top-rank-fixed > .mx-top-rank-name,
-.mx-top-rank-fixed > .mx-top-rank-points{
+.mx-commercial-lobby .mx-leaderboard .mx-top-three > .mx-rank-card > b,
+.mx-commercial-lobby .mx-leaderboard .mx-top-three > .mx-rank-card > strong,
+.mx-commercial-lobby .mx-leaderboard .mx-top-three > .mx-rank-card > span{
   position:static!important;
   display:block!important;
-  flex:none!important;
+  flex:0 0 auto!important;
   width:100%!important;
   max-width:100%!important;
   margin:0!important;
@@ -83,12 +83,12 @@
   white-space:nowrap!important;
   transform:none!important;
 }
-.mx-top-rank-fixed > .mx-top-rank-number{
+.mx-commercial-lobby .mx-leaderboard .mx-top-three > .mx-rank-card > b{
   order:1!important;
   font-size:clamp(28px,3vw,44px)!important;
   line-height:.95!important;
 }
-.mx-top-rank-fixed > .mx-top-rank-name{
+.mx-commercial-lobby .mx-leaderboard .mx-top-three > .mx-rank-card > strong{
   order:2!important;
   overflow:hidden!important;
   text-overflow:ellipsis!important;
@@ -96,7 +96,7 @@
   line-height:1!important;
   color:#fff!important;
 }
-.mx-top-rank-fixed > .mx-top-rank-points{
+.mx-commercial-lobby .mx-leaderboard .mx-top-three > .mx-rank-card > span{
   order:3!important;
   font-size:clamp(15px,1.55vw,22px)!important;
   line-height:1!important;
@@ -130,7 +130,6 @@
       "chat"
       "footer"!important;
   }
-
   .mx-commercial-lobby .mx-area-player{
     position:relative!important;
     min-height:72px!important;
@@ -155,14 +154,6 @@
     line-height:32px!important;
     z-index:2!important;
   }
-
-  .mx-lobby-contactbar{
-    min-height:38px!important;
-    padding:2px 0!important;
-  }
-  .mx-lobby-contact-button{
-    width:auto!important;
-    min-width:124px!important;
-    min-height:32px!important;
-  }
+  .mx-lobby-contactbar{min-height:38px!important;padding:2px 0!important}
+  .mx-lobby-contact-button{width:auto!important;min-width:124px!important;min-height:32px!important}
 }
