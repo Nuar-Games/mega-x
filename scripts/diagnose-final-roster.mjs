@@ -9,3 +9,4 @@ function show(label, source, needle, before=500, after=1400){
 show('FINAL getOnlineFighters', auth, 'export async function getOnlineFighters')
 show('FINAL refreshLobby', app, 'const refreshLobby = async () =>')
 show('FINAL fighter filter', app, "onlineFighters.filter((fighter) => fighter.player_id !== onlineSession?.userId)")
+await import('../tests/vs_intro_identity_regression.mjs')
