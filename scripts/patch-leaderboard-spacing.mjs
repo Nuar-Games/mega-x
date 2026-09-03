@@ -23,7 +23,13 @@ app = app.replace(
   "} else {\n        setOnlineScreen('LOBBY')\n      }",
 )
 
-const submitReplacement = `async function submitEmailAuth() {
+const startNeedle = 'async function submitEmailAuth()'
+const endNeedle = 'async function submitFighterHandle()'
+const start = app.indexOf(startNeedle)
+const end = app.indexOf(endNeedle, start + startNeedle.length)
+if (start < 0 || end < 0 || end <= start) throw new Error('final email auth function boundaries missing')
+
+const replacement = `async function submitEmailAuth() {
     if (!authEmail || authPassword.length < 6 || onlineBusy) return
     setOnlineBusy(true)
     setOnlineMessage('')
@@ -52,12 +58,9 @@ const submitReplacement = `async function submitEmailAuth() {
       setOnlineBusy(false)
     }
   }
-  async function submitFighterHandle()`
+  `
 
-const submitPattern = /async function submitEmailAuth\(\) \{[\s\S]*?\n  \}\n  async function submitFighterHandle\(\)/
-if (!submitPattern.test(app)) throw new Error('final submitEmailAuth function anchor missing')
-app = app.replace(submitPattern, submitReplacement)
-
+app = app.slice(0, start) + replacement + app.slice(end)
 fs.writeFileSync(appPath, app)
 
 const finalApp = fs.readFileSync(appPath, 'utf8')
