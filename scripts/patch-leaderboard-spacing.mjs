@@ -23,11 +23,14 @@ app = app.replace(
   "} else {\n        setOnlineScreen('LOBBY')\n      }",
 )
 
-const screenStatePattern = /useState<OnlineScreen>\('LANDING'\)/
-if (!screenStatePattern.test(app)) throw new Error('onlineScreen initial state anchor missing')
+const screenStatePattern = /useState(?:<[^>]+>)?\(\s*['\"]LANDING['\"]\s*\)/
+const screenStateMatch = app.match(screenStatePattern)
+if (!screenStateMatch) throw new Error('onlineScreen initial state anchor missing')
+const originalStateCall = screenStateMatch[0]
+const generic = originalStateCall.startsWith('useState<') ? originalStateCall.slice(0, originalStateCall.indexOf('>(') + 2) : 'useState('
 app = app.replace(
   screenStatePattern,
-  "useState<OnlineScreen>(() => { try { return sessionStorage.getItem('mx-enter-lobby-after-auth') === '1' ? 'LOBBY' : 'LANDING' } catch { return 'LANDING' } })",
+  generic + "() => { try { return sessionStorage.getItem('mx-enter-lobby-after-auth') === '1' ? 'LOBBY' : 'LANDING' } catch { return 'LANDING' } })",
 )
 
 const startNeedle = 'async function submitEmailAuth()'
