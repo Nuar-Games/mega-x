@@ -66,7 +66,7 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   const boot = () => {
     runLobbyLastFixes()
     const observer = new MutationObserver(() => runLobbyLastFixes())
-    observer.observe(document.body, { childList: true, subtree: true })
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true })
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true })
   else boot()
