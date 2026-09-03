@@ -10,3 +10,11 @@ if (!css.includes(marker)) {
 
 fs.writeFileSync(cssPath, css)
 console.log('Applied leaderboard username/PTS spacing')
+
+const app = fs.readFileSync('src/App.tsx', 'utf8')
+for (const needle of ["async function submitEmailAuth()", "if (onlineScreen === 'AUTH')", "if (onlineScreen === 'LOBBY')"]) {
+  const index = app.indexOf(needle)
+  if (index >= 0) {
+    console.log(`\n--- FINAL APP ${needle} ---\n${app.slice(index, Math.min(app.length, index + 1800))}\n--- END FINAL APP ---`)
+  }
+}
