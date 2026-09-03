@@ -1,0 +1,96 @@
+/* MAIN SEKARANG — arcade fighting-game CTA only */
+#mx-main-landing .mx-main-cta{
+  background:
+    linear-gradient(180deg,#321014 0%,#13070b 42%,#080307 58%,#1e0814 100%) !important;
+  box-shadow:
+    inset 0 0 0 2px rgba(255,244,194,.98),
+    inset 0 0 0 5px rgba(255,150,32,.78),
+    inset 0 0 0 8px rgba(255,44,174,.32),
+    inset 0 0 24px rgba(255,72,31,.34),
+    0 0 4px rgba(255,255,255,.95),
+    0 0 12px rgba(255,176,44,.78),
+    0 0 24px rgba(255,49,187,.60),
+    0 14px 28px rgba(0,0,0,.78) !important;
+}
+
+#mx-main-landing .mx-main-cta::after{
+  background:
+    repeating-linear-gradient(180deg,rgba(255,255,255,.018) 0 2px,rgba(0,0,0,.08) 2px 4px),
+    radial-gradient(ellipse at 50% 46%,rgba(255,95,24,.20),transparent 58%),
+    linear-gradient(180deg,#270b13 0%,#090307 54%,#170710 100%) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.10),
+    inset 0 0 0 3px rgba(255,55,163,.30),
+    inset 0 0 16px rgba(255,91,29,.24),
+    inset 0 -12px 18px rgba(0,0,0,.76) !important;
+}
+
+#mx-main-landing .mx-main-cta-core{
+  font-family:
+    "Arial Black",
+    "Franklin Gothic Heavy",
+    "Segoe UI Black",
+    "Trebuchet MS",
+    sans-serif !important;
+  font-size:clamp(1.26rem,4.75vw,2.38rem) !important;
+  font-weight:1000 !important;
+  font-style:italic !important;
+  letter-spacing:-.015em !important;
+  line-height:.88 !important;
+
+  color:transparent !important;
+  background:
+    linear-gradient(180deg,
+      #fff6b0 0%,
+      #ffd34f 20%,
+      #ff9d16 54%,
+      #ff6b0b 76%,
+      #ffc439 100%) !important;
+  -webkit-background-clip:text !important;
+  background-clip:text !important;
+
+  -webkit-text-stroke:2px rgba(73,10,28,.98) !important;
+  paint-order:stroke fill !important;
+
+  text-shadow:
+    2px 2px 0 #290410,
+    4px 4px 0 #090105,
+    6px 6px 0 rgba(0,0,0,.58),
+    0 0 7px rgba(255,182,42,.72),
+    0 0 14px rgba(255,71,173,.34) !important;
+
+  filter:drop-shadow(0 5px 2px rgba(0,0,0,.58)) !important;
+  transform:skewX(-7deg) scaleX(.94) !important;
+  transform-origin:center !important;
+}
+
+#mx-main-landing .mx-main-cta::before{
+  background:
+    linear-gradient(180deg,
+      rgba(255,255,255,.98) 0 2px,
+      rgba(255,210,73,.98) 2px 5px,
+      rgba(255,82,29,.88) 5px 7px,
+      transparent 7px calc(100% - 7px),
+      rgba(255,48,168,.92) calc(100% - 7px) calc(100% - 5px),
+      rgba(255,133,28,.94) calc(100% - 5px) calc(100% - 3px),
+      rgba(255,238,166,.98) calc(100% - 3px) 100%),
+    linear-gradient(108deg,
+      transparent 0 31%,
+      rgba(255,255,255,.04) 36%,
+      rgba(255,248,199,.92) 47%,
+      rgba(255,167,35,.78) 50%,
+      rgba(255,255,255,.25) 55%,
+      transparent 64% 100%) !important;
+  background-size:100% 100%,230% 100% !important;
+  animation:mxFightButtonSweep 1.55s ease-in-out infinite !important;
+}
+
+#mx-main-landing .mx-main-cta:hover .mx-main-cta-core{
+  filter:brightness(1.14) drop-shadow(0 5px 2px rgba(0,0,0,.58)) !important;
+}
+
+@keyframes mxFightButtonSweep{
+  0%,20%{background-position:0 0,145% 0}
+  72%{background-position:0 0,-28% 0}
+  100%{background-position:0 0,-52% 0}
+}
