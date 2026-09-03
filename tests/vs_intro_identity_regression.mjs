@@ -21,4 +21,17 @@ if (/\.mx-vs-name\{[^}]*color:#fff/.test(css)) {
   throw new Error('VS intro regression failed: fighter names still use generic white')
 }
 
-console.log('PASS VS intro fighter identity colors, single-line fit, and stronger VS mark')
+const mobileStart = css.indexOf('@media(max-width:760px)')
+const mobileEnd = css.indexOf('@media(prefers-reduced-motion:reduce)', mobileStart)
+const mobile = mobileStart >= 0 ? css.slice(mobileStart, mobileEnd >= 0 ? mobileEnd : css.length) : ''
+if (/\.mx-vs-name\{[^}]*font-size:/.test(mobile)) {
+  throw new Error('VS intro regression failed: mobile breakpoint changes fighter-name size abruptly')
+}
+if (/\.mx-vs-mark span\{[^}]*font-size:/.test(mobile)) {
+  throw new Error('VS intro regression failed: mobile breakpoint changes VS size abruptly')
+}
+if (/\.mx-vs-mark i\{[^}]*height:/.test(mobile)) {
+  throw new Error('VS intro regression failed: mobile breakpoint changes VS slash height abruptly')
+}
+
+console.log('PASS VS intro fighter identity colors, single-line fit, strong VS mark, and continuous sizing across breakpoints')
