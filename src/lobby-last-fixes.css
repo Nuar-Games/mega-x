@@ -1,54 +1,37 @@
-/* Final Lobby polish: mobile sign-out, Top 3 formatting, studio contact + footer. */
+/* Final Lobby polish: compact mobile sign-out, Top 3 formatting, contact + footer. */
 .mx-lobby-contactbar{
   grid-area:contact!important;
-  display:grid!important;
-  grid-template-columns:auto minmax(0,1fr) auto!important;
-  align-items:center!important;
-  gap:10px!important;
-  width:100%!important;
-  min-height:46px!important;
-  padding:7px 10px!important;
-  border:1px solid rgba(120,167,219,.30)!important;
-  border-radius:6px!important;
-  background:linear-gradient(180deg,rgba(8,20,36,.97),rgba(4,12,23,.985))!important;
-}
-.mx-lobby-email-icon,
-.mx-lobby-email-address,
-.mx-lobby-contact-button{
-  text-decoration:none!important;
-}
-.mx-lobby-email-icon{
-  width:34px!important;
-  height:34px!important;
-  display:grid!important;
-  place-items:center!important;
-  border:1px solid rgba(86,229,255,.45)!important;
-  border-radius:5px!important;
-  color:#dffaff!important;
-  font-size:18px!important;
-  line-height:1!important;
-}
-.mx-lobby-email-address{
-  overflow:hidden!important;
-  text-overflow:ellipsis!important;
-  white-space:nowrap!important;
-  color:#c7d8ec!important;
-  font:700 12px/1.1 system-ui,sans-serif!important;
-}
-.mx-lobby-contact-button{
-  min-height:34px!important;
   display:flex!important;
   align-items:center!important;
   justify-content:center!important;
-  padding:0 12px!important;
+  width:100%!important;
+  min-height:42px!important;
+  padding:4px 0!important;
+  border:0!important;
+  background:transparent!important;
+}
+.mx-lobby-contact-button{
+  width:auto!important;
+  min-width:132px!important;
+  min-height:34px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:0 16px!important;
   border:1px solid rgba(255,214,74,.55)!important;
   border-radius:4px!important;
   background:rgba(255,211,65,.08)!important;
   color:#ffe16b!important;
+  text-decoration:none!important;
   font:900 12px/1 'Barlow Condensed',Impact,sans-serif!important;
   letter-spacing:.08em!important;
   white-space:nowrap!important;
 }
+.mx-lobby-email-icon,
+.mx-lobby-email-address{
+  display:none!important;
+}
+
 .mx-lobby-studio-footer{
   grid-area:footer!important;
   width:100%!important;
@@ -72,31 +55,40 @@
   font:600 10px/1.3 system-ui,sans-serif!important;
 }
 
-/* Top 3 must always read: rank / fighter / points on three separate lines. */
-.mx-commercial-lobby .mx-leaderboard .mx-top-rank-fixed{
+/* Top 3: always rank / fighter name / points as three separate lines. */
+.mx-top-rank-fixed{
   display:flex!important;
   flex-direction:column!important;
+  flex-wrap:nowrap!important;
   align-items:center!important;
   justify-content:center!important;
-  gap:7px!important;
+  gap:8px!important;
   min-height:132px!important;
+  height:auto!important;
   text-align:center!important;
+  grid-template-columns:none!important;
+  grid-template-rows:none!important;
 }
-.mx-commercial-lobby .mx-top-rank-fixed .mx-top-rank-number,
-.mx-commercial-lobby .mx-top-rank-fixed .mx-top-rank-name,
-.mx-commercial-lobby .mx-top-rank-fixed .mx-top-rank-points{
+.mx-top-rank-fixed > .mx-top-rank-number,
+.mx-top-rank-fixed > .mx-top-rank-name,
+.mx-top-rank-fixed > .mx-top-rank-points{
+  position:static!important;
   display:block!important;
+  flex:none!important;
   width:100%!important;
+  max-width:100%!important;
   margin:0!important;
   padding:0!important;
+  text-align:center!important;
   white-space:nowrap!important;
+  transform:none!important;
 }
-.mx-commercial-lobby .mx-top-rank-fixed .mx-top-rank-number{
+.mx-top-rank-fixed > .mx-top-rank-number{
   order:1!important;
   font-size:clamp(28px,3vw,44px)!important;
   line-height:.95!important;
 }
-.mx-commercial-lobby .mx-top-rank-fixed .mx-top-rank-name{
+.mx-top-rank-fixed > .mx-top-rank-name{
   order:2!important;
   overflow:hidden!important;
   text-overflow:ellipsis!important;
@@ -104,7 +96,7 @@
   line-height:1!important;
   color:#fff!important;
 }
-.mx-commercial-lobby .mx-top-rank-fixed .mx-top-rank-points{
+.mx-top-rank-fixed > .mx-top-rank-points{
   order:3!important;
   font-size:clamp(15px,1.55vw,22px)!important;
   line-height:1!important;
@@ -139,7 +131,6 @@
       "footer"!important;
   }
 
-  /* Keep sign-out compact and inside the header instead of becoming a giant separate block. */
   .mx-commercial-lobby .mx-area-player{
     position:relative!important;
     min-height:72px!important;
@@ -166,14 +157,12 @@
   }
 
   .mx-lobby-contactbar{
-    grid-template-columns:34px minmax(0,1fr)!important;
-    gap:8px!important;
+    min-height:38px!important;
+    padding:2px 0!important;
   }
   .mx-lobby-contact-button{
-    grid-column:1/-1!important;
-    width:100%!important;
-  }
-  .mx-lobby-email-address{
-    font-size:11px!important;
+    width:auto!important;
+    min-width:124px!important;
+    min-height:32px!important;
   }
 }
