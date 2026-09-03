@@ -5,7 +5,7 @@ import './VsIntro.css'
 const VS_INTRO_AUDIO_SRC = '/audio/coin-toss/mega-x-coin-toss-v1.opus'
 const VS_INTRO_AUDIO_START = 10
 const VS_SUPABASE_URL = ((import.meta as any).env?.VITE_SUPABASE_URL || 'https://mmtorfzxnidsczcdygbp.supabase.co') as string
-const VS_SUPABASE_KEY = ((import.meta as any).env?.VITE_SUPABASE_KEY || 'sb_publishable_EMVTyrv3gGmmouCiVix4dg__W3zuzMc') as string
+const VS_SUPABASE_KEY = ((import.meta as any).env?.VITE_SUPABASE_KEY || 'sb_publishable_fXF7LXgKXeH4p5_Bwai0nQ_d-NWdOk_') as string
 
 type VsIntroStage = 'ENTRY' | 'VERSUS' | 'FIGHT' | 'REVEAL'
 async function vsIntroRpc(session: OnlineSession, name: string, body: Record<string, unknown> = {}) {
