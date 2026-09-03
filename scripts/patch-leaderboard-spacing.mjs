@@ -45,13 +45,12 @@ const replacement = `async function submitEmailAuth() {
       const profile = await loadProfile(session)
       setFighterProfile(profile)
       if (profile?.fighter_handle) {
-        setOnlineBusy(false)
-        setOnlineScreen('LOBBY')
-        void getTop10Leaderboard(session).then(setLeaderboardRows).catch(() => undefined)
-      } else {
-        setOnlineBusy(false)
-        setOnlineScreen('HANDLE')
+        try { sessionStorage.setItem('mx-enter-lobby-after-auth', '1') } catch {}
+        window.location.reload()
+        return
       }
+      setOnlineBusy(false)
+      setOnlineScreen('HANDLE')
     } catch (error) {
       setOnlineMessage(error instanceof Error ? error.message.replaceAll('_', ' ') : 'SIGN IN FAILED')
     } finally {
@@ -61,8 +60,15 @@ const replacement = `async function submitEmailAuth() {
   `
 
 app = app.slice(0, start) + replacement + app.slice(end)
+
+const restoreAnchor = "setFighterProfile(profile)"
+const restoreIndex = app.indexOf(restoreAnchor)
+if (restoreIndex < 0) throw new Error('saved-session restore anchor missing')
+const insertAt = restoreIndex + restoreAnchor.length
+app = app.slice(0, insertAt) + `\n      try {\n        if (sessionStorage.getItem('mx-enter-lobby-after-auth') === '1' && profile?.fighter_handle) {\n          sessionStorage.removeItem('mx-enter-lobby-after-auth')\n          setOnlineBusy(false)\n          setOnlineScreen('LOBBY')\n          void getTop10Leaderboard(session).then(setLeaderboardRows).catch(() => undefined)\n          return\n        }\n      } catch {}` + app.slice(insertAt)
+
 fs.writeFileSync(appPath, app)
 
 const finalApp = fs.readFileSync(appPath, 'utf8')
-console.log('FINAL_EMAIL_AUTH_FAST_LOBBY=' + finalApp.includes("setOnlineBusy(false)\n        setOnlineScreen('LOBBY')"))
-console.log('FINAL_SAVED_EMAIL_LOBBY=' + !finalApp.includes("else if (googleSession) {\n        setOnlineScreen('LOBBY')"))
+console.log('FINAL_EMAIL_AUTH_HARD_NAV=' + finalApp.includes("sessionStorage.setItem('mx-enter-lobby-after-auth', '1')"))
+console.log('FINAL_RESTORE_FORCED_LOBBY=' + finalApp.includes("sessionStorage.getItem('mx-enter-lobby-after-auth') === '1'"))
