@@ -1,17 +1,8 @@
-/* Recovery safety override: keep the real landing background image visible. */
+/* Recovery authority: use the recovered background-only MEGA-X arena asset. */
 #mx-main-landing .mx-main-portrait{
-  background:#02030a !important;
+  background:#02030a url('/ui/landing/main-background.png') center center/cover no-repeat !important;
 }
 
 #mx-main-landing .mx-main-bg{
-  display:block !important;
-  position:absolute !important;
-  inset:0 !important;
-  width:100% !important;
-  height:100% !important;
-  object-fit:fill !important;
-  opacity:1 !important;
-  visibility:visible !important;
-  z-index:0 !important;
-  pointer-events:none !important;
+  display:none !important;
 }
