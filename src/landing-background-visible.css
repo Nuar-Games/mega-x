@@ -4,7 +4,7 @@ html body #mx-main-landing .mx-main-portrait{
 }
 
 html body #mx-main-landing .mx-main-bg{
-  content:url('/ui/landing/main-background.png') !important;
+  content:url('/ui/landing/main-background.webp') !important;
   display:block !important;
   position:absolute !important;
   inset:0 !important;

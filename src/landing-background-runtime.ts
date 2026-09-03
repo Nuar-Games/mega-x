@@ -4,8 +4,8 @@ const applyMainBackground = () => {
   const img = document.querySelector<HTMLImageElement>('#mx-main-landing .mx-main-bg')
   if (!img) return false
 
-  if (img.getAttribute('src') !== '/ui/landing/main-background.png') {
-    img.setAttribute('src', '/ui/landing/main-background.png')
+  if (img.getAttribute('src') !== '/ui/landing/main-background.webp') {
+    img.setAttribute('src', '/ui/landing/main-background.webp')
   }
 
   const force = (name: string, value: string) => img.style.setProperty(name, value, 'important')
