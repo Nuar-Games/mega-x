@@ -20,19 +20,36 @@ fs.writeFileSync(path, source)
 const appPath = 'src/App.tsx'
 let app = fs.readFileSync(appPath, 'utf8')
 
-const startupOld = `        if (!profile?.fighter_handle) {\n          if (googleSession) setOnlineScreen('HANDLE')\n          return\n        }\n        const [leaders, match] = await Promise.all([getTop10Leaderboard(session), getMyActiveMatch(session)])\n        if (disposed) return\n        setLeaderboardRows(leaders)\n        if (match) {\n          if (googleSession) applyOnlineMatchView(match)\n          else {\n            latestMatchIdRef.current = match.id\n            latestMatchVersionRef.current = Number(match.state_version)\n            setActiveOnlineMatch(match)\n          }\n        } else if (googleSession) {\n          setOnlineScreen('LOBBY')\n        }`
+const startupPattern = /if \(!profile\?\.fighter_handle\) \{\s*if \(googleSession\) setOnlineScreen\('HANDLE'\)\s*return\s*\}\s*const \[leaders, match\] = await Promise\.all\(\[getTop10Leaderboard\(session\), getMyActiveMatch\(session\)\]\)\s*if \(disposed\) return\s*setLeaderboardRows\(leaders\)\s*if \(match\) \{\s*if \(googleSession\) applyOnlineMatchView\(match\)\s*else \{\s*latestMatchIdRef\.current = match\.id\s*latestMatchVersionRef\.current = Number\(match\.state_version\)\s*setActiveOnlineMatch\(match\)\s*\}\s*\} else if \(googleSession\) \{\s*setOnlineScreen\('LOBBY'\)\s*\}/
 
-const startupNew = `        if (!profile?.fighter_handle) {\n          setOnlineScreen('HANDLE')\n          return\n        }\n        const [leaders, match] = await Promise.all([getTop10Leaderboard(session), getMyActiveMatch(session)])\n        if (disposed) return\n        setLeaderboardRows(leaders)\n        if (match) {\n          applyOnlineMatchView(match)\n        } else {\n          setOnlineScreen('LOBBY')\n        }`
+const startupNew = `if (!profile?.fighter_handle) {
+          setOnlineScreen('HANDLE')
+          return
+        }
+        const [leaders, match] = await Promise.all([getTop10Leaderboard(session), getMyActiveMatch(session)])
+        if (disposed) return
+        setLeaderboardRows(leaders)
+        if (match) {
+          applyOnlineMatchView(match)
+        } else {
+          setOnlineScreen('LOBBY')
+        }`
 
-if (!app.includes(startupOld)) throw new Error('saved-session lobby transition anchor missing')
-app = app.replace(startupOld, startupNew)
+if (!startupPattern.test(app)) throw new Error('saved-session lobby transition anchor missing')
+app = app.replace(startupPattern, startupNew)
 
-const submitOld = `      setOnlineSession(session)\n      const profile = await loadProfile(session)\n      setFighterProfile(profile)\n      if (profile?.fighter_handle) {\n        setLeaderboardRows(await getTop10Leaderboard(session))\n        setOnlineScreen('LOBBY')\n      } else setOnlineScreen('HANDLE')`
+const submitPattern = /setOnlineSession\(session\)\s*const profile = await loadProfile\(session\)\s*setFighterProfile\(profile\)\s*if \(profile\?\.fighter_handle\) \{\s*setLeaderboardRows\(await getTop10Leaderboard\(session\)\)\s*setOnlineScreen\('LOBBY'\)\s*\} else setOnlineScreen\('HANDLE'\)/
 
-const submitNew = `      setOnlineSession(session)\n      const profile = await loadProfile(session)\n      setFighterProfile(profile)\n      if (profile?.fighter_handle) {\n        setOnlineScreen('LOBBY')\n        void getTop10Leaderboard(session).then(setLeaderboardRows).catch(() => undefined)\n      } else setOnlineScreen('HANDLE')`
+const submitNew = `setOnlineSession(session)
+      const profile = await loadProfile(session)
+      setFighterProfile(profile)
+      if (profile?.fighter_handle) {
+        setOnlineScreen('LOBBY')
+        void getTop10Leaderboard(session).then(setLeaderboardRows).catch(() => undefined)
+      } else setOnlineScreen('HANDLE')`
 
-if (!app.includes(submitOld)) throw new Error('email sign-in lobby transition anchor missing')
-app = app.replace(submitOld, submitNew)
+if (!submitPattern.test(app)) throw new Error('email sign-in lobby transition anchor missing')
+app = app.replace(submitPattern, submitNew)
 fs.writeFileSync(appPath, app)
 
 console.log('Forced active auth key, added sign-in timeout, and fixed auth-to-Lobby transitions')
