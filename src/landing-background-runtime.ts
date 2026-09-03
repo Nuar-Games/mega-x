@@ -16,7 +16,7 @@ const applyMainBackground = () => {
   force('height', '100%')
   force('max-width', 'none')
   force('max-height', 'none')
-  force('object-fit', 'cover')
+  force('object-fit', 'fill')
   force('object-position', 'center center')
   force('z-index', '3')
   force('opacity', '1')
