@@ -10,6 +10,15 @@ if (!css.includes(marker)) {
 fs.writeFileSync(cssPath, css)
 console.log('Applied leaderboard username/PTS spacing')
 
+const lobbyPath = 'src/lobby-ui.ts'
+let lobby = fs.readFileSync(lobbyPath, 'utf8')
+const loopingSort = `  rows.sort((a, b) => rankOf(a) - rankOf(b))\n  rows.forEach((row) => stack.appendChild(row))`
+const stableSort = `  const sortedRows = [...rows].sort((a, b) => rankOf(a) - rankOf(b))\n  const alreadySorted = rows.length === sortedRows.length && rows.every((row, index) => row === sortedRows[index])\n  if (!alreadySorted) sortedRows.forEach((row) => stack.appendChild(row))`
+if (!lobby.includes(loopingSort) && !lobby.includes(stableSort)) throw new Error('Top 20 leaderboard sort anchor missing')
+if (lobby.includes(loopingSort)) lobby = lobby.replace(loopingSort, stableSort)
+fs.writeFileSync(lobbyPath, lobby)
+console.log('LOBBY_TOP20_MUTATION_LOOP_FIXED=' + lobby.includes('const alreadySorted ='))
+
 const appPath = 'src/App.tsx'
 let app = fs.readFileSync(appPath, 'utf8')
 
