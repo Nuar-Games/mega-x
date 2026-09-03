@@ -3,6 +3,7 @@ const MX_STUDIO_EMAIL = 'sector.seven.studio@outlook.com'
 function normalizeTopRanks(root: ParentNode = document) {
   const cards = Array.from(root.querySelectorAll<HTMLElement>('.mx-rank-card'))
   for (const card of cards) {
+    if (card.dataset.mxTopRankNormalized === 'true') continue
     const text = (card.textContent ?? '').replace(/\s+/g, ' ').trim()
     const match = text.match(/^#\s*([1-3])\s+(.+?)\s+(\d+)\s*PTS\b/i)
     if (!match) continue
@@ -21,15 +22,14 @@ function ensureLobbyContactAndFooter() {
   const lobby = document.querySelector<HTMLElement>('.mx-commercial-lobby')
   if (!lobby) return
 
-  let contact = lobby.querySelector<HTMLElement>('[data-mx-contact-bar]')
-  if (!contact) {
-    contact = document.createElement('section')
+  if (!lobby.querySelector('[data-mx-contact-bar]')) {
+    const contact = document.createElement('section')
     contact.className = 'mx-lobby-contactbar'
     contact.dataset.mxContactBar = 'true'
     contact.setAttribute('aria-label', 'Sector Seven Studio contact')
+    contact.innerHTML = `<a class="mx-lobby-contact-button" href="mailto:${MX_STUDIO_EMAIL}" aria-label="Contact Sector Seven Studio">CONTACT US</a>`
     lobby.insertBefore(contact, lobby.firstChild)
   }
-  contact.innerHTML = `<a class="mx-lobby-contact-button" href="mailto:${MX_STUDIO_EMAIL}" aria-label="Contact Sector Seven Studio">CONTACT US</a>`
 
   if (!lobby.querySelector('[data-mx-studio-footer]')) {
     const footer = document.createElement('footer')
