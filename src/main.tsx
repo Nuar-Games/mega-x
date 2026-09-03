@@ -12,6 +12,7 @@ import './lobby-final.css'
 import './landing-bg-force.css'
 import './landing-background-fallback.css'
 import './landing-background-visible.css'
+import './landing-cta-fighting.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <App />,
