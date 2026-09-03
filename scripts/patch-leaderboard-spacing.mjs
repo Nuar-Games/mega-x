@@ -23,6 +23,13 @@ app = app.replace(
   "} else {\n        setOnlineScreen('LOBBY')\n      }",
 )
 
+const screenStatePattern = /useState<OnlineScreen>\('LANDING'\)/
+if (!screenStatePattern.test(app)) throw new Error('onlineScreen initial state anchor missing')
+app = app.replace(
+  screenStatePattern,
+  "useState<OnlineScreen>(() => { try { return sessionStorage.getItem('mx-enter-lobby-after-auth') === '1' ? 'LOBBY' : 'LANDING' } catch { return 'LANDING' } })",
+)
+
 const startNeedle = 'async function submitEmailAuth()'
 const endNeedle = 'async function submitFighterHandle()'
 const start = app.indexOf(startNeedle)
@@ -72,3 +79,4 @@ fs.writeFileSync(appPath, app)
 const finalApp = fs.readFileSync(appPath, 'utf8')
 console.log('FINAL_EMAIL_AUTH_HARD_NAV=' + finalApp.includes("sessionStorage.setItem('mx-enter-lobby-after-auth', '1')"))
 console.log('FINAL_RESTORE_FORCED_LOBBY=' + finalApp.includes("sessionStorage.getItem('mx-enter-lobby-after-auth') === '1'"))
+console.log('FINAL_FIRST_PAINT_LOBBY=' + finalApp.includes("return sessionStorage.getItem('mx-enter-lobby-after-auth') === '1' ? 'LOBBY' : 'LANDING'"))
