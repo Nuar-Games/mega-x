@@ -20,9 +20,19 @@ const required = [
   ['audio control hidden during VS intro', 'body:has(.mx-vs-intro-root) #mx-audio-controls', 'display:none!important'],
 ]
 
+function selectorHasToken(selector, token) {
+  let offset = 0
+  while (offset < css.length) {
+    const start = css.indexOf(selector, offset)
+    if (start < 0) return false
+    if (css.slice(start, start + 1800).includes(token)) return true
+    offset = start + selector.length
+  }
+  return false
+}
+
 for (const [label, selector, token] of required) {
-  const start = css.lastIndexOf(selector)
-  if (start < 0 || css.slice(start, start + 1800).indexOf(token) < 0) {
+  if (!selectorHasToken(selector, token)) {
     throw new Error(`VS intro regression failed: ${label}`)
   }
 }
