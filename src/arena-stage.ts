@@ -33,8 +33,20 @@ function refreshFeedback(shell: HTMLElement) {
 function fitCanvas(shell: HTMLElement) {
   const canvas = shell.querySelector<HTMLElement>('.mx3-canvas')
   if (!canvas) return
-  const scale = Math.min(window.innerWidth / WIDTH, window.innerHeight / HEIGHT)
+
+  const viewportWidth = Math.max(1, window.innerWidth)
+  const viewportHeight = Math.max(1, window.innerHeight)
+  const scale = Math.min(viewportWidth / WIDTH, viewportHeight / HEIGHT)
+  const renderedHeight = HEIGHT * scale
+  const availableY = Math.max(0, viewportHeight - renderedHeight)
+  const verticalBias = viewportWidth <= 560 ? 0.16 : viewportWidth < 900 ? 0.3 : 0.5
+  const top = availableY * verticalBias
+
   canvas.style.transform = `translateX(-50%) scale(${scale})`
+  canvas.style.top = `${top}px`
+  shell.style.setProperty('--mx3-fit-scale', `${scale}`)
+  shell.style.setProperty('--mx3-free-y', `${availableY}px`)
+  shell.dataset.arenaAspect = viewportWidth < viewportHeight ? 'portrait' : 'landscape'
 }
 
 function syncResultOutcome(shell: HTMLElement) {
