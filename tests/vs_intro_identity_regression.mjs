@@ -1,6 +1,8 @@
 import fs from 'node:fs'
 
-const css = fs.readFileSync('src/VsIntro.css', 'utf8')
+const baseCss = fs.readFileSync('src/VsIntro.css', 'utf8')
+const hypeCss = fs.existsSync('src/VsIntroHype.css') ? fs.readFileSync('src/VsIntroHype.css', 'utf8') : ''
+const css = `${baseCss}\n${hypeCss}`
 const jsx = fs.readFileSync('src/VsIntro.tsx', 'utf8')
 
 const required = [
@@ -15,26 +17,27 @@ const required = [
   ['right bright pink edge glow', '.mx-vs-name-p2', 'rgba(255,117,175,.95)'],
   ['VS fixed to true center', '.mx-vs-mark{', 'left:50%'],
   ['VS fixed to true center vertically', '.mx-vs-mark{', 'top:50%'],
+  ['audio control hidden during VS intro', 'body:has(.mx-vs-intro-root) #mx-audio-controls', 'display:none!important'],
 ]
 
 for (const [label, selector, token] of required) {
-  const start = css.indexOf(selector)
-  if (start < 0 || css.slice(start, start + 1600).indexOf(token) < 0) {
+  const start = css.lastIndexOf(selector)
+  if (start < 0 || css.slice(start, start + 1800).indexOf(token) < 0) {
     throw new Error(`VS intro regression failed: ${label}`)
   }
 }
 
-if (!jsx.includes('className="mx-vs-brand-logo"') || !jsx.includes('src="/ui/landing/logo.avif"')) {
-  throw new Error('VS intro regression failed: MEGA-X brand logo is missing from VS intro')
+if (!jsx.includes("import './VsIntroHype.css'") || !jsx.includes('className="mx-vs-brand-logo"') || !jsx.includes('src="/ui/landing/logo.avif"')) {
+  throw new Error('VS intro regression failed: branded VS intro layer is missing')
 }
 
-if (/\.mx-vs-name\{[^}]*color:#fff/.test(css)) {
+if (/\.mx-vs-name\{[^}]*color:#fff/.test(baseCss)) {
   throw new Error('VS intro regression failed: fighter names still use generic white')
 }
 
-const mobileStart = css.indexOf('@media(max-width:760px)')
-const mobileEnd = css.indexOf('@media(prefers-reduced-motion:reduce)', mobileStart)
-const mobile = mobileStart >= 0 ? css.slice(mobileStart, mobileEnd >= 0 ? mobileEnd : css.length) : ''
+const mobileStart = baseCss.indexOf('@media(max-width:760px)')
+const mobileEnd = baseCss.indexOf('@media(prefers-reduced-motion:reduce)', mobileStart)
+const mobile = mobileStart >= 0 ? baseCss.slice(mobileStart, mobileEnd >= 0 ? mobileEnd : baseCss.length) : ''
 if (/\.mx-vs-name\{[^}]*font-size:/.test(mobile)) {
   throw new Error('VS intro regression failed: mobile breakpoint changes fighter-name size abruptly')
 }
@@ -45,4 +48,4 @@ if (/\.mx-vs-mark i\{[^}]*height:/.test(mobile)) {
   throw new Error('VS intro regression failed: mobile breakpoint changes VS slash height abruptly')
 }
 
-console.log('PASS VS intro branding, diagonal fighter layout, edge glow, centered VS, and continuous sizing')
+console.log('PASS VS intro branding, diagonal fighter layout, edge glow, centered VS, hidden utility UI, and continuous sizing')
