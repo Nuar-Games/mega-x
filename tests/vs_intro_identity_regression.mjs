@@ -7,8 +7,8 @@ const asset = fs.readFileSync('public/ui/vs-user.svg', 'utf8')
 const css = `${baseCss}\n${hypeCss}`
 
 const required = [
-  ['manual blue supplied background path', '.mx-vs-half-p1', "url('/ui/vs-blue.webp')"],
-  ['manual red supplied background path', '.mx-vs-half-p2', "url('/ui/vs-red.webp')"],
+  ['player one uses supplied red upper-left background', '.mx-vs-half-p1', "url('/ui/vs-red.webp')"],
+  ['player two uses supplied blue lower-right background', '.mx-vs-half-p2', "url('/ui/vs-blue.webp')"],
   ['fighter nameplate shell', '.mx-vs-card{', 'mxVsCardPulse'],
   ['player one impact entry', '.mx-vs-card-p1', 'mxVsCardFlyTop'],
   ['player two impact entry', '.mx-vs-card-p2', 'mxVsCardFlyBottom'],
@@ -46,4 +46,4 @@ if (jsx.includes('mx-vs-fight') || jsx.includes('FIGHT!')) throw new Error('VS i
 if (jsx.includes("setStage('FIGHT')") || jsx.includes("'FIGHT' |")) throw new Error('VS intro regression failed: FIGHT stage must be removed')
 if (!jsx.includes("const VS_INTRO_AUDIO_SRC = '/audio/coin-toss/mega-x-coin-toss-v1.opus'")) throw new Error('VS intro regression failed: intro music source changed')
 
-console.log('PASS redesigned VS intro uses supplied manual media paths, coded impact nameplates, adaptive centered names, VS stomp/lens flare, diagonal split, unchanged music, and no FIGHT word')
+console.log('PASS redesigned VS intro matches mockup background mapping, coded impact nameplates, adaptive centered names, VS stomp/lens flare, diagonal split, unchanged music, and no FIGHT word')
