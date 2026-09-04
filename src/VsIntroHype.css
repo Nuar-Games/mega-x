@@ -1,43 +1,47 @@
-/* MEGA-X VS INTRO — branded hype layer. Loaded after VsIntro.css. */
+/* MEGA-X VS INTRO — redesigned manual-media hype layer. */
 body:has(.mx-vs-intro-root) #mx-audio-controls{display:none!important}
 
-.mx-vs-brand{position:absolute;z-index:96;left:50%;top:clamp(14px,2.4vh,34px);transform:translateX(-50%);width:clamp(150px,20vw,280px);display:grid;place-items:center;pointer-events:none;filter:drop-shadow(0 8px 18px rgba(0,0,0,.6));animation:mxVsBrandEnter .72s cubic-bezier(.08,.9,.16,1.08) both}
-.mx-vs-brand::before{content:"";position:absolute;inset:-28% -42%;z-index:-1;background:radial-gradient(ellipse at center,rgba(255,214,112,.18),rgba(90,211,255,.08) 38%,transparent 70%);filter:blur(10px);animation:mxVsBrandPulse 1.15s ease-in-out infinite alternate}
-.mx-vs-brand::after{content:"";position:absolute;left:50%;top:100%;width:clamp(110px,14vw,210px);height:1px;transform:translateX(-50%);background:linear-gradient(90deg,transparent,rgba(255,225,150,.9),transparent);box-shadow:0 0 10px rgba(255,217,121,.75)}
-.mx-vs-brand-logo{display:block;width:100%;height:auto;object-fit:contain;filter:drop-shadow(0 0 6px rgba(255,232,173,.36)) drop-shadow(-7px 0 18px rgba(79,205,255,.2)) drop-shadow(7px 0 18px rgba(255,74,120,.2))}
+.mx-vs-half-p1{clip-path:polygon(0 0,100% 0,78% 46%,0 46%)!important;background:linear-gradient(rgba(1,7,24,.08),rgba(1,7,24,.08)),url('/ui/vs-blue.webp') center/cover no-repeat!important}
+.mx-vs-half-p2{clip-path:polygon(22% 54%,100% 54%,100% 100%,0 100%)!important;background:linear-gradient(rgba(22,2,2,.05),rgba(22,2,2,.05)),url('/ui/vs-red.webp') center/cover no-repeat!important}
+.mx-vs-half::before{opacity:.18!important}.mx-vs-half::after{background:linear-gradient(180deg,rgba(0,0,0,.08),transparent 28%,transparent 72%,rgba(0,0,0,.24))!important}
 
-.mx-vs-name{width:min(35vw,620px)!important;max-width:35vw!important;font-size:clamp(2rem,5vw,6.5rem)!important;white-space:nowrap!important;overflow:visible!important}
-.mx-vs-name-p1{top:43%!important;left:clamp(20px,3.2vw,70px)!important;color:#ffe3a1!important;-webkit-text-stroke:clamp(1px,.12vw,2.2px) #15182a!important;text-shadow:0 4px 0 rgba(3,10,25,.86),0 0 2px #fff8dc,0 0 8px rgba(104,225,255,.95),0 0 18px rgba(104,225,255,.72),0 0 36px rgba(22,163,255,.45)!important}
-.mx-vs-name-p2{top:57%!important;right:clamp(20px,3.2vw,70px)!important;color:#f3a6a0!important;-webkit-text-stroke:clamp(1px,.12vw,2.2px) #2a0d1b!important;text-shadow:0 4px 0 rgba(36,4,16,.88),0 0 2px #ffe5de,0 0 8px rgba(255,117,175,.95),0 0 18px rgba(255,117,175,.72),0 0 36px rgba(235,32,106,.46)!important}
-.mx-vs-half-p1 .mx-vs-role{top:calc(43% + clamp(62px,6.3vw,100px))!important}
-.mx-vs-half-p2 .mx-vs-role{top:calc(57% + clamp(62px,6.3vw,100px))!important}
+.mx-vs-card{position:absolute;z-index:46;left:50%;width:min(86vw,760px);min-height:clamp(86px,11vw,138px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:clamp(14px,2vw,24px) clamp(22px,4vw,44px);transform:translateX(-50%);background:linear-gradient(180deg,rgba(8,20,42,.88),rgba(3,10,24,.94));border:2px solid #e9f8ff;clip-path:polygon(3% 0,97% 0,100% 20%,100% 80%,97% 100%,3% 100%,0 80%,0 20%);box-shadow:0 0 10px rgba(117,222,255,.8),0 0 26px rgba(26,161,255,.55),inset 0 0 24px rgba(50,140,255,.15);animation:mxVsCardPulse 1.05s ease-in-out infinite alternate;will-change:transform,opacity,filter}
+.mx-vs-card::before,.mx-vs-card::after{content:"";position:absolute;pointer-events:none}
+.mx-vs-card::before{inset:5px;border:1px solid currentColor;opacity:.75;clip-path:polygon(3% 0,97% 0,100% 20%,100% 80%,97% 100%,3% 100%,0 80%,0 20%)}
+.mx-vs-card::after{left:8%;right:8%;height:2px;bottom:8px;background:linear-gradient(90deg,transparent,currentColor 18%,#fff 50%,currentColor 82%,transparent);filter:blur(.2px);opacity:.9}
+.mx-vs-card-p1{top:26%;color:#7ce8ff;background:linear-gradient(180deg,rgba(10,54,108,.94),rgba(3,18,50,.96));box-shadow:0 0 12px rgba(113,229,255,.95),0 0 34px rgba(0,142,255,.72),0 0 64px rgba(0,108,255,.36),inset 0 0 30px rgba(88,188,255,.24);animation:mxVsCardFlyTop .62s cubic-bezier(.08,.94,.15,1.15) both,mxVsCardPulse 1s .72s ease-in-out infinite alternate}
+.mx-vs-card-p2{top:67%;color:#ffb08f;background:linear-gradient(180deg,rgba(117,16,8,.94),rgba(48,4,3,.96));box-shadow:0 0 12px rgba(255,181,112,.9),0 0 34px rgba(255,63,20,.78),0 0 64px rgba(255,41,0,.4),inset 0 0 30px rgba(255,116,58,.25);animation:mxVsCardFlyBottom .62s .14s cubic-bezier(.08,.94,.15,1.15) both,mxVsCardPulse 1s .84s ease-in-out infinite alternate}
 
-/* Supplied VS artwork: one fixed image means every browser renders the same mark. */
-.mx-vs-mark{left:50%!important;top:50%!important;width:clamp(190px,28vmin,360px)!important;aspect-ratio:1!important;display:block!important;gap:0!important;transform-origin:center!important}
-.mx-vs-mark::before{content:""!important;position:absolute!important;inset:6%!important;width:auto!important;aspect-ratio:1!important;border-radius:20%!important;border:2px solid rgba(255,222,143,.84)!important;background:radial-gradient(circle,rgba(255,229,161,.18),rgba(5,8,18,.68) 50%,transparent 72%)!important;box-shadow:0 0 22px rgba(255,231,170,.82),-36px 0 82px rgba(37,159,255,.68),36px 0 82px rgba(238,37,94,.70)!important;transform:rotate(45deg) scale(.72)!important;z-index:0!important}
-.mx-vs-mark::after{content:""!important;position:absolute!important;inset:-4%!important;z-index:3!important;background:url('/ui/vs-user.svg') center/contain no-repeat!important;filter:drop-shadow(0 10px 3px rgba(0,0,0,.68)) drop-shadow(0 0 8px rgba(255,245,174,.95)) drop-shadow(0 0 22px rgba(255,190,47,.82)) drop-shadow(-13px 0 32px rgba(64,193,255,.55)) drop-shadow(13px 0 32px rgba(255,63,112,.58))!important;transform:scale(.92)!important;transform-origin:center!important;animation:mxVsArtworkCharge .72s ease-in-out infinite alternate!important}
+.mx-vs-name{position:relative!important;inset:auto!important;margin:0!important;width:100%!important;max-width:100%!important;overflow:hidden!important;text-overflow:clip!important;white-space:nowrap!important;text-align:center!important;text-transform:uppercase!important;font-family:"Arial Narrow",Impact,"Barlow Condensed",sans-serif!important;line-height:.92!important;font-weight:950!important;font-style:normal!important;letter-spacing:.02em!important;color:#fff!important;-webkit-text-stroke:clamp(.7px,.08vw,1.5px) rgba(0,0,0,.75)!important;text-shadow:0 2px 0 rgba(0,0,0,.72),0 0 8px currentColor!important}
+.mx-vs-name-size-normal{font-size:clamp(2rem,4.8vw,4.8rem)!important}
+.mx-vs-name-size-long{font-size:clamp(1.6rem,3.8vw,3.9rem)!important}
+.mx-vs-name-size-xlong{font-size:clamp(1.25rem,3vw,3.05rem)!important}
+.mx-vs-card-p1 .mx-vs-name{text-shadow:0 2px 0 rgba(0,0,0,.72),0 0 10px rgba(129,230,255,.92),0 0 22px rgba(0,142,255,.6)!important}
+.mx-vs-card-p2 .mx-vs-name{text-shadow:0 2px 0 rgba(0,0,0,.72),0 0 10px rgba(255,189,132,.95),0 0 22px rgba(255,63,20,.62)!important}
+.mx-vs-ranking{position:relative;z-index:2;margin-top:clamp(8px,1.1vw,14px);width:100%;text-align:center;font-size:clamp(.85rem,1.6vw,1.4rem);font-weight:900;letter-spacing:.14em;color:#fff;text-shadow:0 0 12px currentColor}
+.mx-vs-ranking::before,.mx-vs-ranking::after{content:"";display:inline-block;vertical-align:middle;width:clamp(34px,8vw,110px);height:2px;margin:0 clamp(10px,2vw,22px);background:currentColor;box-shadow:0 0 8px currentColor;opacity:.8}
+
+.mx-vs-mark{left:50%!important;top:50%!important;width:clamp(190px,30vmin,390px)!important;aspect-ratio:1!important;display:block!important;gap:0!important;transform-origin:center!important;z-index:82!important}
+.mx-vs-mark::before{content:""!important;position:absolute!important;inset:7%!important;border-radius:22%!important;border:2px solid rgba(255,229,170,.8)!important;background:radial-gradient(circle,rgba(255,236,179,.22),rgba(3,7,18,.72) 50%,transparent 72%)!important;box-shadow:0 0 25px rgba(255,236,179,.82),-42px 0 92px rgba(26,162,255,.75),42px 0 92px rgba(255,67,26,.78)!important;transform:rotate(45deg) scale(.72)!important;z-index:0!important}
+.mx-vs-mark::after{content:""!important;position:absolute!important;inset:-8%!important;z-index:3!important;background:url('/ui/vs-user.svg') center/contain no-repeat!important;filter:drop-shadow(0 10px 3px rgba(0,0,0,.72)) drop-shadow(0 0 8px rgba(255,248,187,1)) drop-shadow(0 0 26px rgba(255,192,43,.92)) drop-shadow(-18px 0 38px rgba(54,196,255,.7)) drop-shadow(18px 0 38px rgba(255,67,42,.72))!important;transform:scale(.92)!important;transform-origin:center!important}
 .mx-vs-mark span,.mx-vs-mark i{display:none!important}
-.mx-vs-impact-ring{left:50%!important}
-.stage-versus .mx-vs-mark::after{animation:mxVsArtworkHit .62s cubic-bezier(.06,.95,.14,1.18) both,mxVsArtworkCharge .72s .62s ease-in-out infinite alternate!important}
-.stage-fight .mx-vs-mark::after{filter:drop-shadow(0 12px 3px rgba(0,0,0,.7)) drop-shadow(0 0 11px #fff5b0) drop-shadow(0 0 30px rgba(255,193,49,.98)) drop-shadow(-18px 0 44px rgba(69,204,255,.76)) drop-shadow(18px 0 44px rgba(255,68,119,.78))!important}
-.stage-reveal .mx-vs-mark::after{animation:mxVsArtworkExit .5s ease-in both!important}
+.stage-versus .mx-vs-mark::after{animation:mxVsArtworkStomp .58s cubic-bezier(.05,.98,.12,1.12) both,mxVsArtworkCharge .68s .6s ease-in-out infinite alternate!important}
+.stage-reveal .mx-vs-mark::after{animation:mxVsArtworkExit .44s ease-in both!important}
 
-.stage-versus .mx-vs-brand,.stage-fight .mx-vs-brand{filter:drop-shadow(0 8px 18px rgba(0,0,0,.6)) brightness(1.08)}
-.stage-reveal .mx-vs-brand{animation:mxVsBrandExit .38s ease-in forwards}
+.mx-vs-lens-flare{position:absolute;z-index:95;left:50%;top:50%;width:130vw;height:5px;transform:translate(-50%,-50%) rotate(-12deg) scaleX(.04);opacity:0;background:linear-gradient(90deg,transparent 0 25%,rgba(66,194,255,.25) 38%,#fff 49%,#fffbd0 50%,rgba(255,88,43,.55) 62%,transparent 75%);box-shadow:0 0 12px #fff,0 0 30px rgba(255,232,156,.9),0 0 80px rgba(78,180,255,.4);filter:blur(.2px);pointer-events:none}.stage-versus .mx-vs-lens-flare{animation:mxVsLensFlare .46s .18s ease-out both}
 
-@keyframes mxVsArtworkHit{0%{opacity:0;transform:scale(.26) rotate(-10deg);filter:blur(13px) brightness(2.4)}58%{opacity:1;transform:scale(1.12) rotate(2deg);filter:blur(0) brightness(1.5)}80%{transform:scale(.88) rotate(-1deg)}100%{opacity:1;transform:scale(.92) rotate(0)}}
+.mx-vs-impact-ring{left:50%!important;z-index:75!important}.stage-versus .mx-vs-impact-ring{animation:mxVsShockwave .78s ease-out forwards!important}
+.mx-vs-seam{left:50%!important;transform:rotate(27deg) translateX(-50%)!important;opacity:.95!important}
+.stage-reveal .mx-vs-half-p1{animation:mxVsTearLeft 1.08s cubic-bezier(.72,.02,.91,.42) forwards!important}.stage-reveal .mx-vs-half-p2{animation:mxVsTearRight 1.08s cubic-bezier(.72,.02,.91,.42) forwards!important}.stage-reveal .mx-vs-seam{animation:mxVsSeamTear 1.02s cubic-bezier(.64,0,.9,.28) forwards!important}
+.stage-reveal .mx-vs-card{animation:mxVsCardExit .42s ease-in forwards!important}.stage-reveal .mx-vs-reveal-flash{animation:mxVsRevealFlash .38s ease-out forwards!important}
+
+@keyframes mxVsCardFlyTop{0%{opacity:0;transform:translate(-50%,-150%) scale(.72);filter:blur(12px)}64%{opacity:1;transform:translate(-50%,8%) scale(1.05);filter:blur(0)}82%{transform:translate(-50%,-3%) scale(.98)}100%{opacity:1;transform:translate(-50%,0) scale(1)}}
+@keyframes mxVsCardFlyBottom{0%{opacity:0;transform:translate(-50%,150%) scale(.72);filter:blur(12px)}64%{opacity:1;transform:translate(-50%,-8%) scale(1.05);filter:blur(0)}82%{transform:translate(-50%,3%) scale(.98)}100%{opacity:1;transform:translate(-50%,0) scale(1)}}
+@keyframes mxVsCardPulse{from{filter:brightness(.96)}to{filter:brightness(1.12)}}
+@keyframes mxVsArtworkStomp{0%{opacity:0;transform:scale(2.8);filter:blur(16px) brightness(2.6)}52%{opacity:1;transform:scale(.84);filter:blur(0) brightness(1.65)}70%{transform:scale(1.08)}84%{transform:scale(.96)}100%{opacity:1;transform:scale(.92)}}
 @keyframes mxVsArtworkCharge{from{transform:scale(.91)}to{transform:scale(.97)}}
-@keyframes mxVsArtworkExit{to{opacity:0;transform:scale(1.6) rotate(4deg);filter:blur(9px) brightness(2.6)}}
-@keyframes mxVsBrandEnter{0%{opacity:0;transform:translateX(-50%) translateY(-42px) scale(.78);filter:blur(10px)}68%{opacity:1;transform:translateX(-50%) translateY(3px) scale(1.05);filter:blur(0)}100%{opacity:1;transform:translateX(-50%) translateY(0) scale(1);filter:blur(0)}}
-@keyframes mxVsBrandPulse{from{opacity:.55;transform:scale(.94)}to{opacity:1;transform:scale(1.08)}}
-@keyframes mxVsBrandExit{to{opacity:0;transform:translateX(-50%) translateY(-26px) scale(1.08);filter:blur(8px)}}
+@keyframes mxVsLensFlare{0%{opacity:0;transform:translate(-50%,-50%) rotate(-12deg) scaleX(.04)}18%{opacity:1}55%{opacity:1;transform:translate(-50%,-50%) rotate(-12deg) scaleX(1)}100%{opacity:0;transform:translate(-50%,-50%) rotate(-12deg) scaleX(1.18)}}
+@keyframes mxVsArtworkExit{to{opacity:0;transform:scale(1.7) rotate(4deg);filter:blur(9px) brightness(2.5)}}
+@keyframes mxVsCardExit{to{opacity:0;filter:blur(6px) brightness(1.5)}}
 
-@media(max-width:760px){
-  .mx-vs-brand{top:16px;width:clamp(126px,26vw,190px)}
-  .mx-vs-name{width:34vw!important;max-width:34vw!important}
-  .mx-vs-name-p1{left:4vw!important}
-  .mx-vs-name-p2{right:4vw!important}
-  .mx-vs-half-p1 .mx-vs-role{top:calc(43% + 58px)!important}
-  .mx-vs-half-p2 .mx-vs-role{top:calc(57% + 58px)!important}
-  .mx-vs-mark{width:clamp(175px,30vmin,300px)!important}
-}
+@media(max-width:760px){.mx-vs-card{width:86vw;min-height:88px}.mx-vs-card-p1{top:25%}.mx-vs-card-p2{top:66%}.mx-vs-mark{width:clamp(165px,36vmin,285px)!important}.mx-vs-ranking::before,.mx-vs-ranking::after{width:clamp(18px,6vw,46px);margin:0 8px}}
