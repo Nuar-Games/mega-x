@@ -16,6 +16,9 @@ if(!engine.includes(oldHidden)) throw new Error('gameplay flow patch: pendingHid
 engine=engine.replace(oldHidden,newHidden)
 
 const replacements=[
+  ["(game.phase === 'SET_VS' && game.needsVS[bottomPlayer] && (activeOnlineMatch || setupPlayer === bottomPlayer))","(game.phase === 'SET_VS' && game.needsVS[activeOnlineMatch ? localViewer : bottomPlayer] && (activeOnlineMatch || setupPlayer === bottomPlayer))"],
+  ["(canBegin && passToPlayer === null && (!activeOnlineMatch || localViewer === game.firstPlayer))","(canBegin && passToPlayer === null && (!activeOnlineMatch || actionTimerIndex === localViewer || localViewer === game.firstPlayer))"],
+  ["(canBegin && passToPlayer === null && (!activeOnlineMatch || localViewer === game.firstPlayer))","(canBegin && passToPlayer === null && (!activeOnlineMatch || actionTimerIndex === localViewer || localViewer === game.firstPlayer))"],
   ["(game.phase === 'EFFECT' && game.effectTurn === bottomPlayer)","(game.phase === 'EFFECT' && game.effectTurn === localViewer)"],
   ["(game.phase === 'ATTACK' && game.attackTurn === bottomPlayer)","(game.phase === 'ATTACK' && game.attackTurn === localViewer)"],
   ["{game.phase === 'EFFECT' && game.effectTurn === bottomPlayer && <button onClick={requestEndEffectTurn}","{game.phase === 'EFFECT' && game.effectTurn === localViewer && <button onClick={requestEndEffectTurn}"],
@@ -25,4 +28,4 @@ for(const [from,to] of replacements){if(!arena.includes(from))throw new Error(`g
 
 fs.writeFileSync(enginePath,engine)
 fs.writeFileSync(arenaPath,arena)
-console.log('Repaired Kapores persistence, zero-target choice deadlocks, and authoritative Arena turn prompts')
+console.log('Repaired Kapores persistence, zero-target choice deadlocks, and authoritative Arena SET_VS/turn/begin-round prompts')
