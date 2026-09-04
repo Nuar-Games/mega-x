@@ -24,7 +24,8 @@ const assert=(ok,msg)=>{if(!ok)throw new Error(msg)}
 
 // Kapores must pay its own -1 STA without evicting itself from Effect Zone.
 {
- const s=play(state({p1Hand:[19],p1Vs:vs(4)}),19) // TABUAN BARA VS has STA 2
+ const s=play(state({p1Hand:[19],p1Vs:vs(4)}),19 // TABUAN BARA VS has STA 2
+ )
  assert(s.player1.vs.staDelta===-1,'KAPORES own STA penalty missing')
  assert(s.player1.effects.some(e=>e.card===19),'KAPORES removed itself from Effect Zone')
  assert(!s.player1.discard.includes(19),'KAPORES sent itself to Zon Tepi')
@@ -51,5 +52,7 @@ for(const id of [3,15,22]){
 const blueprint=fs.readFileSync('src/arena-blueprint.fragment','utf8')
 assert(blueprint.includes("game.phase === 'EFFECT' && game.effectTurn === localViewer"),'Effect-turn prompt is not keyed to localViewer')
 assert(blueprint.includes("game.phase === 'ATTACK' && game.attackTurn === localViewer"),'Attack prompt is not keyed to localViewer')
+assert(blueprint.includes("game.phase === 'SET_VS' && game.needsVS[activeOnlineMatch ? localViewer : bottomPlayer]"),'SET_VS prompt is still keyed only to display orientation')
+assert(blueprint.includes("actionTimerIndex === localViewer || localViewer === game.firstPlayer"),'Begin-round prompt does not honor the authoritative online action deadline')
 
 console.log('PASS gameplay flow invariants: Kapores persistence, Tembok progression, zero-target choices, authoritative local prompts')
