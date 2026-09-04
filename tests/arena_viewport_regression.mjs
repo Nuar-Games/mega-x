@@ -1,14 +1,21 @@
 import fs from 'node:fs'
 const main=fs.readFileSync('src/main.tsx','utf8')
 const stage=fs.readFileSync('src/arena-stage.css','utf8')
+const premium=fs.existsSync('src/arena-premium.css')?fs.readFileSync('src/arena-premium.css','utf8'):''
 const fragment=fs.readFileSync('src/arena-blueprint.fragment','utf8')
 const runtime=fs.readFileSync('src/arena-stage.ts','utf8')
 const pkg=JSON.parse(fs.readFileSync('package.json','utf8'))
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg)}
 assert(main.includes("import './arena-stage.css'"),'Arena MX3 coordinate stage is not loaded')
-assert(!main.includes('arena-action.css')&&!main.includes('arena-overlay.css'),'Arena MX3 has extra Arena stylesheets')
+assert(main.includes("import './arena-premium.css'"),'Arena premium treatment layer is not loaded')
+assert(!main.includes('arena-action.css')&&!main.includes('arena-overlay.css'),'Arena MX3 has obsolete Arena stylesheets')
 assert(stage.includes('width:780px')&&stage.includes('height:1110px'),'Arena MX3 fixed canvas missing')
 assert(runtime.includes('Math.min(window.innerWidth / WIDTH, window.innerHeight / HEIGHT)'),'Arena MX3 is not uniformly scaled')
+assert(runtime.includes('availableY')&&runtime.includes('canvas.style.top'),'Arena MX3 does not center spare viewport space')
+assert(premium.includes('--mx3-gold')&&premium.includes('.duel-shell.mx3-stage'),'Arena premium visual system missing')
+assert(premium.includes('.mx3-canvas::before')&&premium.includes('.mx3-canvas::after'),'Arena premium depth treatment missing')
+assert(premium.includes('.mx3-vs')&&premium.includes('.mx3-effects')&&premium.includes('.mx3-local-hand'),'Arena core battle surfaces are not covered by premium treatment')
+assert(premium.includes('@media (max-width: 560px)')&&premium.includes('@media (min-width: 900px)'),'Arena device scaling treatment missing phone/desktop breakpoints')
 assert(fragment.includes('mx3-opponent-hand'),'opponent hand region missing')
 assert(fragment.includes('mx3-p1-x')&&fragment.includes('mx3-p2-x'),'Zone X regions missing')
 assert(fragment.includes('mx3-vs-left')&&fragment.includes('mx3-vs-right'),'side-by-side VS regions missing')
@@ -24,4 +31,4 @@ assert(stage.includes('contain:paint')&&stage.includes('mx3PurplePhaseContained'
 assert(runtime.includes("button.classList.add('mx3-result-return')")&&stage.includes('button.mx3-result-return'),'Return to Lobby button styling contract missing')
 assert(stage.includes('width:90px')&&stage.includes('height:90px'),'Timer 90x90 contract missing')
 assert(!pkg.scripts.build.includes('patch-single-fight.mjs'),'obsolete FIGHT patch remains')
-console.log('PASS Arena MX3 viewport, compact top bar, VS hierarchy, glow containment and particles')
+console.log('PASS Arena MX3 premium responsive viewport, visual hierarchy, compact top bar, VS hierarchy, glow containment and particles')
