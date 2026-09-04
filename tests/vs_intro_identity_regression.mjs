@@ -11,6 +11,8 @@ const required = [
   ['right rose-gold identity', '.mx-vs-name-p2', '#f3a6a0'],
   ['strong VS condensed face', '.mx-vs-mark span', 'font-family:"Arial Narrow",Impact,"Barlow Condensed",sans-serif'],
   ['strong VS angular treatment', '.mx-vs-mark span', 'scaleX(.82)'],
+  ['VS letters do not collapse into each other', '.mx-vs-mark span', 'letter-spacing:0!important'],
+  ['VS letters reserve their own width', '.mx-vs-mark span', 'min-width:.62em'],
   ['left fighter pushed higher', '.mx-vs-name-p1', 'top:43%'],
   ['right fighter pushed lower', '.mx-vs-name-p2', 'top:57%'],
   ['left bright cyan edge glow', '.mx-vs-name-p1', 'rgba(104,225,255,.95)'],
@@ -58,4 +60,4 @@ if (/\.mx-vs-mark i\{[^}]*height:/.test(mobile)) {
   throw new Error('VS intro regression failed: mobile breakpoint changes VS slash height abruptly')
 }
 
-console.log('PASS VS intro branding, diagonal fighter layout, edge glow, centered VS, hidden utility UI, and continuous sizing')
+console.log('PASS VS intro branding, diagonal fighter layout, edge glow, centered and separated VS, hidden utility UI, and continuous sizing')
