@@ -1,0 +1,127 @@
+/* Arena usability layer: larger touch prompt, glass treatment, audio state, feedback toast. */
+
+.duel-shell.mx3-stage .mx3-phase-prompt{
+  left:210px!important;
+  top:448px!important;
+  width:360px!important;
+  height:auto!important;
+  min-height:92px!important;
+  padding:10px 12px 12px!important;
+  gap:8px!important;
+  border:1px solid rgba(245,205,94,.78)!important;
+  border-radius:14px!important;
+  background:linear-gradient(180deg,rgba(18,31,48,.72),rgba(7,14,25,.58))!important;
+  backdrop-filter:blur(12px) saturate(132%)!important;
+  -webkit-backdrop-filter:blur(12px) saturate(132%)!important;
+  box-shadow:inset 0 1px 0 rgba(255,246,201,.20),0 0 24px rgba(244,197,73,.16),0 12px 28px rgba(0,0,0,.38)!important;
+}
+
+.duel-shell.mx3-stage .mx3-phase-prompt::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  border-radius:14px;
+  background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.025) 34%,transparent 72%);
+}
+
+.duel-shell.mx3-stage .mx3-phase-prompt strong{
+  position:relative;
+  z-index:1;
+  font-size:18px!important;
+  line-height:1.08!important;
+  letter-spacing:.045em!important;
+  text-shadow:0 2px 8px rgba(0,0,0,.55)!important;
+}
+
+.duel-shell.mx3-stage .mx3-phase-prompt>div{
+  position:relative;
+  z-index:1;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:8px!important;
+  flex-wrap:wrap!important;
+}
+
+.duel-shell.mx3-stage .mx3-phase-prompt button{
+  min-width:156px!important;
+  min-height:52px!important;
+  height:52px!important;
+  padding:0 16px!important;
+  border-radius:10px!important;
+  font-size:15px!important;
+  font-weight:900!important;
+  letter-spacing:.045em!important;
+  border:1px solid rgba(255,218,104,.78)!important;
+  background:linear-gradient(180deg,rgba(72,58,24,.92),rgba(26,19,7,.92))!important;
+  box-shadow:inset 0 1px 0 rgba(255,244,186,.22),0 5px 14px rgba(0,0,0,.34)!important;
+  touch-action:manipulation!important;
+}
+
+.duel-shell.mx3-stage .mx3-audio.is-muted{
+  border-color:#d85b66!important;
+  color:#ffd9dc!important;
+  background:linear-gradient(160deg,#631b26 0%,#2c0a10 58%,#120408 100%)!important;
+  box-shadow:inset 0 1px 0 rgba(255,190,196,.18),0 0 18px rgba(217,66,81,.18)!important;
+}
+
+.mx3-arena-toast{
+  position:fixed;
+  left:50%;
+  bottom:max(18px,env(safe-area-inset-bottom));
+  z-index:2200;
+  width:min(calc(100vw - 24px),430px);
+  min-height:48px;
+  padding:12px 16px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  border:1px solid rgba(255,211,92,.82);
+  border-radius:12px;
+  background:linear-gradient(180deg,rgba(21,30,42,.96),rgba(6,10,17,.98));
+  color:#ffe48a;
+  font:900 15px/1.25 Barlow Condensed,Impact,sans-serif;
+  letter-spacing:.035em;
+  box-shadow:0 14px 34px rgba(0,0,0,.55),0 0 22px rgba(241,190,55,.16);
+  opacity:0;
+  transform:translate(-50%,16px) scale(.97);
+  pointer-events:none;
+  transition:opacity .16s ease,transform .16s ease;
+}
+
+.mx3-arena-toast.is-visible{
+  opacity:1;
+  transform:translate(-50%,0) scale(1);
+}
+
+@media(max-width:560px){
+  .duel-shell.mx3-stage .mx3-phase-prompt{
+    left:190px!important;
+    top:438px!important;
+    width:400px!important;
+    min-height:146px!important;
+    padding:14px 14px 16px!important;
+    gap:10px!important;
+    border-radius:18px!important;
+    backdrop-filter:blur(15px) saturate(138%)!important;
+    -webkit-backdrop-filter:blur(15px) saturate(138%)!important;
+  }
+  .duel-shell.mx3-stage .mx3-phase-prompt strong{
+    font-size:22px!important;
+  }
+  .duel-shell.mx3-stage .mx3-phase-prompt button{
+    min-width:230px!important;
+    min-height:88px!important;
+    height:88px!important;
+    padding:0 22px!important;
+    border-radius:14px!important;
+    font-size:19px!important;
+  }
+  .mx3-arena-toast{
+    bottom:max(14px,env(safe-area-inset-bottom));
+    min-height:54px;
+    font-size:16px;
+  }
+}
