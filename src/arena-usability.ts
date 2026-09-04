@@ -59,6 +59,6 @@ window.addEventListener(FEEDBACK_EVENT, (event) => {
   showArenaFeedback(message)
 })
 
-const observer = new MutationObserver(() => { if (arenaVisible()) syncArenaAudioButton(false) })
-observer.observe(document.documentElement, { childList: true, subtree: true })
+const arenaUsabilityObserver = new MutationObserver(() => { if (arenaVisible()) syncArenaAudioButton(false) })
+arenaUsabilityObserver.observe(document.documentElement, { childList: true, subtree: true })
 window.addEventListener('DOMContentLoaded', () => syncArenaAudioButton(false), { once: true })
