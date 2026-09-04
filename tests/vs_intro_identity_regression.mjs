@@ -12,6 +12,7 @@ const required = [
   ['balanced player two diagonal split', '.mx-vs-half-p2', '62% 0,100% 0,100% 100%,38% 100%'],
   ['seam matches background split geometry', '.mx-vs-seam{', 'mxVsBalancedSeam'],
   ['fighter nameplate shell', '.mx-vs-card{', 'mxVsCardPulse'],
+  ['nameplates render above seam', '.mx-vs-card{', 'z-index:66'],
   ['player one impact entry', '.mx-vs-card-p1', 'mxVsCardFlyTop'],
   ['player two impact entry', '.mx-vs-card-p2', 'mxVsCardFlyBottom'],
   ['fast running light on nameplate edges', '.mx-vs-card::after', 'mxVsEdgeRun'],
@@ -51,4 +52,4 @@ if (jsx.includes('mx-vs-fight') || jsx.includes('FIGHT!')) throw new Error('VS i
 if (jsx.includes("setStage('FIGHT')") || jsx.includes("'FIGHT' |")) throw new Error('VS intro regression failed: FIGHT stage must be removed')
 if (!jsx.includes("const VS_INTRO_AUDIO_SRC = '/audio/coin-toss/mega-x-coin-toss-v1.opus'")) throw new Error('VS intro regression failed: intro music source changed')
 
-console.log('PASS redesigned VS intro uses balanced seam geometry, fast animated nameplate edge lights, all three manual WebP assets, adaptive centered names, VS stomp/lens flare, unchanged music, and no FIGHT word')
+console.log('PASS redesigned VS intro uses balanced seam geometry, nameplates above seam, fast animated nameplate edge lights, all three manual WebP assets, adaptive centered names, VS stomp/lens flare, unchanged music, and no FIGHT word')
