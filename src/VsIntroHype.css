@@ -1,8 +1,8 @@
 /* MEGA-X VS INTRO — redesigned manual-media hype layer. */
 body:has(.mx-vs-intro-root) #mx-audio-controls{display:none!important}
 
-.mx-vs-half-p1{clip-path:polygon(0 0,100% 0,43% 100%,0 100%)!important;background:linear-gradient(rgba(22,2,2,.04),rgba(22,2,2,.08)),url('/ui/vs-red.webp') center/cover no-repeat!important}
-.mx-vs-half-p2{clip-path:polygon(100% 0,100% 100%,43% 100%)!important;background:linear-gradient(rgba(1,7,24,.04),rgba(1,7,24,.08)),url('/ui/vs-blue.webp') center/cover no-repeat!important}
+.mx-vs-half-p1{clip-path:polygon(0 0,100% 0,43% 100%,0 100%)!important;background-image:linear-gradient(rgba(22,2,2,.04),rgba(22,2,2,.08)),url('/ui/vs-red.webp')!important;background-position:center center,64% center!important;background-size:auto,cover!important;background-repeat:no-repeat,no-repeat!important}
+.mx-vs-half-p2{clip-path:polygon(100% 0,100% 100%,43% 100%)!important;background-image:linear-gradient(rgba(1,7,24,.04),rgba(1,7,24,.08)),url('/ui/vs-blue.webp')!important;background-position:center center,36% center!important;background-size:auto,cover!important;background-repeat:no-repeat,no-repeat!important}
 .mx-vs-half::before{opacity:.10!important}.mx-vs-half::after{background:linear-gradient(180deg,rgba(0,0,0,.04),transparent 30%,transparent 70%,rgba(0,0,0,.16))!important}
 .mx-vs-energy{display:none!important}.mx-vs-speedlines{opacity:.14!important}.mx-vs-flash-grid{opacity:.07!important}
 
