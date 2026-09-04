@@ -1,0 +1,38 @@
+/* MEGA-X VS INTRO — branded hype layer. Loaded after VsIntro.css. */
+body:has(.mx-vs-intro-root) #mx-audio-controls{display:none!important}
+
+.mx-vs-brand{position:absolute;z-index:96;left:50%;top:clamp(14px,2.4vh,34px);transform:translateX(-50%);width:clamp(150px,20vw,280px);display:grid;place-items:center;pointer-events:none;filter:drop-shadow(0 8px 18px rgba(0,0,0,.6));animation:mxVsBrandEnter .72s cubic-bezier(.08,.9,.16,1.08) both}
+.mx-vs-brand::before{content:"";position:absolute;inset:-28% -42%;z-index:-1;background:radial-gradient(ellipse at center,rgba(255,214,112,.18),rgba(90,211,255,.08) 38%,transparent 70%);filter:blur(10px);animation:mxVsBrandPulse 1.15s ease-in-out infinite alternate}
+.mx-vs-brand::after{content:"";position:absolute;left:50%;top:100%;width:clamp(110px,14vw,210px);height:1px;transform:translateX(-50%);background:linear-gradient(90deg,transparent,rgba(255,225,150,.9),transparent);box-shadow:0 0 10px rgba(255,217,121,.75)}
+.mx-vs-brand-logo{display:block;width:100%;height:auto;object-fit:contain;filter:drop-shadow(0 0 6px rgba(255,232,173,.36)) drop-shadow(-7px 0 18px rgba(79,205,255,.2)) drop-shadow(7px 0 18px rgba(255,74,120,.2))}
+
+.mx-vs-name{width:min(35vw,620px)!important;max-width:35vw!important;font-size:clamp(2rem,5vw,6.5rem)!important;overflow:visible!important}
+.mx-vs-name-p1{top:43%!important;left:clamp(20px,3.2vw,70px)!important;color:#ffe3a1!important;-webkit-text-stroke:clamp(1px,.12vw,2.2px) #15182a!important;text-shadow:0 4px 0 rgba(3,10,25,.86),0 0 2px #fff8dc,0 0 8px rgba(104,225,255,.95),0 0 18px rgba(104,225,255,.72),0 0 36px rgba(22,163,255,.45)!important}
+.mx-vs-name-p2{top:57%!important;right:clamp(20px,3.2vw,70px)!important;color:#f3a6a0!important;-webkit-text-stroke:clamp(1px,.12vw,2.2px) #2a0d1b!important;text-shadow:0 4px 0 rgba(36,4,16,.88),0 0 2px #ffe5de,0 0 8px rgba(255,117,175,.95),0 0 18px rgba(255,117,175,.72),0 0 36px rgba(235,32,106,.46)!important}
+
+.mx-vs-half-p1 .mx-vs-role{top:calc(43% + clamp(62px,6.3vw,100px))!important}
+.mx-vs-half-p2 .mx-vs-role{top:calc(57% + clamp(62px,6.3vw,100px))!important}
+
+.mx-vs-mark{left:50%!important;top:50%!important;gap:0!important}
+.mx-vs-mark::before{width:clamp(170px,22vw,360px)!important;border-radius:18%!important;border:2px solid rgba(255,222,143,.84)!important;background:radial-gradient(circle,rgba(255,229,161,.14),rgba(5,8,18,.72) 52%,transparent 72%)!important;box-shadow:0 0 18px rgba(255,231,170,.72),-32px 0 76px rgba(37,159,255,.64),32px 0 76px rgba(238,37,94,.66)!important}
+.mx-vs-mark span{font-size:clamp(5.8rem,12vw,12rem)!important;line-height:.58!important;letter-spacing:-.15em!important;filter:drop-shadow(0 10px 0 rgba(0,0,0,.62)) drop-shadow(0 0 6px rgba(255,227,159,.35))!important}
+.mx-vs-mark span:first-child{color:#f0d390!important;transform:scaleX(.9) skewX(-16deg) translateX(.13em)!important;text-shadow:-14px 0 34px rgba(43,181,255,.72),0 0 10px rgba(255,232,173,.58)!important}
+.mx-vs-mark span:last-child{color:#d98f89!important;transform:scaleX(.9) skewX(-16deg) translateX(-.13em)!important;text-shadow:14px 0 34px rgba(255,64,116,.72),0 0 10px rgba(255,187,166,.54)!important}
+.mx-vs-mark i{height:clamp(104px,12vw,186px)!important;width:clamp(6px,.46vw,10px)!important;transform:rotate(9deg)!important;background:linear-gradient(#fff4be,#f4c95d 42%,#b96c21)!important;box-shadow:0 0 12px rgba(255,244,196,.9),0 0 30px rgba(234,170,55,.72),-10px 0 26px rgba(59,195,255,.5),10px 0 26px rgba(255,72,118,.5)!important}
+.mx-vs-impact-ring{left:50%!important}
+
+.stage-versus .mx-vs-brand,.stage-fight .mx-vs-brand{filter:drop-shadow(0 8px 18px rgba(0,0,0,.6)) brightness(1.08)}
+.stage-reveal .mx-vs-brand{animation:mxVsBrandExit .38s ease-in forwards}
+
+@keyframes mxVsBrandEnter{0%{opacity:0;transform:translateX(-50%) translateY(-42px) scale(.78);filter:blur(10px)}68%{opacity:1;transform:translateX(-50%) translateY(3px) scale(1.05);filter:blur(0)}100%{opacity:1;transform:translateX(-50%) translateY(0) scale(1);filter:blur(0)}}
+@keyframes mxVsBrandPulse{from{opacity:.55;transform:scale(.94)}to{opacity:1;transform:scale(1.08)}}
+@keyframes mxVsBrandExit{to{opacity:0;transform:translateX(-50%) translateY(-26px) scale(1.08);filter:blur(8px)}}
+
+@media(max-width:760px){
+  .mx-vs-brand{top:16px;width:clamp(126px,26vw,190px)}
+  .mx-vs-name{width:34vw!important;max-width:34vw!important}
+  .mx-vs-name-p1{left:4vw!important}
+  .mx-vs-name-p2{right:4vw!important}
+  .mx-vs-half-p1 .mx-vs-role{top:calc(43% + 58px)!important}
+  .mx-vs-half-p2 .mx-vs-role{top:calc(57% + 58px)!important}
+}
