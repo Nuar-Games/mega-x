@@ -35,7 +35,8 @@ function syncArenaAudioButton(announce = false) {
   const arena = document.querySelector<HTMLButtonElement>('.mx3-audio')
   if (!mute || !arena) return false
   const muted = (mute.textContent ?? '').trim().toUpperCase() === 'UNMUTE'
-  arena.textContent = muted ? 'AUDIO OFF' : 'AUDIO ON'
+  const label = muted ? 'AUDIO OFF' : 'AUDIO ON'
+  if (arena.textContent !== label) arena.textContent = label
   arena.classList.toggle('is-muted', muted)
   arena.setAttribute('aria-pressed', muted ? 'true' : 'false')
   arena.setAttribute('aria-label', muted ? 'Hidupkan audio' : 'Matikan audio')
