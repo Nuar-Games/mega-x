@@ -122,6 +122,8 @@ function tagTargetSelection() {
   })
 
   for (const title of titles) {
+    const titleText = compactText(title.textContent ?? '').toUpperCase()
+    const isDiscard = titleText === 'PILIH KAD UNTUK DIBUANG'
     title.classList.add('mx3-target-selection-title')
     let panel = title.parentElement
     while (panel && panel !== document.body) {
@@ -132,6 +134,7 @@ function tagTargetSelection() {
     }
     if (!panel || panel === document.body) continue
     panel.classList.add('mx3-target-selection-panel')
+    panel.classList.toggle('mx3-discard-selection-panel', isDiscard)
     panel.parentElement?.classList.add('mx3-target-selection-overlay')
   }
 }
@@ -146,7 +149,7 @@ function syncArenaCommunication() {
   const promptStrong = prompt?.querySelector<HTMLElement>('strong') ?? null
   const visiblePrompt = compactText(promptStrong?.textContent ?? '')
 
-  if (promptStrong && visiblePrompt && !/^(ANDA|LAWAN)\s*·/i.test(visiblePrompt)) {
+  if (promptStrong && visiblePrompt && !/^(PEMAIN|LAWAN)\s*·/i.test(visiblePrompt)) {
     promptStrong.dataset.mx3RawPrompt = visiblePrompt
   }
 
@@ -170,9 +173,9 @@ function syncArenaCommunication() {
 
   if (localTurn === true) {
     strip.dataset.owner = 'local'
-    if (owner) owner.textContent = 'GILIRAN ANDA'
-    if (detail) detail.textContent = `ANDA · ${action || 'BERMAIN'}`
-    if (promptStrong && action) promptStrong.textContent = `ANDA · ${action}`
+    if (owner) owner.textContent = 'GILIRAN PEMAIN'
+    if (detail) detail.textContent = `PEMAIN · ${action || 'BERMAIN'}`
+    if (promptStrong && action) promptStrong.textContent = `PEMAIN · ${action}`
   } else if (localTurn === false) {
     strip.dataset.owner = 'opponent'
     if (owner) owner.textContent = 'GILIRAN LAWAN'
