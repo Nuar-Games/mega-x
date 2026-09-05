@@ -30,36 +30,33 @@ function showArenaFeedback(message: string) {
   }, 2400)
 }
 
-function syncArenaAudioButton(announce = false) {
+function syncArenaAudioButton() {
   const mute = document.querySelector<HTMLButtonElement>('#mx-audio-controls [data-audio-mute]')
   const arena = document.querySelector<HTMLButtonElement>('.mx3-audio')
-  if (!mute || !arena) return false
-  const muted = (mute.textContent ?? '').trim().toUpperCase() === 'UNMUTE'
-  const label = muted ? 'AUDIO OFF' : 'AUDIO ON'
-  if (arena.textContent !== label) arena.textContent = label
+  if (!arena) return false
+  arena.textContent = 'AUDIO'
+  const muted = (mute?.textContent ?? '').trim().toUpperCase() === 'UNMUTE'
   arena.classList.toggle('is-muted', muted)
-  arena.setAttribute('aria-pressed', muted ? 'true' : 'false')
-  arena.setAttribute('aria-label', muted ? 'Hidupkan audio' : 'Matikan audio')
-  if (announce) showArenaFeedback(muted ? 'AUDIO DIMATIKAN' : 'AUDIO DIHIDUPKAN')
+  arena.setAttribute('aria-label', 'Buka tetapan audio')
   return true
 }
 
-function toggleArenaAudio() {
-  const mute = document.querySelector<HTMLButtonElement>('#mx-audio-controls [data-audio-mute]')
-  if (!mute) {
+function openArenaAudioSettings() {
+  const toggle = document.querySelector<HTMLButtonElement>('#mx-audio-controls [data-audio-toggle]')
+  if (!toggle) {
     showArenaFeedback('KAWALAN AUDIO BELUM SEDIA')
     return
   }
-  mute.click()
-  window.setTimeout(() => syncArenaAudioButton(true), 0)
+  toggle.click()
+  window.setTimeout(() => syncArenaAudioButton(), 0)
 }
 
-window.addEventListener(AUDIO_REQUEST, toggleArenaAudio)
+window.addEventListener(AUDIO_REQUEST, openArenaAudioSettings)
 window.addEventListener(FEEDBACK_EVENT, (event) => {
   const message = (event as CustomEvent<{ message?: string }>).detail?.message ?? ''
   showArenaFeedback(message)
 })
 
-const arenaUsabilityObserver = new MutationObserver(() => { if (arenaVisible()) syncArenaAudioButton(false) })
+const arenaUsabilityObserver = new MutationObserver(() => { if (arenaVisible()) syncArenaAudioButton() })
 arenaUsabilityObserver.observe(document.documentElement, { childList: true, subtree: true })
-window.addEventListener('DOMContentLoaded', () => syncArenaAudioButton(false), { once: true })
+window.addEventListener('DOMContentLoaded', () => syncArenaAudioButton(), { once: true })
