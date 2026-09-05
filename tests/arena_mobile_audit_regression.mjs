@@ -34,5 +34,5 @@ must(stage.includes("url('/ui/vs.webp')")&&stage.includes('mx3VsFlarePulse'),'su
 must(stage.includes('mx3PromptBob'),'compact bobbing phase prompt missing')
 must(stage.includes('contain:paint'),'opponent hand containment missing')
 must(app.includes("new CustomEvent('mega-x:motion'"),'motion state does not dispatch gameplay audio events')
-must(app.includes('CONFIRM DISCARD')&&app.includes('selectedDiscardIds'),'Spudur discard interaction missing')
+must(app.includes('SAHKAN BUANG')&&app.includes('selectedDiscardIds'),'shared discard interaction missing')
 console.log('PASS Arena MX3 final lock: server-state UUID online prompts, supplied VS art/flare, compact prompt, contained opponent hand, dedicated VS-entry SFX, one-shot result music, no FIGHT audio')
