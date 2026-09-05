@@ -12,8 +12,9 @@ must(!pkg.scripts.build.includes('patch-single-fight.mjs'),'obsolete FIGHT patch
 must(stage.includes('MEGA-X ARENA MX3'),'Arena MX3 stage is not authoritative')
 must(fragment.includes('mx3-canvas')&&fragment.includes('mx3-local-hand'),'Arena MX3 fragment missing')
 must(main.includes("import './arena-stage.css'")&&!main.includes('arena-action.css')&&!main.includes('arena-overlay.css'),'Arena MX3 must have one Arena stylesheet')
-const requiredAssets=['card-selected.opus','card-draw.opus','effect-enter-field.opus','card-enter-vs.opus','card-attacking.opus','card-destroyed.opus','card-goes-to-zon-x.opus','prompt-needed.opus','player-win.opus']
+const requiredAssets=['card-selected.opus','card-draw.opus','effect-enter-field.opus','card-enter-vs.opus','card-attacking.opus','card-destroyed.opus','card-goes-to-zon-x.opus','prompt-needed.opus','win-lose-screen.opus']
 for(const asset of requiredAssets) must(assets.includes(`/audio/replacements/${asset}`),`replacement audio asset missing: ${asset}`)
+must(!assets.includes('player-win.opus'),'legacy player-win mapping remains')
 must(assets.includes('SFX_REV'),'replacement SFX cache revision missing')
 must(!assets.includes('arena-appear.opus'),'Arena-entry announcer-risk asset mapping remains')
 must(!audio.includes('arenaAppear'),'Arena-entry announcer-risk playback remains')
@@ -33,4 +34,4 @@ must(stage.includes('mx3PromptBob'),'compact bobbing phase prompt missing')
 must(stage.includes('contain:paint'),'opponent hand containment missing')
 must(app.includes("new CustomEvent('mega-x:motion'"),'motion state does not dispatch gameplay audio events')
 must(app.includes('CONFIRM DISCARD')&&app.includes('selectedDiscardIds'),'Spudur discard interaction missing')
-console.log('PASS Arena MX3 final lock: authoritative local prompts, supplied VS art/flare, compact prompt, contained opponent hand, dedicated VS-entry SFX, no FIGHT audio')
+console.log('PASS Arena MX3 final lock: authoritative local prompts, supplied VS art/flare, compact prompt, contained opponent hand, dedicated VS-entry SFX, one-shot result music, no FIGHT audio')
