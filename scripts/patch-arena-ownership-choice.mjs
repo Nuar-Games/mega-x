@@ -13,8 +13,6 @@ function replaceRequired(source, from, to, label) {
 const replacements = [
   ["<span>X FIGHTER 1</span><strong>{playerDisplayName(0)}</strong><em>RANK</em>", "<strong>{playerDisplayName(0)}</strong><em>#{leaderboardRows.find((row) => row.player_id === activeOnlineMatch?.player1_id)?.place ?? '—'}</em>", 'left fighter name/rank'],
   ["<span>X FIGHTER 2</span><strong>{playerDisplayName(1)}</strong><em>RANK</em>", "<strong>{playerDisplayName(1)}</strong><em>#{leaderboardRows.find((row) => row.player_id === activeOnlineMatch?.player2_id)?.place ?? '—'}</em>", 'right fighter name/rank'],
-  ["KAD VS X FIGHTER 1", "KAD VS", 'left neutral VS label'],
-  ["KAD VS X FIGHTER 2", "KAD VS", 'right neutral VS label'],
   ["title: 'X FIGHTER 1 · ZON X'", "title: `${bottomPlayer === 0 ? 'PEMAIN' : 'LAWAN'} · ZON X`", 'P1 Zon X title'],
   ["title: 'X FIGHTER 1 · ZON TEPI'", "title: `${bottomPlayer === 0 ? 'PEMAIN' : 'LAWAN'} · ZON TEPI`", 'P1 Zon Tepi title'],
   ["title: 'X FIGHTER 2 · ZON X'", "title: `${bottomPlayer === 1 ? 'PEMAIN' : 'LAWAN'} · ZON X`", 'P2 Zon X title'],
@@ -26,6 +24,17 @@ for (const [from, to, label] of replacements) {
   app = replaceRequired(app, from, to, label)
 }
 
+function removeVsLabels(source, label) {
+  const before = (source.match(/className="mx3-vs-label"/g) || []).length
+  source = source.replace(/\s*<span className="mx3-vs-label"[^>]*>KAD VS X FIGHTER [12]<\/span>/g, '')
+  const after = (source.match(/className="mx3-vs-label"/g) || []).length
+  if (before < 2 || after !== before - 2) throw new Error(`Arena ownership patch target missing: ${label}`)
+  return source
+}
+
+fragment = removeVsLabels(fragment, 'fragment inner VS labels')
+app = removeVsLabels(app, 'app inner VS labels')
+
 const legacyStartToken = "{game.pendingSelfDiscard && game.pendingSelfDiscard.player === localViewer && ("
 const authoritativeNextToken = "{game.phase === 'TIE_BREAKER' && game.tieBreaker && ("
 const legacyStart = app.indexOf(legacyStartToken)
@@ -35,8 +44,9 @@ if (legacyEnd < 0) throw new Error('Legacy duplicate discard sheet end marker mi
 app = app.slice(0, legacyStart) + app.slice(legacyEnd)
 
 if (app.includes('mx-discard-confirm-sheet') || app.includes('CONFIRM DISCARD')) throw new Error('Legacy duplicate discard sheet survived shared cleanup')
-if (!app.includes('choice-overlay') || !app.includes('discard-panel') || !app.includes('SAHKAN BUANG')) throw new Error('Authoritative shared choice overlay was damaged')
+if (!app.includes('choice-overlay') || !app.includes('discard-panel') || !app.includes('SAHKAN BUANG')) throw new Error('Authoritative shared discard choice overlay was damaged')
+if (fragment.includes('mx3-vs-label') || app.includes('mx3-vs-label')) throw new Error('VS card slots must not contain inner text labels')
 
 fs.writeFileSync(fragmentPath, fragment)
 fs.writeFileSync(appPath, app)
-console.log('Applied clean fighter name/rank plates, neutral VS labels, PEMAIN pile terminology, and removed legacy duplicate discard choice surface')
+console.log('Applied clean fighter name/rank plates, empty VS slots, PEMAIN pile terminology, and removed legacy duplicate discard choice surface')
