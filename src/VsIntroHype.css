@@ -22,8 +22,8 @@ body:has(.mx-vs-intro-root) #mx-audio-controls{display:none!important}
 /* Real MEGA-X logo asset. */
 .mx-vs-logo{position:absolute!important;z-index:92!important;left:50%!important;top:clamp(18px,3.4vh,38px)!important;width:clamp(150px,22vw,300px)!important;height:auto!important;object-fit:contain!important;transform:translateX(-50%)!important;filter:drop-shadow(0 5px 2px rgba(0,0,0,.8)) drop-shadow(0 0 12px rgba(255,232,170,.85)) drop-shadow(-10px 0 22px rgba(255,48,63,.34)) drop-shadow(10px 0 22px rgba(54,173,255,.36))!important;animation:mxVsLogoCharge .48s ease-in-out infinite alternate!important;pointer-events:none!important}
 
-/* Fighter identity tags: asymmetrical glass HUD, not giant centered banners. */
-.mx-vs-card{position:absolute!important;z-index:72!important;width:min(38vw,460px)!important;min-height:clamp(88px,8vw,112px)!important;display:flex!important;flex-direction:column!important;justify-content:center!important;padding:clamp(12px,1.5vw,18px) clamp(18px,2.3vw,30px)!important;overflow:hidden!important;isolation:isolate!important;border:0!important;background:linear-gradient(110deg,rgba(7,9,15,.84),rgba(12,15,26,.62) 58%,rgba(7,8,14,.2))!important;clip-path:polygon(0 0,calc(100% - 34px) 0,100% 28px,calc(100% - 18px) 100%,18px 100%,0 calc(100% - 18px))!important;backdrop-filter:blur(10px) saturate(135%)!important;-webkit-backdrop-filter:blur(10px) saturate(135%)!important;will-change:transform,opacity,filter!important}
+/* Fighter identity tags: asymmetrical glass HUD, always above the seam. */
+.mx-vs-card{position:absolute!important;z-index:86!important;width:min(38vw,460px)!important;min-height:clamp(88px,8vw,112px)!important;display:flex!important;flex-direction:column!important;justify-content:center!important;padding:clamp(12px,1.5vw,18px) clamp(18px,2.3vw,30px)!important;overflow:hidden!important;isolation:isolate!important;border:0!important;background:linear-gradient(110deg,rgba(7,9,15,.84),rgba(12,15,26,.62) 58%,rgba(7,8,14,.2))!important;clip-path:polygon(0 0,calc(100% - 34px) 0,100% 28px,calc(100% - 18px) 100%,18px 100%,0 calc(100% - 18px))!important;backdrop-filter:blur(10px) saturate(135%)!important;-webkit-backdrop-filter:blur(10px) saturate(135%)!important;will-change:transform,opacity,filter!important}
 .mx-vs-card::before{content:""!important;position:absolute!important;inset:0!important;z-index:1!important;border:1px solid rgba(255,255,255,.18)!important;clip-path:inherit!important;background:linear-gradient(90deg,currentColor 0 3px,transparent 3px calc(100% - 2px),rgba(255,255,255,.28) calc(100% - 2px))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 -1px 0 rgba(255,255,255,.08)!important;opacity:.95!important}
 .mx-vs-card::after{content:""!important;position:absolute!important;z-index:2!important;left:-45%!important;top:0!important;width:40%!important;height:2px!important;background:linear-gradient(90deg,transparent,#fff,currentColor,transparent)!important;box-shadow:0 0 12px currentColor!important;animation:mxVsPlateEdge .72s linear infinite!important;pointer-events:none!important}
 .mx-vs-card-p1{left:clamp(26px,5vw,78px)!important;right:auto!important;top:31%!important;color:#ff604d!important;text-align:left!important;box-shadow:-8px 0 28px rgba(255,46,58,.22),0 18px 40px rgba(0,0,0,.32)!important;animation:mxVsPlateInLeft .42s cubic-bezier(.08,.92,.18,1.02) both!important}
@@ -35,11 +35,11 @@ body:has(.mx-vs-intro-root) #mx-audio-controls{display:none!important}
 .mx-vs-card-p1 .mx-vs-ranking{align-self:flex-start!important}.mx-vs-card-p2 .mx-vs-ranking{align-self:flex-end!important}
 .mx-vs-ranking::before{content:""!important;width:28px!important;height:2px!important;background:currentColor!important;box-shadow:0 0 8px currentColor!important}.mx-vs-ranking::after{display:none!important}
 
-/* Living diagonal energy blade. The bright packet visibly races bottom -> top. */
-.mx-vs-seam{position:absolute!important;z-index:82!important;inset:-8%!important;left:-8%!important;top:-8%!important;width:116%!important;height:116%!important;transform:none!important;opacity:1!important;background:repeating-linear-gradient(180deg,rgba(255,255,255,.04) 0 8px,#fff8c5 9px 13px,#fff 14px 19px,rgba(255,212,84,.28) 20px 34px,rgba(255,255,255,.04) 35px 48px)!important;background-size:100% 96px!important;clip-path:polygon(61.58% 0,62.32% 0,38.42% 100%,37.68% 100%)!important;filter:drop-shadow(0 0 7px #fff) drop-shadow(-9px 0 17px rgba(255,43,64,.95)) drop-shadow(9px 0 17px rgba(48,183,255,1))!important;animation:mxVsSeamEnergyRise .24s linear infinite,mxVsSeamPulse .28s ease-in-out infinite alternate!important;pointer-events:none!important}
-.mx-vs-seam::before{content:""!important;position:absolute!important;left:0!important;top:110%!important;width:100%!important;height:22%!important;background:linear-gradient(180deg,transparent 0%,rgba(255,255,255,.18) 20%,#fff 44%,#fff6a6 50%,#fff 56%,rgba(255,255,255,.18) 80%,transparent 100%)!important;mix-blend-mode:screen!important;filter:blur(1px) brightness(1.8)!important;box-shadow:0 0 28px rgba(255,240,170,.95)!important;animation:mxVsSeamBoltUp .58s linear infinite!important}
-.mx-vs-seam::after{content:""!important;position:absolute!important;inset:0!important;background:repeating-radial-gradient(circle at 50% 50%,rgba(255,255,255,.95) 0 2px,transparent 3px 24px)!important;background-size:100% 74px!important;mix-blend-mode:screen!important;opacity:.62!important;animation:mxVsSeamSparkRise .34s linear infinite!important}
-.mx-vs-seam span{display:none!important}
+/* Living diagonal energy blade. The core pulse is deliberately impossible to miss. */
+.mx-vs-seam{position:absolute!important;z-index:82!important;inset:-8%!important;left:-8%!important;top:-8%!important;width:116%!important;height:116%!important;transform:none!important;opacity:1!important;background:repeating-linear-gradient(180deg,rgba(255,255,255,.035) 0 12px,#fff5b0 13px 16px,#fff 17px 20px,rgba(255,212,84,.18) 21px 38px,rgba(255,255,255,.03) 39px 62px)!important;background-size:100% 124px!important;clip-path:polygon(61.58% 0,62.32% 0,38.42% 100%,37.68% 100%)!important;filter:drop-shadow(0 0 7px #fff) drop-shadow(-9px 0 17px rgba(255,43,64,.95)) drop-shadow(9px 0 17px rgba(48,183,255,1))!important;animation:mxVsSeamEnergyRise .34s linear infinite,mxVsSeamPulse .3s ease-in-out infinite alternate!important;pointer-events:none!important}
+.mx-vs-seam::before{content:""!important;position:absolute!important;left:0!important;top:112%!important;width:100%!important;height:18%!important;background:linear-gradient(180deg,transparent 0%,rgba(255,255,255,.08) 14%,rgba(255,248,190,.95) 36%,#fff 48%,#fff4a8 52%,rgba(255,255,255,.95) 64%,rgba(255,255,255,.08) 86%,transparent 100%)!important;mix-blend-mode:screen!important;filter:blur(.5px) brightness(2.8)!important;box-shadow:0 0 34px rgba(255,240,170,1)!important;animation:mxVsSeamBoltUp .72s linear infinite!important}
+.mx-vs-seam::after{content:""!important;position:absolute!important;inset:0!important;background:repeating-radial-gradient(circle at 50% 50%,rgba(255,255,255,.95) 0 2px,transparent 3px 28px)!important;background-size:100% 86px!important;mix-blend-mode:screen!important;opacity:.72!important;animation:mxVsSeamSparkRise .42s linear infinite!important}
+.mx-vs-seam span{display:block!important;position:absolute!important;z-index:3!important;left:-18%!important;top:118%!important;width:136%!important;height:12%!important;background:radial-gradient(ellipse at center,rgba(255,255,255,1) 0 6%,rgba(255,246,170,1) 16%,rgba(255,255,255,.95) 30%,rgba(255,214,74,.55) 48%,rgba(255,255,255,0) 74%)!important;filter:blur(1px) brightness(3.1)!important;box-shadow:0 0 24px #fff,0 0 52px rgba(255,226,100,.95)!important;mix-blend-mode:screen!important;animation:mxVsSeamCoreRise .62s linear infinite!important;pointer-events:none!important}
 
 /* Preserve the preferred VS hero and lens flare. */
 .mx-vs-mark{left:50%!important;top:50%!important;width:clamp(190px,30vmin,390px)!important;aspect-ratio:1!important;display:block!important;gap:0!important;transform-origin:center!important;z-index:90!important}
@@ -55,7 +55,7 @@ body:has(.mx-vs-intro-root) #mx-audio-controls{display:none!important}
 .stage-reveal .mx-vs-card-p1{animation:mxVsPlateExitLeft .32s ease-in forwards!important}.stage-reveal .mx-vs-card-p2{animation:mxVsPlateExitRight .32s ease-in forwards!important}
 .stage-reveal .mx-vs-logo{animation:mxVsLogoExit .3s ease-in forwards!important}
 .stage-reveal .mx-vs-seam{animation:mxVsSeamExit .42s cubic-bezier(.66,0,.95,.35) forwards!important}
-.stage-reveal .mx-vs-seam::before,.stage-reveal .mx-vs-seam::after{animation:none!important;opacity:0!important}
+.stage-reveal .mx-vs-seam::before,.stage-reveal .mx-vs-seam::after,.stage-reveal .mx-vs-seam span{animation:none!important;opacity:0!important}
 .stage-reveal .mx-vs-mark::after{animation:mxVsArtworkExit .4s ease-in both!important}
 .stage-reveal .mx-vs-mark{animation:mxVsMarkExit .44s ease-in forwards!important}
 .stage-reveal .mx-vs-reveal-flash{animation:mxVsRevealFlash .36s ease-out forwards!important}
@@ -66,10 +66,11 @@ body:has(.mx-vs-intro-root) #mx-audio-controls{display:none!important}
 @keyframes mxVsPlateInLeft{0%{opacity:0;transform:translateX(-120%) skewX(-9deg);filter:blur(12px) brightness(1.8)}74%{opacity:1;transform:translateX(3%) skewX(-2deg);filter:blur(0) brightness(1.2)}100%{opacity:1;transform:translateX(0);filter:brightness(1)}}
 @keyframes mxVsPlateInRight{0%{opacity:0;transform:translateX(120%) skewX(9deg);filter:blur(12px) brightness(1.8)}74%{opacity:1;transform:translateX(-3%) skewX(2deg);filter:blur(0) brightness(1.2)}100%{opacity:1;transform:translateX(0);filter:brightness(1)}}
 @keyframes mxVsPlateEdge{0%{left:-45%}100%{left:115%}}
-@keyframes mxVsSeamEnergyRise{from{background-position:0 96px}to{background-position:0 0}}
-@keyframes mxVsSeamBoltUp{from{top:110%}to{top:-30%}}
-@keyframes mxVsSeamSparkRise{from{background-position:0 74px}to{background-position:0 0}}
-@keyframes mxVsSeamPulse{from{opacity:.78;filter:drop-shadow(0 0 5px #fff) drop-shadow(-6px 0 12px rgba(255,43,64,.75)) drop-shadow(6px 0 12px rgba(48,183,255,.78))}to{opacity:1;filter:drop-shadow(0 0 12px #fff) drop-shadow(-13px 0 24px rgba(255,43,64,1)) drop-shadow(13px 0 24px rgba(48,183,255,1))}}
+@keyframes mxVsSeamEnergyRise{from{background-position:0 124px}to{background-position:0 0}}
+@keyframes mxVsSeamBoltUp{from{top:112%}to{top:-26%}}
+@keyframes mxVsSeamCoreRise{0%{top:118%;opacity:0}8%{opacity:1}82%{opacity:1}100%{top:-18%;opacity:0}}
+@keyframes mxVsSeamSparkRise{from{background-position:0 86px}to{background-position:0 0}}
+@keyframes mxVsSeamPulse{from{opacity:.76;filter:drop-shadow(0 0 5px #fff) drop-shadow(-6px 0 12px rgba(255,43,64,.72)) drop-shadow(6px 0 12px rgba(48,183,255,.76))}to{opacity:1;filter:drop-shadow(0 0 14px #fff) drop-shadow(-15px 0 28px rgba(255,43,64,1)) drop-shadow(15px 0 28px rgba(48,183,255,1))}}
 @keyframes mxVsArtworkStomp{0%{opacity:0;transform:scale(2.8);filter:blur(16px) brightness(2.6)}52%{opacity:1;transform:scale(.84);filter:blur(0) brightness(1.65)}70%{transform:scale(1.08)}84%{transform:scale(.96)}100%{opacity:1;transform:scale(.92)}}
 @keyframes mxVsArtworkCharge{from{transform:scale(.91);filter:drop-shadow(0 10px 3px rgba(0,0,0,.75)) drop-shadow(0 0 10px #fff1b0) drop-shadow(0 0 26px rgba(255,191,43,.88))}to{transform:scale(.98);filter:drop-shadow(0 10px 3px rgba(0,0,0,.75)) drop-shadow(0 0 16px #fff8d0) drop-shadow(0 0 42px rgba(255,191,43,1))}}
 @keyframes mxVsLensFlare{0%{opacity:0;transform:translate(-50%,-50%) rotate(-10deg) scaleX(.04)}18%{opacity:1}54%{opacity:1;transform:translate(-50%,-50%) rotate(-10deg) scaleX(1)}100%{opacity:0;transform:translate(-50%,-50%) rotate(-10deg) scaleX(1.18)}}
@@ -81,9 +82,9 @@ body:has(.mx-vs-intro-root) #mx-audio-controls{display:none!important}
 
 @media(max-width:760px){
   .mx-vs-logo{top:max(14px,env(safe-area-inset-top))!important;width:clamp(140px,44vw,230px)!important}
-  .mx-vs-card{width:68vw!important;min-height:82px!important;padding:10px 14px!important}
+  .mx-vs-card{width:48vw!important;min-height:82px!important;padding:10px 14px!important}
   .mx-vs-card-p1{left:18px!important;top:25%!important}.mx-vs-card-p2{right:18px!important;top:69%!important}
-  .mx-vs-name-size-normal{font-size:clamp(1.85rem,8vw,2.9rem)!important}.mx-vs-name-size-long{font-size:clamp(1.5rem,6.4vw,2.35rem)!important}.mx-vs-name-size-xlong{font-size:clamp(1.18rem,5.2vw,1.9rem)!important}
+  .mx-vs-name-size-normal{font-size:clamp(1.72rem,7.2vw,2.65rem)!important}.mx-vs-name-size-long{font-size:clamp(1.35rem,5.7vw,2.05rem)!important}.mx-vs-name-size-xlong{font-size:clamp(1.08rem,4.6vw,1.65rem)!important}
   .mx-vs-mark{width:clamp(170px,39vmin,285px)!important}
   .mx-vs-speedlines{opacity:.46!important}
   .mx-vs-seam{clip-path:polygon(61.3% 0,62.7% 0,38.7% 100%,37.3% 100%)!important}
