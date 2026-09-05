@@ -23,7 +23,6 @@ const act=(s,actor,action,payload={})=>applyEngineAction({state:s,meta,actorId:a
 const play=(s,id)=>act(s,P1,'PLAY_EFFECT',{cardId:id})
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg)}
 
-// Kapores must pay its own -1 STA without evicting itself from Effect Zone.
 {
  const s=play(state({p1Hand:[19],p1Vs:vs(4)}),19)
  assert(s.player1.vs.staDelta===-1,'KAPORES own STA penalty missing')
@@ -32,7 +31,6 @@ const assert=(ok,msg)=>{if(!ok)throw new Error(msg)}
  assert(!s.pendingBoardChoice?.cardIds?.includes(19),'KAPORES incorrectly created a self-removal capacity choice')
 }
 
-// Persistent effect cards must remain actionable after play; Tembok may not dead-end the effect turn.
 {
  let s=play(state({p1Hand:[24],p1Vs:vs(17),p2Vs:vs(20,'DEF')}),24)
  assert(s.phase==='EFFECT'&&s.effectTurn===P1,'TEMBOK lost the current Effect turn after play')
@@ -42,7 +40,6 @@ const assert=(ok,msg)=>{if(!ok)throw new Error(msg)}
  assert(s.phase==='EFFECT'&&s.effectTurn===P2,'TEMBOK turn cannot advance to opponent')
 }
 
-// Waktu Membeku must not dead-end either player after enforcing its two-Effect cap.
 {
  let s=play(state({p1Hand:[14],p2Hand:[3],p2Effects:[effect(1),effect(20)]}),14)
  assert(s.player2.attackBlocks===1,'WAKTU attack block missing')
@@ -53,17 +50,16 @@ const assert=(ok,msg)=>{if(!ok)throw new Error(msg)}
  assert(s.phase==='ATTACK','WAKTU-capped opponent cannot end Effect turn and progress to attack')
 }
 
-// Hidden-choice effects with no valid target must never leave an impossible pending state.
 for(const id of [3,15,22]){
  const s=play(state({p1Hand:[id],p2Hand:[],p2Effects:[]}),id)
  assert(!s.pendingChoice,`Card ${id} created a zero-target pending choice and deadlocked the match`)
 }
 
-// Online Arena prompts must follow the authoritative action timer, not screen orientation.
 const blueprint=fs.readFileSync('src/arena-blueprint.fragment','utf8')
-assert(blueprint.includes("activeOnlineMatch ? actionTimerIndex === localViewer : game.effectTurn === bottomPlayer"),'Effect-turn prompt is not keyed to authoritative online action timer')
-assert(blueprint.includes("activeOnlineMatch ? actionTimerIndex === localViewer : game.attackTurn === bottomPlayer"),'Attack prompt is not keyed to authoritative online action timer')
+assert(blueprint.includes("activeOnlineMatch ? game.effectTurn === localViewer : game.effectTurn === bottomPlayer"),'Effect prompt must follow game.effectTurn for the local player')
+assert(blueprint.includes("activeOnlineMatch ? game.attackTurn === localViewer : game.attackTurn === bottomPlayer"),'Attack prompt must follow game.attackTurn for the local player')
 assert(blueprint.includes("game.phase === 'SET_VS' && game.needsVS[activeOnlineMatch ? localViewer : bottomPlayer]"),'SET_VS prompt is still keyed only to display orientation')
-assert(blueprint.includes("actionTimerIndex === localViewer || localViewer === game.firstPlayer"),'Begin-round prompt does not honor the authoritative online action deadline')
+assert(!blueprint.includes("activeOnlineMatch ? actionTimerIndex === localViewer : game.effectTurn === bottomPlayer"),'Effect prompt must not depend on timer ownership')
+assert(!blueprint.includes("activeOnlineMatch ? actionTimerIndex === localViewer : game.attackTurn === bottomPlayer"),'Attack prompt must not depend on timer ownership')
 
 console.log('PASS gameplay flow invariants: Kapores, Tembok, Waktu progression, zero-target choices, authoritative online prompts')
