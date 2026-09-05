@@ -4,6 +4,14 @@
       {Array.from({ length: 18 }, (_, i) => <span key={`mx3-particle-${i}`} />)}
     </div>
 
+    <div className="mx3-premium-rail" aria-hidden="true" style={{
+      position: 'absolute', left: '104px', top: '388px', width: '572px', height: '490px', zIndex: 2,
+      pointerEvents: 'none', border: '2px solid rgba(105,181,230,.34)',
+      background: 'linear-gradient(90deg, rgba(24,132,213,.12), rgba(2,7,13,.76) 44%, rgba(2,7,13,.76) 56%, rgba(214,42,72,.12))',
+      boxShadow: 'inset 0 0 0 2px rgba(255,255,255,.035), inset 0 0 70px rgba(44,144,218,.08), 0 0 34px rgba(30,124,196,.12)',
+      clipPath: 'polygon(18px 0, calc(100% - 18px) 0, 100% 18px, 100% calc(100% - 18px), calc(100% - 18px) 100%, 18px 100%, 0 calc(100% - 18px), 0 18px)'
+    }} />
+
     <button className="mx3-quit" disabled={matchNetworkBusy} onClick={quitOnlineMatch}>QUIT MATCH</button>
     <div className="mx3-status" role="status">{activeOnlineMatch && onlineMessage ? onlineMessage : game.message}</div>
     <button className="mx3-audio" type="button" onClick={() => document.querySelector<HTMLButtonElement>('#mx-audio-controls button')?.click()}>AUDIO</button>
@@ -22,14 +30,26 @@
       <div className="mx3-hand-label">TANGAN LAWAN · {Math.max(0, game.players[topPlayer].hand.length - arrivalCount(`p${topPlayer + 1}-hand`))} KAD</div>
     </section>
 
-    <section className="mx3-zone mx3-p1-x" data-motion-anchor="p1-x"><button onClick={() => setPileView({ title: 'X FIGHTER 1 · ZON X', cards: game.players[0].x })}>{visiblePileTop(game.players[0].x, 'p1-x') ? <CardView card={visiblePileTop(game.players[0].x, 'p1-x')!} /> : <span>ZON X</span>}</button></section>
+    <section className="mx3-zone mx3-p1-x" data-motion-anchor="p1-x">
+      <button onClick={() => setPileView({ title: 'X FIGHTER 1 · ZON X', cards: game.players[0].x })}>{visiblePileTop(game.players[0].x, 'p1-x') && <CardView card={visiblePileTop(game.players[0].x, 'p1-x')!} />}</button>
+      <span className="mx3-zone-label" style={{position:'absolute',left:'4px',right:'4px',bottom:'4px',zIndex:4,pointerEvents:'none',fontSize:'20px',lineHeight:1,fontWeight:1000,color:'#ffe685',background:'rgba(8,8,10,.82)',padding:'4px 2px',textShadow:'0 2px 5px #000, 0 0 10px rgba(255,211,79,.55)'}}>ZON X</span>
+    </section>
     <div className="mx3-big-counter mx3-p1-counter">{displayedPileCount('p1-x', game.players[0].x.length)}</div>
-    <section className="mx3-zone mx3-p1-discard" data-motion-anchor="p1-discard"><button onClick={() => setPileView({ title: 'X FIGHTER 1 · ZON TEPI', cards: game.players[0].discard })}>{visiblePileTop(game.players[0].discard, 'p1-discard') ? <CardView card={visiblePileTop(game.players[0].discard, 'p1-discard')!} /> : <span>ZON TEPI</span>}</button></section>
+    <section className="mx3-zone mx3-p1-discard" data-motion-anchor="p1-discard">
+      <button onClick={() => setPileView({ title: 'X FIGHTER 1 · ZON TEPI', cards: game.players[0].discard })}>{visiblePileTop(game.players[0].discard, 'p1-discard') && <CardView card={visiblePileTop(game.players[0].discard, 'p1-discard')!} />}</button>
+      <span className="mx3-zone-label" style={{position:'absolute',left:'4px',right:'4px',bottom:'4px',zIndex:4,pointerEvents:'none',fontSize:'20px',lineHeight:1,fontWeight:1000,color:'#ffd36a',background:'rgba(8,8,10,.84)',padding:'4px 2px',textShadow:'0 2px 5px #000, 0 0 10px rgba(255,178,45,.48)'}}>ZON TEPI</span>
+    </section>
     <section className="mx3-zone mx3-master" data-motion-anchor="master"><div className="mx3-master-core"><img src="/cards/back-game.webp" alt="Master Deck"/><span>MASTER<br/>DECK</span></div></section>
     <div className="mx3-master-counter">{displayedDeckCount}</div>
-    <section className="mx3-zone mx3-p2-discard" data-motion-anchor="p2-discard"><button onClick={() => setPileView({ title: 'X FIGHTER 2 · ZON TEPI', cards: game.players[1].discard })}>{visiblePileTop(game.players[1].discard, 'p2-discard') ? <CardView card={visiblePileTop(game.players[1].discard, 'p2-discard')!} /> : <span>ZON TEPI</span>}</button></section>
+    <section className="mx3-zone mx3-p2-discard" data-motion-anchor="p2-discard">
+      <button onClick={() => setPileView({ title: 'X FIGHTER 2 · ZON TEPI', cards: game.players[1].discard })}>{visiblePileTop(game.players[1].discard, 'p2-discard') && <CardView card={visiblePileTop(game.players[1].discard, 'p2-discard')!} />}</button>
+      <span className="mx3-zone-label" style={{position:'absolute',left:'4px',right:'4px',bottom:'4px',zIndex:4,pointerEvents:'none',fontSize:'20px',lineHeight:1,fontWeight:1000,color:'#ffd36a',background:'rgba(8,8,10,.84)',padding:'4px 2px',textShadow:'0 2px 5px #000, 0 0 10px rgba(255,178,45,.48)'}}>ZON TEPI</span>
+    </section>
     <div className="mx3-big-counter mx3-p2-counter">{displayedPileCount('p2-x', game.players[1].x.length)}</div>
-    <section className="mx3-zone mx3-p2-x" data-motion-anchor="p2-x"><button onClick={() => setPileView({ title: 'X FIGHTER 2 · ZON X', cards: game.players[1].x })}>{visiblePileTop(game.players[1].x, 'p2-x') ? <CardView card={visiblePileTop(game.players[1].x, 'p2-x')!} /> : <span>ZON X</span>}</button></section>
+    <section className="mx3-zone mx3-p2-x" data-motion-anchor="p2-x">
+      <button onClick={() => setPileView({ title: 'X FIGHTER 2 · ZON X', cards: game.players[1].x })}>{visiblePileTop(game.players[1].x, 'p2-x') && <CardView card={visiblePileTop(game.players[1].x, 'p2-x')!} />}</button>
+      <span className="mx3-zone-label" style={{position:'absolute',left:'4px',right:'4px',bottom:'4px',zIndex:4,pointerEvents:'none',fontSize:'20px',lineHeight:1,fontWeight:1000,color:'#ffe685',background:'rgba(8,8,10,.82)',padding:'4px 2px',textShadow:'0 2px 5px #000, 0 0 10px rgba(255,211,79,.55)'}}>ZON X</span>
+    </section>
 
     <aside className={`mx3-effects mx3-effects-left ${game.phase === 'EFFECT' && game.effectTurn === 0 ? 'is-live' : ''}`} data-motion-anchor="p1-effect">{Array.from({ length: 5 }, (_, i) => { const effect = game.players[0].effects[i]; return <div key={`mx3-p1-e-${i}`} className={`mx3-effect ${effect ? 'is-filled' : ''}`}><b>{i + 1}<small>EFFECT</small></b>{effect && <button onClick={() => setFocusedCard(effect.card)}><CardView card={effect.card}/></button>}</div> })}</aside>
     <aside className={`mx3-effects mx3-effects-right ${game.phase === 'EFFECT' && game.effectTurn === 1 ? 'is-live' : ''}`} data-motion-anchor="p2-effect">{Array.from({ length: 5 }, (_, i) => { const effect = game.players[1].effects[i]; return <div key={`mx3-p2-e-${i}`} className={`mx3-effect ${effect ? 'is-filled' : ''}`}><b>{i + 1}<small>EFFECT</small></b>{effect && <button onClick={() => setFocusedCard(effect.card)}><CardView card={effect.card}/></button>}</div> })}</aside>
@@ -51,8 +71,14 @@
       </div>
     </section>}
 
-    <section className={`mx3-vs mx3-vs-left ${(game.phase === 'SET_VS' && game.needsVS[0]) || (game.phase === 'ATTACK' && game.attackTurn === 0) ? 'is-live' : ''} ${impactFx?.attacker === 0 ? 'is-attacking' : ''} ${impactFx?.defender === 0 ? 'is-hit' : ''}`} data-motion-anchor="p1-vs">{game.players[0].vs ? (!revealRoundOneVS && game.round === 1 ? <img src="/cards/back-game.webp" alt="VS tersembunyi"/> : <button onClick={() => setFocusedCard(game.players[0].vs!.card)}><CardView card={game.players[0].vs!.card}/></button>) : <span>KAD VS X FIGHTER 1</span>}</section>
-    <section className={`mx3-vs mx3-vs-right ${(game.phase === 'SET_VS' && game.needsVS[1]) || (game.phase === 'ATTACK' && game.attackTurn === 1) ? 'is-live' : ''} ${impactFx?.attacker === 1 ? 'is-attacking' : ''} ${impactFx?.defender === 1 ? 'is-hit' : ''}`} data-motion-anchor="p2-vs">{game.players[1].vs ? (!revealRoundOneVS && game.round === 1 ? <img src="/cards/back-game.webp" alt="VS tersembunyi"/> : <button onClick={() => setFocusedCard(game.players[1].vs!.card)}><CardView card={game.players[1].vs!.card}/></button>) : <span>KAD VS X FIGHTER 2</span>}</section>
+    <section className={`mx3-vs mx3-vs-left ${(game.phase === 'SET_VS' && game.needsVS[0]) || (game.phase === 'ATTACK' && game.attackTurn === 0) ? 'is-live' : ''} ${impactFx?.attacker === 0 ? 'is-attacking' : ''} ${impactFx?.defender === 0 ? 'is-hit' : ''}`} data-motion-anchor="p1-vs">
+      <span className="mx3-vs-label" style={{position:'absolute',left:'10px',right:'10px',top:'8px',zIndex:6,pointerEvents:'none',fontSize:'20px',lineHeight:1,fontWeight:1000,color:'#8edcff',textAlign:'center',background:'rgba(2,10,18,.84)',padding:'5px 4px',border:'1px solid rgba(72,181,244,.7)',textShadow:'0 2px 5px #000, 0 0 10px rgba(43,178,255,.72)'}}>KAD VS X FIGHTER 1</span>
+      {game.players[0].vs ? (!revealRoundOneVS && game.round === 1 ? <img src="/cards/back-game.webp" alt="VS tersembunyi"/> : <button onClick={() => setFocusedCard(game.players[0].vs!.card)}><CardView card={game.players[0].vs!.card}/></button>) : null}
+    </section>
+    <section className={`mx3-vs mx3-vs-right ${(game.phase === 'SET_VS' && game.needsVS[1]) || (game.phase === 'ATTACK' && game.attackTurn === 1) ? 'is-live' : ''} ${impactFx?.attacker === 1 ? 'is-attacking' : ''} ${impactFx?.defender === 1 ? 'is-hit' : ''}`} data-motion-anchor="p2-vs">
+      <span className="mx3-vs-label" style={{position:'absolute',left:'10px',right:'10px',top:'8px',zIndex:6,pointerEvents:'none',fontSize:'20px',lineHeight:1,fontWeight:1000,color:'#ff9aac',textAlign:'center',background:'rgba(20,3,8,.84)',padding:'5px 4px',border:'1px solid rgba(244,69,101,.72)',textShadow:'0 2px 5px #000, 0 0 10px rgba(255,63,99,.68)'}}>KAD VS X FIGHTER 2</span>
+      {game.players[1].vs ? (!revealRoundOneVS && game.round === 1 ? <img src="/cards/back-game.webp" alt="VS tersembunyi"/> : <button onClick={() => setFocusedCard(game.players[1].vs!.card)}><CardView card={game.players[1].vs!.card}/></button>) : null}
+    </section>
 
     <div className={`mx3-center-vs ${game.phase === 'ATTACK' ? 'is-live' : ''}`} aria-hidden="true"><span>V</span><i>◆</i><span>S</span></div>
     <div className={`mx3-timer ${actionSecondsLeft <= 10 ? 'is-danger' : ''}`}><strong>{actionTimerVisible ? actionSecondsLeft : '—'}</strong><span>TIMER</span></div>
