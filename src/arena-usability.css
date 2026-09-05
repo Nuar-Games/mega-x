@@ -1,4 +1,4 @@
-/* Arena usability layer: larger touch prompt, glass treatment, audio state, feedback toast. */
+/* Arena usability layer: turn ownership, larger touch prompt, mobile target safety, audio state, feedback toast. */
 
 .duel-shell.mx3-stage .mx3-phase-prompt{
   left:210px!important;
@@ -57,6 +57,103 @@
   background:linear-gradient(180deg,rgba(72,58,24,.84),rgba(26,19,7,.86))!important;
   box-shadow:inset 0 1px 0 rgba(255,244,186,.22),0 5px 14px rgba(0,0,0,.34)!important;
   touch-action:manipulation!important;
+}
+
+/* Persistent human-readable turn state. It occupies the existing top-status lane without changing arena geometry. */
+.duel-shell.mx3-stage .mx3-turn-communication{
+  position:absolute!important;
+  left:130px!important;
+  top:10px!important;
+  width:530px!important;
+  height:52px!important;
+  z-index:42!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:1px!important;
+  padding:4px 12px!important;
+  text-align:center!important;
+  pointer-events:none!important;
+  border:2px solid rgba(212,171,57,.92)!important;
+  clip-path:polygon(9px 0,calc(100% - 9px) 0,100% 9px,100% calc(100% - 9px),calc(100% - 9px) 100%,9px 100%,0 calc(100% - 9px),0 9px)!important;
+  background:linear-gradient(180deg,rgba(30,32,37,.96),rgba(7,11,16,.97))!important;
+  box-shadow:inset 0 0 0 2px rgba(255,220,91,.08),0 0 18px rgba(218,173,46,.16)!important;
+}
+
+.duel-shell.mx3-stage .mx3-turn-communication strong{
+  color:#ffe27a!important;
+  font-size:15px!important;
+  line-height:1!important;
+  font-weight:1000!important;
+  letter-spacing:.08em!important;
+  text-shadow:0 2px 5px #000!important;
+}
+
+.duel-shell.mx3-stage .mx3-turn-communication span{
+  color:#eef7ff!important;
+  font-size:11px!important;
+  line-height:1.08!important;
+  font-weight:850!important;
+  letter-spacing:.045em!important;
+  text-shadow:0 2px 4px #000!important;
+}
+
+.duel-shell.mx3-stage .mx3-turn-communication[data-owner="local"]{
+  border-color:#39c9ff!important;
+  box-shadow:inset 0 0 0 2px rgba(85,205,255,.11),0 0 19px rgba(42,180,255,.22)!important;
+}
+
+.duel-shell.mx3-stage .mx3-turn-communication[data-owner="local"] strong{color:#8fe6ff!important}
+.duel-shell.mx3-stage .mx3-turn-communication[data-owner="opponent"]{
+  border-color:#f25570!important;
+  box-shadow:inset 0 0 0 2px rgba(255,87,113,.10),0 0 19px rgba(239,57,87,.20)!important;
+}
+.duel-shell.mx3-stage .mx3-turn-communication[data-owner="opponent"] strong{color:#ff9aaa!important}
+
+/* Active ownership is visible at a glance; the waiting side stays readable but recedes. */
+.duel-shell.mx3-stage .mx3-fighter.is-local-turn{
+  opacity:1!important;
+  filter:brightness(1.14) saturate(1.12)!important;
+  border-color:#70ddff!important;
+  box-shadow:inset 0 0 0 2px rgba(101,218,255,.13),0 0 24px rgba(53,193,255,.34)!important;
+}
+.duel-shell.mx3-stage .mx3-fighter.is-opponent-turn{
+  opacity:1!important;
+  filter:brightness(1.10) saturate(1.10)!important;
+  border-color:#ff6f89!important;
+  box-shadow:inset 0 0 0 2px rgba(255,102,130,.12),0 0 24px rgba(239,63,94,.30)!important;
+}
+.duel-shell.mx3-stage .mx3-fighter.is-waiting-turn{
+  opacity:.68!important;
+  filter:brightness(.78) saturate(.78)!important;
+}
+.duel-shell.mx3-stage.is-local-turn .mx3-phase-prompt{
+  border-color:rgba(94,211,255,.86)!important;
+  box-shadow:inset 0 1px 0 rgba(207,246,255,.18),0 0 24px rgba(47,189,255,.20),0 10px 24px rgba(0,0,0,.30)!important;
+}
+.duel-shell.mx3-stage.is-opponent-turn .mx3-phase-prompt{
+  border-color:rgba(255,91,118,.72)!important;
+  box-shadow:inset 0 1px 0 rgba(255,211,219,.14),0 0 20px rgba(239,57,87,.15),0 10px 24px rgba(0,0,0,.30)!important;
+}
+
+/* Android target-selection safety: respect the actually visible browser viewport and keep every target reachable. */
+.mx3-target-selection-overlay{
+  max-height:100dvh!important;
+  overflow:hidden!important;
+}
+.mx3-target-selection-panel{
+  max-height:calc(100dvh - 24px)!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+  scrollbar-gutter:stable both-edges!important;
+}
+.mx3-target-selection-title{
+  position:sticky!important;
+  top:0!important;
+  z-index:3!important;
 }
 
 .duel-shell.mx3-stage .mx3-audio.is-muted{
@@ -119,6 +216,22 @@
     padding:0 22px!important;
     border-radius:14px!important;
     font-size:19px!important;
+  }
+  .duel-shell.mx3-stage .mx3-turn-communication strong{
+    font-size:16px!important;
+  }
+  .duel-shell.mx3-stage .mx3-turn-communication span{
+    font-size:12px!important;
+  }
+  .mx3-target-selection-panel{
+    max-height:calc(100dvh - 18px)!important;
+    padding-bottom:max(14px,env(safe-area-inset-bottom))!important;
+  }
+  .mx3-target-selection-panel button:has(img) img{
+    width:auto!important;
+    max-width:min(72vw,310px)!important;
+    max-height:42dvh!important;
+    object-fit:contain!important;
   }
   .mx3-arena-toast{
     bottom:max(14px,env(safe-area-inset-bottom));
