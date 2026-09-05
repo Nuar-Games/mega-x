@@ -17,6 +17,10 @@ function fighterNameSizeClass(name: string) {
   return 'mx-vs-name-size-normal'
 }
 
+function rankLabel(place: number | null | undefined) {
+  return Number.isFinite(place) && Number(place) > 0 ? `#${place}` : '#—'
+}
+
 async function vsIntroRpc(session: OnlineSession, name: string, body: Record<string, unknown> = {}) {
   const response = await fetch(`${VS_SUPABASE_URL}/rest/v1/rpc/${name}`, { method:'POST', headers:{ apikey:VS_SUPABASE_KEY, Authorization:`Bearer ${session.accessToken}`, 'Content-Type':'application/json' }, body:JSON.stringify(body) })
   const payload = await response.json().catch(() => ({}))
@@ -36,5 +40,5 @@ export function VsIntroScreen({session,match,onComplete,onError}:Props){
   const p1NameClass=fighterNameSizeClass(match.player1_handle)
   const p2NameClass=fighterNameSizeClass(match.player2_handle)
 
-  return <main className="app mx-vs-intro-root"><section className={`mx-vs-intro stage-${stage.toLowerCase()}`} aria-label="Match introduction"><div className="mx-vs-noise" aria-hidden="true"/><div className="mx-vs-flash-grid" aria-hidden="true"/><div className="mx-vs-speedlines mx-vs-speedlines-left" aria-hidden="true"/><div className="mx-vs-speedlines mx-vs-speedlines-right" aria-hidden="true"/><div className="mx-vs-half mx-vs-half-p1"><div className="mx-vs-energy mx-vs-energy-p1" aria-hidden="true"/></div><div className="mx-vs-half mx-vs-half-p2"><div className="mx-vs-energy mx-vs-energy-p2" aria-hidden="true"/></div><div className="mx-vs-card mx-vs-card-p1"><h1 className={`mx-vs-name ${p1NameClass}`}>{match.player1_handle}</h1><div className="mx-vs-ranking">#RANKING</div></div><div className="mx-vs-card mx-vs-card-p2"><h1 className={`mx-vs-name ${p2NameClass}`}>{match.player2_handle}</h1><div className="mx-vs-ranking">#RANKING</div></div><div className="mx-vs-seam" aria-hidden="true"><span/></div><div className="mx-vs-impact-ring" aria-hidden="true"/><div className="mx-vs-mark" aria-hidden="true"><span>V</span><i/><span>S</span></div><div className="mx-vs-lens-flare" aria-hidden="true"/><div className="mx-vs-reveal-flash" aria-hidden="true"/></section></main>
+  return <main className="app mx-vs-intro-root"><section className={`mx-vs-intro stage-${stage.toLowerCase()}`} aria-label="Match introduction"><div className="mx-vs-noise" aria-hidden="true"/><div className="mx-vs-flash-grid" aria-hidden="true"/><div className="mx-vs-speedlines mx-vs-speedlines-left" aria-hidden="true"/><div className="mx-vs-speedlines mx-vs-speedlines-right" aria-hidden="true"/><div className="mx-vs-half mx-vs-half-p1"><div className="mx-vs-energy mx-vs-energy-p1" aria-hidden="true"/></div><div className="mx-vs-half mx-vs-half-p2"><div className="mx-vs-energy mx-vs-energy-p2" aria-hidden="true"/></div><div className="mx-vs-logo" aria-label="MEGA-X">MEGA-X</div><div className="mx-vs-card mx-vs-card-p1"><h1 className={`mx-vs-name ${p1NameClass}`}>{match.player1_handle}</h1><div className="mx-vs-ranking">{rankLabel(match.player1_start_place)}</div></div><div className="mx-vs-card mx-vs-card-p2"><h1 className={`mx-vs-name ${p2NameClass}`}>{match.player2_handle}</h1><div className="mx-vs-ranking">{rankLabel(match.player2_start_place)}</div></div><div className="mx-vs-seam" aria-hidden="true"><span/></div><div className="mx-vs-impact-ring" aria-hidden="true"/><div className="mx-vs-mark" aria-hidden="true"><span>V</span><i/><span>S</span></div><div className="mx-vs-lens-flare" aria-hidden="true"/><div className="mx-vs-reveal-flash" aria-hidden="true"/></section></main>
 }
