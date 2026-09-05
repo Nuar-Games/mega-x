@@ -20,9 +20,9 @@ const SFX_GAIN: Partial<Record<MegaXSfx, number>> = {
   draw: 1.25,
   enter: 1.0,
   vsEnter: 1.25,
-  attack: 1.2,
+  attack: 0.72,
   destroy: 1.0,
-  zonX: 1.05,
+  zonX: 1.15,
   prompt: 1.0,
 }
 
@@ -38,7 +38,9 @@ class MegaXAudio {
   private unlocked = false
   private settings = loadSettings()
   private sfxPool = new Map<MegaXSfx, HTMLAudioElement[]>()
+  private lastSfxAt = new Map<MegaXSfx, number>()
   private music: HTMLAudioElement | null = null
+  private resultAudio: HTMLAudioElement | null = null
   private scene: Scene = 'silent'
   private fadeTimer: number | null = null
   private duckTimer: number | null = null
@@ -47,9 +49,14 @@ class MegaXAudio {
   private lastPrompt = ''
   private lastPromptAt = 0
   private resultPlayed = false
+  private lastArenaDeckCount: number | null = null
+  private lastArenaXCounts: [number | null, number | null] = [null, null]
+  private lastArenaVsOccupied: [boolean | null, boolean | null] = [null, null]
 
   start() {
     this.mountControls()
+    this.preloadResultMusic()
+    for (const kind of Object.keys(SFX_ASSETS) as MegaXSfx[]) this.preloadSfx(kind)
     document.addEventListener('pointerdown', () => this.unlock(), { once: true, capture: true })
     document.addEventListener('keydown', () => this.unlock(), { once: true, capture: true })
     document.addEventListener('click', this.onClick, true)
@@ -57,12 +64,25 @@ class MegaXAudio {
     const observer = new MutationObserver(this.onMutations)
     observer.observe(document.documentElement, { childList: true, subtree: true, characterData: true })
     this.syncScene()
+    this.syncArenaStateSfx()
   }
 
   private unlock() {
     if (this.unlocked) return
     this.unlocked = true
+    this.preloadResultMusic()
+    for (const kind of Object.keys(SFX_ASSETS) as MegaXSfx[]) this.preloadSfx(kind)
     this.syncScene(true)
+  }
+
+  private preloadResultMusic() {
+    if (this.resultAudio) return
+    const audio = new Audio(MUSIC_ASSETS.winLose)
+    audio.loop = false
+    audio.preload = 'auto'
+    audio.volume = Math.min(1, this.settings.music * RESULT_GAIN)
+    try { audio.load() } catch {}
+    this.resultAudio = audio
   }
 
   private coinTossVisible() {
@@ -78,13 +98,22 @@ class MegaXAudio {
     return 'silent'
   }
 
+  private resetArenaStateSfx() {
+    this.lastArenaDeckCount = null
+    this.lastArenaXCounts = [null, null]
+    this.lastArenaVsOccupied = [null, null]
+  }
+
   private syncScene(force = false) {
     const next = this.detectScene()
     if (!force && next === this.scene) return
     const previous = this.scene
     this.scene = next
 
-    if (previous === 'match' && next !== 'match') this.resultPlayed = false
+    if (previous === 'match' && next !== 'match') {
+      this.resultPlayed = false
+      this.resetArenaStateSfx()
+    }
 
     if (previous === 'coinToss' && next === 'match' && this.music) {
       this.fadeOutMusic(COIN_FADE_MS, () => {
@@ -134,12 +163,16 @@ class MegaXAudio {
     if (this.resultPlayed || !this.unlocked || this.settings.muted) return
     this.resultPlayed = true
     this.stopMusic()
-    const audio = new Audio(MUSIC_ASSETS.winLose)
-    audio.loop = false
-    audio.preload = 'auto'
-    audio.volume = Math.min(1, this.settings.music * RESULT_GAIN)
-    this.music = audio
-    void audio.play().catch(() => undefined)
+    this.preloadResultMusic()
+    if (!this.resultAudio) return
+    this.resultAudio.loop = false
+    this.resultAudio.volume = Math.min(1, this.settings.music * RESULT_GAIN)
+    try {
+      this.resultAudio.pause()
+      this.resultAudio.currentTime = 0
+      this.music = this.resultAudio
+      void this.resultAudio.play().catch(() => undefined)
+    } catch {}
   }
 
   private pickArenaTrack() {
@@ -206,11 +239,20 @@ class MegaXAudio {
 
   private preloadSfx(kind: MegaXSfx) {
     if (this.sfxPool.has(kind)) return
-    this.sfxPool.set(kind, Array.from({ length: 3 }, () => { const audio = new Audio(SFX_ASSETS[kind]); audio.preload = 'auto'; return audio }))
+    this.sfxPool.set(kind, Array.from({ length: 3 }, () => {
+      const audio = new Audio(SFX_ASSETS[kind])
+      audio.preload = 'auto'
+      try { audio.load() } catch {}
+      return audio
+    }))
   }
 
   private playSfx(kind: MegaXSfx) {
     if (!this.unlocked || this.settings.muted || this.settings.sfx <= 0) return
+    const now = performance.now()
+    const last = this.lastSfxAt.get(kind) ?? -Infinity
+    if (now - last < 140) return
+    this.lastSfxAt.set(kind, now)
     if (this.scene === 'match') {
       if (kind === 'attack' || kind === 'destroy' || kind === 'zonX') this.duckArenaMusic(SFX_DUCK_GAIN, 650)
       else if (kind === 'draw' || kind === 'vsEnter' || kind === 'prompt') this.duckArenaMusic(SFX_LIGHT_DUCK_GAIN, 420)
@@ -228,6 +270,41 @@ class MegaXAudio {
     else if (kind === 'SUPPORT') this.playSfx('enter')
     else if (kind === 'DESTROY') this.playSfx('destroy')
     else if (kind === 'CAPTURE') this.playSfx('zonX')
+  }
+
+  private readCount(selector: string) {
+    const text = document.querySelector<HTMLElement>(selector)?.textContent?.trim() ?? ''
+    const value = Number(text.replace(/[^0-9-]/g, ''))
+    return Number.isFinite(value) ? value : null
+  }
+
+  private syncArenaStateSfx() {
+    if (this.scene !== 'match' || !document.querySelector('.mx3-canvas')) return
+
+    const deckCount = this.readCount('.mx3-master-counter')
+    if (deckCount !== null) {
+      if (this.lastArenaDeckCount !== null && deckCount < this.lastArenaDeckCount) this.playSfx('draw')
+      this.lastArenaDeckCount = deckCount
+    }
+
+    const xSelectors = ['.mx3-p1-counter', '.mx3-p2-counter'] as const
+    xSelectors.forEach((selector, index) => {
+      const count = this.readCount(selector)
+      if (count === null) return
+      const previous = this.lastArenaXCounts[index]
+      if (previous !== null && count > previous) this.playSfx('zonX')
+      this.lastArenaXCounts[index] = count
+    })
+
+    const vsSelectors = ['.mx3-vs-left', '.mx3-vs-right'] as const
+    vsSelectors.forEach((selector, index) => {
+      const zone = document.querySelector<HTMLElement>(selector)
+      if (!zone) return
+      const occupied = Boolean(zone.querySelector('button, img'))
+      const previous = this.lastArenaVsOccupied[index]
+      if (previous === false && occupied) this.playSfx('vsEnter')
+      this.lastArenaVsOccupied[index] = occupied
+    })
   }
 
   private onClick = (event: Event) => {
@@ -255,6 +332,7 @@ class MegaXAudio {
 
   private onMutations = (mutations: MutationRecord[]) => {
     if (mutations.some((mutation) => mutation.type === 'childList')) this.syncScene()
+    this.syncArenaStateSfx()
     for (const mutation of mutations) {
       const nodes = mutation.type === 'childList' ? Array.from(mutation.addedNodes) : [mutation.target]
       for (const node of nodes) {
@@ -282,7 +360,7 @@ class MegaXAudio {
     toggle.addEventListener('click', (event) => { event.stopPropagation(); panel.hidden = !panel.hidden; this.unlock() })
     mute.addEventListener('click', (event) => { event.stopPropagation(); this.settings.muted = !this.settings.muted; this.saveSettings(); refresh(); this.syncScene(true) })
     root.addEventListener('click', (event) => event.stopPropagation())
-    panel.style.cssText = 'margin-top:6px;display:grid;gap:6px;padding:10px;background:rgba(7,8,14,.94);border:1px solid rgba(255,255,255,.2);border-radius:10px;color:#fff;font-size:12px;min-width:170px;box-shadow:0 8px 28px rgba(0,0,0,.5)'
+    panel.style.cssText = 'margin-top:6px;display:grid;gap:8px;padding:12px;background:rgba(7,8,14,.96);border:1px solid rgba(255,255,255,.2);border-radius:10px;color:#fff;font-size:12px;min-width:190px;box-shadow:0 8px 28px rgba(0,0,0,.5)'
     toggle.style.cssText = 'width:38px;height:38px;border-radius:999px;border:1px solid rgba(255,255,255,.25);background:rgba(7,8,14,.9);color:#fff;cursor:pointer'
     mute.style.cssText = 'min-height:32px;border:1px solid rgba(255,255,255,.2);background:#171923;color:#fff;border-radius:7px;font-weight:800;cursor:pointer'
     refresh(); document.body.appendChild(root)
