@@ -27,5 +27,8 @@ must(!bridge.includes("mute.click()"), 'Arena AUDIO tab must not directly toggle
 must(bridge.includes('audioUiSyncQueued'),'Arena audio UI observer must coalesce mutation callbacks')
 must(bridge.includes("attributeFilter: ['class', 'hidden']"),'Arena audio UI observer must stay scoped to relevant attributes')
 must(audio.includes('[data-audio-music]') && audio.includes('[data-audio-sfx]') && audio.includes('[data-audio-mute]'), 'audio panel must expose MUSIC, SFX and MUTE controls')
+must(bridge.includes('PILIH KAD UNTUK DIBUANG'), 'Android discard-selection dialog is not tagged for viewport safety')
+must(css.includes('.mx3-target-selection-overlay') && css.includes('position:fixed!important') && css.includes('inset:0!important'), 'Android selection overlay is not pinned to the visible dynamic viewport')
+must(css.includes('height:100dvh!important'), 'Android selection overlay does not own the visible dynamic viewport height')
 
-console.log('PASS Arena usability: AUDIO opens Music/SFX/Mute panel, glass prompt and STA feedback remain intact without mutation-loop risk')
+console.log('PASS Arena usability: AUDIO, feedback and Android target/discard selection viewport safety remain intact')
