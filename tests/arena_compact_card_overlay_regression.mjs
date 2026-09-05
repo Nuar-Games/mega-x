@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 const app=fs.readFileSync('src/App.tsx','utf8')
 const css=fs.readFileSync('src/arena-stage.css','utf8')
+const mobile=fs.readFileSync('src/arena-mobile-priority.css','utf8')
 const main=fs.readFileSync('src/main.tsx','utf8')
 const must=(ok,msg)=>{if(!ok)throw new Error(msg)}
 const duelStart=app.indexOf('<section className="duel-shell">')
@@ -14,6 +15,9 @@ must(duel.includes("setVS(bottomPlayer, focusedCard.id, 'DEF')"),'DEF placement 
 must(duel.includes('playEffect(bottomPlayer, focusedCard.id)'),'Effect placement action missing')
 must(duel.includes('setFocusedCard(null)'),'overlay close action missing')
 must(css.includes('.mx3-card-overlay-panel'),'overlay geometry missing from sole Arena stylesheet')
+must(mobile.includes('(min-width:561px)') && mobile.includes('(max-width:900px)'), 'compact desktop overlay viewport range missing')
+must(mobile.includes('.mx3-card-overlay-panel') && mobile.includes('left:50%!important') && mobile.includes('transform:translateX(-50%)!important'), 'compact desktop overlay is not viewport-centered')
+must(mobile.includes('width:min(calc(100vw - 32px),440px)!important'), 'compact desktop overlay width is not viewport-bounded')
 const selectedStart=duel.indexOf('{focusedCard && passToPlayer === null')
 must(selectedStart>=0,'selected-card render path missing')
 const selectedWindow=duel.slice(selectedStart,selectedStart+1800)
@@ -23,4 +27,4 @@ must(selectedWindow.includes('mx3-card-overlay-stats'),'selected-card text stats
 must(!selectedWindow.includes('mx3-card-overlay-preview'),'selected-card image preview must not exist')
 must(!selectedWindow.includes('<CardView card={focusedCard}'),'selected-card overlay must be text-only')
 must(!selectedWindow.includes('card-focus-overlay'),'selected card still routes to legacy full-screen overlay')
-console.log('PASS Arena MX3 selected-card overlay is text-only and exposes authoritative actions')
+console.log('PASS Arena MX3 selected-card overlay remains authoritative and viewport-bounded on compact desktop')
