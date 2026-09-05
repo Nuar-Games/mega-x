@@ -115,6 +115,63 @@ function ensureTurnCommunication(canvas: HTMLElement) {
   return strip
 }
 
+function discardButtonSelected(button: HTMLButtonElement) {
+  const text = compactText(button.textContent ?? '').toUpperCase()
+  return button.classList.contains('is-selected') ||
+    button.classList.contains('selected') ||
+    button.getAttribute('aria-pressed') === 'true' ||
+    button.dataset.selected === 'true' ||
+    text.includes('DIPILIH')
+}
+
+function tagDiscardSelection(panel: HTMLElement, title: HTMLElement) {
+  panel.classList.add('mx3-discard-selection-panel')
+  panel.parentElement?.classList.add('mx3-discard-selection-overlay')
+
+  const panelText = compactText(panel.textContent ?? '')
+  const requiredMatch = panelText.match(/PILIH TEPAT\s+(\d+)\s+KAD/i)
+  const required = Math.max(1, Number(requiredMatch?.[1] ?? 2))
+  const buttons = Array.from(panel.querySelectorAll<HTMLButtonElement>('button'))
+  const pickButtons = buttons.filter((button) => /^(PILIH|DIPILIH|✓\s*DIPILIH)$/i.test(compactText(button.textContent ?? '')))
+  const cardButtons = buttons.filter((button) => Boolean(button.querySelector('img')))
+  const items: HTMLElement[] = []
+
+  if (pickButtons.length) {
+    for (const pickButton of pickButtons) {
+      pickButton.classList.add('mx3-discard-pick-button')
+      let item: HTMLElement | null = pickButton.parentElement
+      while (item && item !== panel && !item.querySelector('img')) item = item.parentElement
+      if (!item || item === panel) continue
+      item.classList.add('mx3-discard-choice-item')
+      item.classList.toggle('is-selected', discardButtonSelected(pickButton))
+      items.push(item)
+    }
+  } else {
+    for (const cardButton of cardButtons) {
+      cardButton.classList.add('mx3-discard-choice-item')
+      cardButton.classList.toggle('is-selected', discardButtonSelected(cardButton))
+      items.push(cardButton)
+    }
+  }
+
+  const uniqueItems = Array.from(new Set(items))
+  const itemParents = Array.from(new Set(uniqueItems.map((item) => item.parentElement).filter((parent): parent is HTMLElement => Boolean(parent))))
+  if (itemParents.length === 1 && itemParents[0] !== panel) itemParents[0].classList.add('mx3-discard-selection-grid')
+
+  const actionButtons = buttons.filter((button) => {
+    const text = compactText(button.textContent ?? '').toUpperCase()
+    return text.includes('SAHKAN BUANG') || text === 'BATAL' || /^BUANG\s+\d+\s+KAD$/.test(text)
+  })
+  const actionParents = Array.from(new Set(actionButtons.map((button) => button.parentElement).filter((parent): parent is HTMLElement => Boolean(parent))))
+  if (actionParents.length === 1 && actionParents[0] !== panel) actionParents[0].classList.add('mx3-discard-selection-footer')
+  actionButtons.forEach((button) => button.classList.add('mx3-discard-action-button'))
+
+  const selected = Math.min(required, uniqueItems.filter((item) => item.classList.contains('is-selected')).length)
+  title.dataset.mx3DiscardSummary = `Pilih tepat ${required} kad · ${selected}/${required} dipilih`
+  panel.dataset.mx3DiscardRequired = String(required)
+  panel.dataset.mx3DiscardSelected = String(selected)
+}
+
 function tagTargetSelection() {
   const titles = Array.from(document.querySelectorAll<HTMLElement>('body *')).filter((node) => {
     if (!isViewportSelectionTitle(node.textContent ?? '')) return false
@@ -134,8 +191,8 @@ function tagTargetSelection() {
     }
     if (!panel || panel === document.body) continue
     panel.classList.add('mx3-target-selection-panel')
-    panel.classList.toggle('mx3-discard-selection-panel', isDiscard)
     panel.parentElement?.classList.add('mx3-target-selection-overlay')
+    if (isDiscard) tagDiscardSelection(panel, title)
   }
 }
 
@@ -229,7 +286,7 @@ arenaCommunicationObserver.observe(document.documentElement, {
   subtree: true,
   characterData: true,
   attributes: true,
-  attributeFilter: ['class', 'hidden', 'disabled'],
+  attributeFilter: ['class', 'hidden', 'disabled', 'aria-pressed', 'data-selected'],
 })
 
 window.addEventListener('DOMContentLoaded', () => {
