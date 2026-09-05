@@ -1,7 +1,11 @@
 import fs from 'node:fs'
 
 const appPath = 'src/App.tsx'
+const stagePath = 'src/arena-stage.css'
+const usabilityCssPath = 'src/arena-usability.css'
 let app = fs.readFileSync(appPath, 'utf8')
+let stage = fs.readFileSync(stagePath, 'utf8')
+let usabilityCss = fs.readFileSync(usabilityCssPath, 'utf8')
 
 function mustReplace(source, from, to, label) {
   if (!source.includes(from)) throw new Error(`Arena usability patch target missing: ${label}`)
@@ -23,8 +27,32 @@ const effectOld = `{game.players[bottomPlayer].hand.some((card) => card.id === f
 const effectNew = `{game.players[bottomPlayer].hand.some((card) => card.id === focusedCard.id) && game.phase === 'EFFECT' && game.effectTurn === bottomPlayer && !pendingChoice && passToPlayer === null && (Number((currentStats[bottomPlayer] as any)?.sta ?? 0) > 0 && game.players[bottomPlayer].effects.length >= Math.max(0, Number((currentStats[bottomPlayer] as any)?.sta ?? 0) - 1) ? <button type="button" className="mx3-capacity-warning" onClick={() => window.dispatchEvent(new CustomEvent('mega-x:arena-feedback', { detail: { message: \`STA HABIS — VS STA \${Number((currentStats[bottomPlayer] as any)?.sta ?? 0)} hanya membenarkan \${Math.max(0, Number((currentStats[bottomPlayer] as any)?.sta ?? 0) - 1)} kad EFFECT.\` } }))}>STA HABIS</button> : <button type="button" onClick={() => { playEffect(bottomPlayer, focusedCard.id); setFocusedCard(null) }}>PLAY EFFECT</button>)}`
 app = mustReplace(app, effectOld, effectNew, 'selected-card Effect capacity feedback')
 
+stage = mustReplace(
+  stage,
+  'body.mx3-arena-present #mx-audio-controls{display:none!important}',
+  `body.mx3-arena-present #mx-audio-controls{display:block!important;position:fixed!important;top:64px!important;right:10px!important;z-index:1600!important}\nbody.mx3-arena-present #mx-audio-controls>[data-audio-toggle]{display:none!important}\nbody.mx3-arena-present #mx-audio-controls [data-audio-panel][hidden]{display:none!important}\nbody.mx3-arena-present #mx-audio-controls [data-audio-panel]:not([hidden]){display:grid!important}`,
+  'Arena audio controls visibility',
+)
+
+stage = mustReplace(
+  stage,
+  '.mx3-local-hand{position:absolute!important;left:180px!important;top:880px!important;',
+  '.mx3-local-hand{position:absolute!important;left:180px!important;top:895px!important;',
+  'local hand vertical spacing',
+)
+
+const discardMarker = '/* Android-only compact discard selection */'
+if (!usabilityCss.includes(discardMarker)) {
+  usabilityCss += `\n${discardMarker}\n@media(max-width:560px){\n  .mx3-target-selection-panel.mx3-discard-selection-panel button:has(img) img{\n    width:auto!important;\n    max-width:min(44vw,180px)!important;\n    max-height:24dvh!important;\n    object-fit:contain!important;\n  }\n}\n`
+}
+
 if (!app.includes("mega-x:audio-toggle-request")) throw new Error('Arena usability audio request missing after patch')
 if (!app.includes("mega-x:arena-feedback") || !app.includes('STA HABIS')) throw new Error('Arena usability STA feedback missing after patch')
+if (stage.includes('#mx-audio-controls{display:none!important}')) throw new Error('Arena audio controls are still hidden')
+if (!stage.includes('top:895px!important')) throw new Error('Arena hand spacing adjustment missing')
+if (!usabilityCss.includes('mx3-discard-selection-panel') || !usabilityCss.includes('max-height:24dvh!important')) throw new Error('Android discard compact sizing missing')
 
 fs.writeFileSync(appPath, app)
-console.log('Applied Arena usability: audio settings request and explicit exhausted-STA feedback')
+fs.writeFileSync(stagePath, stage)
+fs.writeFileSync(usabilityCssPath, usabilityCss)
+console.log('Applied Arena usability: working audio panel, lowered hand, Android compact discard selection, and exhausted-STA feedback')
