@@ -14,10 +14,11 @@ must(main.includes("import './arena-player-role.css'"), 'PEMAIN/LAWAN orientatio
 must(main.includes("import './arena-player-role.ts'"), 'PEMAIN/LAWAN orientation runtime is not loaded')
 
 must(usability.includes('mx3-turn-communication'), 'persistent arena turn communication missing')
-must(usability.includes('GILIRAN ANDA'), 'local turn ownership copy missing')
+must(usability.includes('GILIRAN PEMAIN'), 'current local turn ownership copy missing')
 must(usability.includes('GILIRAN LAWAN'), 'opponent turn ownership copy missing')
-must(usability.includes('ANDA ·'), 'local action prefix missing')
+must(usability.includes('PEMAIN ·'), 'current local action prefix missing')
 must(usability.includes('LAWAN ·'), 'opponent action prefix missing')
+must(!usability.includes('GILIRAN ANDA') && !usability.includes('ANDA ·'), 'obsolete ANDA terminology remains in Arena turn communication')
 must(usability.includes('PILIH KAD VS'), 'VS selection communication missing')
 must(usability.includes('PILIH SASARAN'), 'target selection communication missing')
 must(usability.includes('SERANG'), 'attack decision communication missing')
@@ -43,4 +44,4 @@ must(css.includes('.mx3-fighter.is-opponent-turn'), 'opponent fighter active sty
 must(css.includes('100dvh'), 'dynamic viewport height protection missing')
 must(css.includes('overflow-y:auto'), 'scrollable mobile target content missing')
 
-console.log('PASS Arena turn ownership, PEMAIN/LAWAN orientation labels, opponent waiting communication, and mobile target overflow are explicit')
+console.log('PASS Arena PEMAIN/LAWAN terminology, orientation labels, opponent waiting communication, and mobile target overflow are explicit')
