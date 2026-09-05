@@ -13,8 +13,10 @@ const required = [
   ['animated energy backdrop exists on p2', '.mx-vs-half-p2', 'mxVsFieldSurge', true],
   ['energy seam exists', '.mx-vs-seam{', 'mxVsSeamEnergyRise', true],
   ['seam has obvious upward travelling bolt', '.mx-vs-seam::before', 'mxVsSeamBoltUp', true],
+  ['seam has visible core pulse travelling upward', '.mx-vs-seam span', 'mxVsSeamCoreRise', true],
   ['seam exits on reveal', '.stage-reveal .mx-vs-seam', 'mxVsSeamExit', true],
   ['fighter plate shell uses asymmetric glass treatment', '.mx-vs-card{', 'backdrop-filter', true],
+  ['fighter plates render above seam', '.mx-vs-card{', 'z-index:86', true],
   ['fighter plate no longer uses giant centered 64vw banner', '.mx-vs-card{', 'width:min(64vw,590px)', false],
   ['fighter plate entrance stays fixed after impact', '.mx-vs-card-p1', 'mxVsPlateInLeft', true],
   ['fighter plate entrance stays fixed after impact', '.mx-vs-card-p2', 'mxVsPlateInRight', true],
@@ -52,7 +54,8 @@ if (jsx.includes('#RANKING')) throw new Error('VS intro regression failed: fake 
 if (!patch.includes('player1_start_place') || !patch.includes('player2_start_place')) throw new Error('VS intro regression failed: ActiveOnlineMatch rank fields are not patched into client type')
 if (!jsx.includes('className="mx-vs-lens-flare"')) throw new Error('VS intro regression failed: VS lens flare layer is missing')
 if (jsx.includes('mx-vs-fight') || jsx.includes('FIGHT!')) throw new Error('VS intro regression failed: FIGHT word must not exist in the intro markup')
+if (!hypeCss.includes('width:48vw!important') || !hypeCss.includes('z-index:86!important')) throw new Error('VS intro regression failed: mobile fighter plates must stay clear of the seam and above it')
 if (!hypeCss.includes('translateX(140vw)') || !hypeCss.includes('opacity:0')) throw new Error('VS intro regression failed: reveal seam must fully evacuate the viewport')
 if (!jsx.includes("const VS_INTRO_AUDIO_SRC = '/audio/coin-toss/mega-x-coin-toss-v1.opus'")) throw new Error('VS intro regression failed: intro music source changed')
 
-console.log('PASS premium VS intro: real logo/ranks, asymmetric fighter IDs, visible upward seam energy, full seam evacuation, preserved VS stomp/lens flare')
+console.log('PASS premium VS intro: real logo/ranks, plates clear of seam, visible upward seam core energy, full seam evacuation, preserved VS stomp/lens flare')
