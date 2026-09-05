@@ -41,6 +41,6 @@ must(fragment.includes('mx3-zone-label')&&fragment.includes('mx3-vs-label'),'per
 must((fragment.match(/>ZON X<\/span>/g)||[]).length>=2,'persistent ZON X labels missing')
 must((fragment.match(/>ZON TEPI<\/span>/g)||[]).length>=2,'persistent ZON TEPI labels missing')
 must(fragment.includes('mx3-premium-rail'),'obvious premium combat-frame treatment missing')
-must(fragment.includes("fontSize: '20px'")&&fragment.includes("textShadow: '0 2px 5px #000, 0 0 10px"),'real-phone label legibility treatment missing')
+must(/fontSize\s*:\s*['"]20px['"]/.test(fragment)&&/textShadow\s*:\s*['"]0 2px 5px #000, 0 0 10px/.test(fragment),'real-phone label legibility treatment missing')
 
 console.log('PASS Arena MX3 final lock: server-state UUID online prompts, supplied VS art/flare, compact prompt, contained opponent hand, dedicated VS-entry SFX, persistent real-phone zone labels, premium combat frame, one-shot result music, no FIGHT audio')
