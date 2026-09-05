@@ -1,6 +1,6 @@
 export type MegaXSfx = 'card' | 'draw' | 'enter' | 'vsEnter' | 'attack' | 'destroy' | 'zonX' | 'prompt'
 
-const SFX_REV = '20260905-final-audio'
+const SFX_REV = '20260905-arena-mix-v2'
 
 export const SFX_ASSETS: Record<MegaXSfx, string> = {
   card: `/audio/replacements/card-selected.opus?v=${SFX_REV}`,
