@@ -22,6 +22,11 @@ if(!source.includes('if (!this.unlocked && occupied) return')) {
 }
 if(!source.includes('if (!this.unlocked && occupied) return')) throw new Error('locked VS occupancy deferral missing')
 
+const broadResult="    if (/PERLAWANAN\\s+TAMAT|MENANG!?|KALAH|YOU\\s+WIN|YOU\\s+LOSE|ANDA\\s+MENANG/.test(text)) this.playResultMusic()"
+const gatedResult="    if (document.querySelector('.mx3-canvas.phase-game_over')) this.playResultMusic()"
+if(source.includes(broadResult)) source=source.replace(broadResult,gatedResult)
+if(!source.includes(gatedResult)) throw new Error('result music GAME_OVER phase gate missing')
+
 if(!source.includes('window.setInterval(() => this.syncArenaStateSfx(), 180)')) {
   const hook='    this.syncArenaStateSfx()\n  }\n\n  private unlock()'
   if(!source.includes(hook)) throw new Error('Arena state SFX startup hook missing')
@@ -30,4 +35,4 @@ if(!source.includes('window.setInterval(() => this.syncArenaStateSfx(), 180)')) 
 if(!source.includes('window.setInterval(() => this.syncArenaStateSfx(), 180)')) throw new Error('Arena state SFX polling missing')
 if(source.includes("playSfx('fight')") || /\bFIGHT\b/.test(source)) throw new Error('FIGHT announcer must stay removed')
 fs.writeFileSync(path,source)
-console.log('Verified mobile audio; louder VS intro/Arena music, quieter card selection, VS entry deferred until audio unlock, no FIGHT announcer')
+console.log('Verified mobile audio; louder VS intro/Arena music, quieter card selection, VS entry deferred until audio unlock, result music gated to GAME_OVER, no FIGHT announcer')
