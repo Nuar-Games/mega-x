@@ -7,21 +7,23 @@ const ARENA_BAG_KEY = 'mega-x-arena-bag-v1'
 const ARENA_LAST_KEY = 'mega-x-arena-last-v1'
 const COIN_TOSS_GAIN = 0.78
 const ARENA_GAIN = 0.58
-const SFX_DUCK_GAIN = 0.7
-const SFX_BASE_GAIN = 0.64
+const RESULT_GAIN = 0.9
+const SFX_DUCK_GAIN = 0.56
+const SFX_LIGHT_DUCK_GAIN = 0.72
+const SFX_BASE_GAIN = 0.9
 const COIN_FADE_MS = 700
 const ARENA_FADE_IN_MS = 900
 const ARENA_FADE_OUT_MS = 600
 
 const SFX_GAIN: Partial<Record<MegaXSfx, number>> = {
-  card: 0.82,
-  draw: 0.90,
-  enter: 0.84,
-  attack: 0.86,
-  destroy: 0.82,
-  zonX: 0.88,
-  prompt: 0.78,
-  win: 0.88,
+  card: 0.95,
+  draw: 1.25,
+  enter: 1.0,
+  vsEnter: 1.25,
+  attack: 1.2,
+  destroy: 1.0,
+  zonX: 1.05,
+  prompt: 1.0,
 }
 
 function clamp01(value: number) { return Math.max(0, Math.min(1, value)) }
@@ -44,7 +46,7 @@ class MegaXAudio {
   private arenaTrack: string | null = null
   private lastPrompt = ''
   private lastPromptAt = 0
-  private lastWinAt = 0
+  private resultPlayed = false
 
   start() {
     this.mountControls()
@@ -82,6 +84,8 @@ class MegaXAudio {
     const previous = this.scene
     this.scene = next
 
+    if (previous === 'match' && next !== 'match') this.resultPlayed = false
+
     if (previous === 'coinToss' && next === 'match' && this.music) {
       this.fadeOutMusic(COIN_FADE_MS, () => {
         if (this.scene !== 'match') return
@@ -114,6 +118,7 @@ class MegaXAudio {
 
   private startSceneMusic(scene: Scene) {
     if (!this.unlocked || this.settings.muted || scene === 'silent') return
+    if (scene === 'match' && this.resultPlayed) return
     if (scene === 'lobby') {
       const audio = new Audio(LOBBY_TRACK); audio.loop = true; audio.preload = 'auto'; audio.volume = this.settings.music; this.music = audio; void audio.play().catch(() => undefined); return
     }
@@ -123,6 +128,18 @@ class MegaXAudio {
     if (!this.arenaTrack) this.arenaTrack = this.pickArenaTrack()
     const audio = new Audio(this.arenaTrack); audio.loop = true; audio.preload = 'auto'; audio.volume = 0; this.music = audio
     void audio.play().then(() => this.fadeInMusic(ARENA_FADE_IN_MS)).catch(() => undefined)
+  }
+
+  private playResultMusic() {
+    if (this.resultPlayed || !this.unlocked || this.settings.muted) return
+    this.resultPlayed = true
+    this.stopMusic()
+    const audio = new Audio(MUSIC_ASSETS.winLose)
+    audio.loop = false
+    audio.preload = 'auto'
+    audio.volume = Math.min(1, this.settings.music * RESULT_GAIN)
+    this.music = audio
+    void audio.play().catch(() => undefined)
   }
 
   private pickArenaTrack() {
@@ -165,7 +182,7 @@ class MegaXAudio {
   }
 
   private duckArenaMusic(gain: number, durationMs = 0) {
-    if (this.scene !== 'match' || !this.music) return
+    if (this.scene !== 'match' || !this.music || this.resultPlayed) return
     this.arenaDuckGain = Math.min(this.arenaDuckGain, gain); this.music.volume = this.targetMusicVolume()
     if (durationMs <= 0) return
     if (this.duckTimer !== null) window.clearTimeout(this.duckTimer)
@@ -175,7 +192,7 @@ class MegaXAudio {
   private restoreArenaMusic() {
     if (this.duckTimer !== null) { window.clearTimeout(this.duckTimer); this.duckTimer = null }
     this.arenaDuckGain = 1
-    if (this.scene === 'match' && this.music) this.music.volume = this.targetMusicVolume()
+    if (this.scene === 'match' && this.music && !this.resultPlayed) this.music.volume = this.targetMusicVolume()
   }
 
   private stopMusic() {
@@ -194,16 +211,20 @@ class MegaXAudio {
 
   private playSfx(kind: MegaXSfx) {
     if (!this.unlocked || this.settings.muted || this.settings.sfx <= 0) return
-    if (this.scene === 'match' && (kind === 'attack' || kind === 'destroy' || kind === 'zonX' || kind === 'win')) this.duckArenaMusic(SFX_DUCK_GAIN, 520)
+    if (this.scene === 'match') {
+      if (kind === 'attack' || kind === 'destroy' || kind === 'zonX') this.duckArenaMusic(SFX_DUCK_GAIN, 650)
+      else if (kind === 'draw' || kind === 'vsEnter' || kind === 'prompt') this.duckArenaMusic(SFX_LIGHT_DUCK_GAIN, 420)
+    }
     this.preloadSfx(kind)
     const pool = this.sfxPool.get(kind) ?? []; const audio = pool.find((item) => item.paused || item.ended) ?? pool[0]; if (!audio) return
-    const eventGain = SFX_GAIN[kind] ?? 0.82
+    const eventGain = SFX_GAIN[kind] ?? 1
     try { audio.pause(); audio.currentTime = 0; audio.volume = Math.min(1, this.settings.sfx * SFX_BASE_GAIN * eventGain); void audio.play().catch(() => undefined) } catch {}
   }
 
   private onMotionSfx = (event: Event) => {
     const kind = (event as CustomEvent<{ kind?: string }>).detail?.kind
     if (kind === 'DRAW') this.playSfx('draw')
+    else if (kind === 'ENTER_VS') this.playSfx('vsEnter')
     else if (kind === 'SUPPORT') this.playSfx('enter')
     else if (kind === 'DESTROY') this.playSfx('destroy')
     else if (kind === 'CAPTURE') this.playSfx('zonX')
@@ -211,11 +232,11 @@ class MegaXAudio {
 
   private onClick = (event: Event) => {
     if (!this.unlocked) this.unlock()
-    else if (!this.settings.muted && this.scene !== 'silent' && (!this.music || this.music.paused)) { if (this.music?.paused) this.stopMusic(); this.startSceneMusic(this.scene) }
+    else if (!this.settings.muted && !this.resultPlayed && this.scene !== 'silent' && (!this.music || this.music.paused)) { if (this.music?.paused) this.stopMusic(); this.startSceneMusic(this.scene) }
     const target = event.target instanceof Element ? event.target.closest('button, .digital-card, .mx3-effect, .mx3-hand-card') : null
     if (!target) return
     const label = (target.textContent ?? '').replace(/\s+/g, ' ').trim().toUpperCase()
-    if (label.includes('ATTACK') || label === 'SERANG') { this.playSfx('attack'); return }
+    if (label.includes('ATTACK') || /^SERANG!?$/.test(label)) { this.playSfx('attack'); return }
     if (target.matches('.digital-card, .mx3-effect, .mx3-hand-card') || target.querySelector('.digital-card')) this.playSfx('card')
   }
 
@@ -227,6 +248,11 @@ class MegaXAudio {
     this.lastPrompt = prompt; this.lastPromptAt = now; this.playSfx('prompt')
   }
 
+  private maybePlayResult(text: string) {
+    if (this.resultPlayed) return
+    if (/PERLAWANAN\s+TAMAT|MENANG!?|KALAH|YOU\s+WIN|YOU\s+LOSE|ANDA\s+MENANG/.test(text)) this.playResultMusic()
+  }
+
   private onMutations = (mutations: MutationRecord[]) => {
     if (mutations.some((mutation) => mutation.type === 'childList')) this.syncScene()
     for (const mutation of mutations) {
@@ -234,8 +260,7 @@ class MegaXAudio {
       for (const node of nodes) {
         const text = (node.textContent ?? '').replace(/\s+/g, ' ').toUpperCase(); if (!text) continue
         this.maybePlayPrompt(text)
-        const now = performance.now()
-        if (/YOU WIN|ANDA MENANG/.test(text) && now - this.lastWinAt > 1300) { this.lastWinAt = now; this.playSfx('win') }
+        this.maybePlayResult(text)
       }
     }
   }
@@ -251,7 +276,7 @@ class MegaXAudio {
     const ranges = { music: root.querySelector<HTMLInputElement>('[data-audio-music]')!, sfx: root.querySelector<HTMLInputElement>('[data-audio-sfx]')! }
     for (const key of Object.keys(ranges) as Array<keyof typeof ranges>) {
       const input = ranges[key]; input.value = String(Math.round(this.settings[key] * 100))
-      input.addEventListener('input', () => { this.settings[key] = Number(input.value) / 100; this.saveSettings(); if (key === 'music' && this.music) this.music.volume = this.targetMusicVolume() })
+      input.addEventListener('input', () => { this.settings[key] = Number(input.value) / 100; this.saveSettings(); if (key === 'music' && this.music) this.music.volume = this.resultPlayed ? Math.min(1, this.settings.music * RESULT_GAIN) : this.targetMusicVolume() })
     }
     const refresh = () => { toggle.textContent = this.settings.muted ? '🔇' : '🔊'; mute.textContent = this.settings.muted ? 'UNMUTE' : 'MUTE' }
     toggle.addEventListener('click', (event) => { event.stopPropagation(); panel.hidden = !panel.hidden; this.unlock() })
