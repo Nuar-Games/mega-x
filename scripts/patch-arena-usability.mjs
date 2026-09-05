@@ -11,7 +11,7 @@ function mustReplace(source, from, to, label) {
 app = mustReplace(
   app,
   `<button className="mx3-audio" type="button" onClick={() => document.querySelector<HTMLButtonElement>('#mx-audio-controls button')?.click()}>AUDIO</button>`,
-  `<button className="mx3-audio" type="button" onClick={() => window.dispatchEvent(new CustomEvent('mega-x:audio-toggle-request'))}>AUDIO ON</button>`,
+  `<button className="mx3-audio" type="button" onClick={() => window.dispatchEvent(new CustomEvent('mega-x:audio-toggle-request'))}>AUDIO</button>`,
   'Arena audio button',
 )
 
@@ -27,4 +27,4 @@ if (!app.includes("mega-x:audio-toggle-request")) throw new Error('Arena usabili
 if (!app.includes("mega-x:arena-feedback") || !app.includes('STA HABIS')) throw new Error('Arena usability STA feedback missing after patch')
 
 fs.writeFileSync(appPath, app)
-console.log('Applied Arena usability: working audio toggle request and explicit exhausted-STA feedback')
+console.log('Applied Arena usability: audio settings request and explicit exhausted-STA feedback')
