@@ -6,21 +6,26 @@ if(!source.includes("else if (!this.settings.muted && !this.resultPlayed && this
 
 source=source.replace('const COIN_TOSS_GAIN = 0.78','const COIN_TOSS_GAIN = 1.0')
 source=source.replace('const ARENA_GAIN = 0.58','const ARENA_GAIN = 0.88')
-source=source.replace('  card: 0.95,','  card: 0.55,')
+source=source.replace('  card: 0.95,','  card: 0.25,')
+source=source.replace('  card: 0.55,','  card: 0.25,')
 if(!source.includes('const COIN_TOSS_GAIN = 1.0')) throw new Error('VS intro music gain rebalance missing')
 if(!source.includes('const ARENA_GAIN = 0.88')) throw new Error('Arena music gain rebalance missing')
-if(!source.includes('card: 0.55')) throw new Error('card selection gain rebalance missing')
+if(!source.includes('card: 0.25')) throw new Error('card selection gain rebalance missing')
 if(!source.includes('vsEnter: 1.25')) throw new Error('dedicated VS-entry priority gain missing')
 
 if(!source.includes("kind === 'ENTER_VS'")) source=source.replace("    if (kind === 'DRAW') this.playSfx('draw')\n    else if (kind === 'SUPPORT') this.playSfx('enter')", "    if (kind === 'DRAW') this.playSfx('draw')\n    else if (kind === 'ENTER_VS') this.playSfx('vsEnter')\n    else if (kind === 'SUPPORT') this.playSfx('enter')")
 if(!source.includes("kind === 'ENTER_VS') this.playSfx('vsEnter')")) throw new Error('dedicated VS-entry SFX trigger missing')
 
-if(!source.includes('if (!this.unlocked && occupied) return')) {
-  const anchor="      const occupied = Boolean(zone.querySelector('button, img'))\n      const previous = this.lastArenaVsOccupied[index]"
-  if(!source.includes(anchor)) throw new Error('VS occupancy fallback anchor missing')
-  source=source.replace(anchor,"      const occupied = Boolean(zone.querySelector('button, img'))\n      if (!this.unlocked && occupied) return\n      const previous = this.lastArenaVsOccupied[index]")
-}
-if(!source.includes('if (!this.unlocked && occupied) return')) throw new Error('locked VS occupancy deferral missing')
+source=source.replace('  private lastArenaVsOccupied: [boolean | null, boolean | null] = [null, null]','  private lastArenaVsCardIds: [string | null, string | null] = [null, null]')
+source=source.replace('    this.lastArenaVsOccupied = [null, null]','    this.lastArenaVsCardIds = [null, null]')
+const oldVsBlock=`      const occupied = Boolean(zone.querySelector('button, img'))\n      const previous = this.lastArenaVsOccupied[index]\n      if (previous !== true && occupied) this.playSfx('vsEnter')\n      this.lastArenaVsOccupied[index] = occupied`
+const oldDeferredVsBlock=`      const occupied = Boolean(zone.querySelector('button, img'))\n      if (!this.unlocked && occupied) return\n      const previous = this.lastArenaVsOccupied[index]\n      if (previous !== true && occupied) this.playSfx('vsEnter')\n      this.lastArenaVsOccupied[index] = occupied`
+const newVsBlock=`      const cardId = zone.dataset.vsCardId || null\n      if (!this.unlocked && cardId) return\n      const previous = this.lastArenaVsCardIds[index]\n      if (previous !== cardId && cardId) this.playSfx('vsEnter')\n      this.lastArenaVsCardIds[index] = cardId`
+if(source.includes(oldDeferredVsBlock)) source=source.replace(oldDeferredVsBlock,newVsBlock)
+else if(source.includes(oldVsBlock)) source=source.replace(oldVsBlock,newVsBlock)
+if(!source.includes('lastArenaVsCardIds')) throw new Error('VS card identity state missing')
+if(!source.includes('zone.dataset.vsCardId')) throw new Error('VS card identity reader missing')
+if(!source.includes('previous !== cardId && cardId')) throw new Error('VS card identity transition trigger missing')
 
 const broadResult="    if (/PERLAWANAN\\s+TAMAT|MENANG!?|KALAH|YOU\\s+WIN|YOU\\s+LOSE|ANDA\\s+MENANG/.test(text)) this.playResultMusic()"
 const gatedResult="    if (document.querySelector('.mx3-canvas.phase-game_over')) this.playResultMusic()"
@@ -35,4 +40,4 @@ if(!source.includes('window.setInterval(() => this.syncArenaStateSfx(), 180)')) 
 if(!source.includes('window.setInterval(() => this.syncArenaStateSfx(), 180)')) throw new Error('Arena state SFX polling missing')
 if(source.includes("playSfx('fight')") || /\bFIGHT\b/.test(source)) throw new Error('FIGHT announcer must stay removed')
 fs.writeFileSync(path,source)
-console.log('Verified mobile audio; louder VS intro/Arena music, quieter card selection, VS entry deferred until audio unlock, result music gated to GAME_OVER, no FIGHT announcer')
+console.log('Verified mobile audio; louder VS intro/Arena music, much quieter card selection, VS entry tracked by card identity, result music gated to GAME_OVER, no FIGHT announcer')
