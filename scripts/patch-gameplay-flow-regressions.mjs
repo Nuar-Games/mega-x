@@ -17,10 +17,10 @@ engine=engine.replace(oldHidden,newHidden)
 
 const replacements=[
   ["(game.phase === 'SET_VS' && game.needsVS[bottomPlayer] && (activeOnlineMatch || setupPlayer === bottomPlayer))","(game.phase === 'SET_VS' && game.needsVS[activeOnlineMatch ? localViewer : bottomPlayer] && (activeOnlineMatch || setupPlayer === bottomPlayer))"],
-  ["(game.phase === 'EFFECT' && game.effectTurn === bottomPlayer)","(game.phase === 'EFFECT' && (activeOnlineMatch ? actionTimerIndex === localViewer : game.effectTurn === bottomPlayer))"],
-  ["(game.phase === 'ATTACK' && game.attackTurn === bottomPlayer)","(game.phase === 'ATTACK' && (activeOnlineMatch ? actionTimerIndex === localViewer : game.attackTurn === bottomPlayer))"],
-  ["{game.phase === 'EFFECT' && game.effectTurn === bottomPlayer && <button onClick={requestEndEffectTurn}","{game.phase === 'EFFECT' && (activeOnlineMatch ? actionTimerIndex === localViewer : game.effectTurn === bottomPlayer) && <button onClick={requestEndEffectTurn}"],
-  ["{game.phase === 'ATTACK' && game.attackTurn === bottomPlayer && <>","{game.phase === 'ATTACK' && (activeOnlineMatch ? actionTimerIndex === localViewer : game.attackTurn === bottomPlayer) && <>"],
+  ["(game.phase === 'EFFECT' && game.effectTurn === bottomPlayer)","(game.phase === 'EFFECT' && game.effectTurn !== null && (activeOnlineMatch ? actionTimerIndex === localViewer : game.effectTurn === bottomPlayer))"],
+  ["(game.phase === 'ATTACK' && game.attackTurn === bottomPlayer)","(game.phase === 'ATTACK' && game.attackTurn !== null && (activeOnlineMatch ? actionTimerIndex === localViewer : game.attackTurn === bottomPlayer))"],
+  ["{game.phase === 'EFFECT' && game.effectTurn === bottomPlayer && <button onClick={requestEndEffectTurn}","{game.phase === 'EFFECT' && game.effectTurn !== null && (activeOnlineMatch ? actionTimerIndex === localViewer : game.effectTurn === bottomPlayer) && <button onClick={requestEndEffectTurn}"],
+  ["{game.phase === 'ATTACK' && game.attackTurn === bottomPlayer && <>","{game.phase === 'ATTACK' && game.attackTurn !== null && (activeOnlineMatch ? actionTimerIndex === localViewer : game.attackTurn === bottomPlayer) && <>"],
 ]
 for(const [from,to] of replacements){if(!arena.includes(from))throw new Error(`gameplay flow patch: Arena prompt anchor missing: ${from}`);arena=arena.replace(from,to)}
 
