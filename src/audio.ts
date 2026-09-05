@@ -302,7 +302,7 @@ class MegaXAudio {
       if (!zone) return
       const occupied = Boolean(zone.querySelector('button, img'))
       const previous = this.lastArenaVsOccupied[index]
-      if (previous === false && occupied) this.playSfx('vsEnter')
+      if (previous !== true && occupied) this.playSfx('vsEnter')
       this.lastArenaVsOccupied[index] = occupied
     })
   }
