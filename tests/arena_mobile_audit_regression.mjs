@@ -40,7 +40,7 @@ must(app.includes('SAHKAN BUANG')&&app.includes('selectedDiscardIds'),'shared di
 must(fragment.includes('mx3-zone-label')&&fragment.includes('mx3-vs-label'),'persistent Arena zone labels missing')
 must((fragment.match(/>ZON X<\/span>/g)||[]).length>=2,'persistent ZON X labels missing')
 must((fragment.match(/>ZON TEPI<\/span>/g)||[]).length>=2,'persistent ZON TEPI labels missing')
-must(stage.includes('.mx3-zone-label')&&stage.includes('.mx3-vs-label'),'persistent Arena label styling missing')
-must(stage.includes('mx3-premium-rail'),'obvious premium combat-frame treatment missing')
+must(fragment.includes('mx3-premium-rail'),'obvious premium combat-frame treatment missing')
+must(fragment.includes("fontSize: '20px'")&&fragment.includes("textShadow: '0 2px 5px #000, 0 0 10px"),'real-phone label legibility treatment missing')
 
 console.log('PASS Arena MX3 final lock: server-state UUID online prompts, supplied VS art/flare, compact prompt, contained opponent hand, dedicated VS-entry SFX, persistent real-phone zone labels, premium combat frame, one-shot result music, no FIGHT audio')
