@@ -207,17 +207,23 @@ window.addEventListener(FEEDBACK_EVENT, (event) => {
   showArenaFeedback(message)
 })
 
-const arenaUsabilityObserver = new MutationObserver(() => {
-  queueArenaAudioButtonSync()
-  queueArenaCommunicationSync()
-})
+const arenaUsabilityObserver = new MutationObserver(() => queueArenaAudioButtonSync())
 arenaUsabilityObserver.observe(document.documentElement, {
+  childList: true,
+  subtree: true,
+  attributes: true,
+  attributeFilter: ['class', 'hidden'],
+})
+
+const arenaCommunicationObserver = new MutationObserver(() => queueArenaCommunicationSync())
+arenaCommunicationObserver.observe(document.documentElement, {
   childList: true,
   subtree: true,
   characterData: true,
   attributes: true,
   attributeFilter: ['class', 'hidden', 'disabled'],
 })
+
 window.addEventListener('DOMContentLoaded', () => {
   queueArenaAudioButtonSync()
   queueArenaCommunicationSync()
