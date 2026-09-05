@@ -66,6 +66,11 @@ function canonicalAction(value: string) {
   return ''
 }
 
+function isViewportSelectionTitle(value: string) {
+  const text = compactText(value).toUpperCase()
+  return text === 'PILIH SASARAN' || text === 'PILIH KAD UNTUK DIBUANG'
+}
+
 function phaseAction(canvas: HTMLElement | null) {
   if (!canvas) return ''
   if (canvas.classList.contains('phase-set_vs')) return 'PILIH KAD VS'
@@ -111,12 +116,12 @@ function ensureTurnCommunication(canvas: HTMLElement) {
 }
 
 function tagTargetSelection() {
-  const leaves = Array.from(document.querySelectorAll<HTMLElement>('body *')).filter((node) => {
-    if (node.children.length !== 0) return false
-    return canonicalAction(node.textContent ?? '') === 'PILIH SASARAN'
+  const titles = Array.from(document.querySelectorAll<HTMLElement>('body *')).filter((node) => {
+    if (!isViewportSelectionTitle(node.textContent ?? '')) return false
+    return !Array.from(node.children).some((child) => isViewportSelectionTitle(child.textContent ?? ''))
   })
 
-  for (const title of leaves) {
+  for (const title of titles) {
     title.classList.add('mx3-target-selection-title')
     let panel = title.parentElement
     while (panel && panel !== document.body) {
