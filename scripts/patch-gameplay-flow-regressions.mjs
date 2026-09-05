@@ -17,10 +17,10 @@ engine=engine.replace(oldHidden,newHidden)
 
 const replacements=[
   ["(game.phase === 'SET_VS' && game.needsVS[bottomPlayer] && (activeOnlineMatch || setupPlayer === bottomPlayer))","(game.phase === 'SET_VS' && game.needsVS[activeOnlineMatch ? localViewer : bottomPlayer] && (activeOnlineMatch || setupPlayer === bottomPlayer))"],
-  ["(game.phase === 'EFFECT' && game.effectTurn === bottomPlayer)","(game.phase === 'EFFECT' && game.effectTurn === localViewer)"],
-  ["(game.phase === 'ATTACK' && game.attackTurn === bottomPlayer)","(game.phase === 'ATTACK' && game.attackTurn === localViewer)"],
-  ["{game.phase === 'EFFECT' && game.effectTurn === bottomPlayer && <button onClick={requestEndEffectTurn}","{game.phase === 'EFFECT' && game.effectTurn === localViewer && <button onClick={requestEndEffectTurn}"],
-  ["{game.phase === 'ATTACK' && game.attackTurn === bottomPlayer && <>","{game.phase === 'ATTACK' && game.attackTurn === localViewer && <>"],
+  ["(game.phase === 'EFFECT' && game.effectTurn === bottomPlayer)","(game.phase === 'EFFECT' && (activeOnlineMatch ? actionTimerIndex === localViewer : game.effectTurn === bottomPlayer))"],
+  ["(game.phase === 'ATTACK' && game.attackTurn === bottomPlayer)","(game.phase === 'ATTACK' && (activeOnlineMatch ? actionTimerIndex === localViewer : game.attackTurn === bottomPlayer))"],
+  ["{game.phase === 'EFFECT' && game.effectTurn === bottomPlayer && <button onClick={requestEndEffectTurn}","{game.phase === 'EFFECT' && (activeOnlineMatch ? actionTimerIndex === localViewer : game.effectTurn === bottomPlayer) && <button onClick={requestEndEffectTurn}"],
+  ["{game.phase === 'ATTACK' && game.attackTurn === bottomPlayer && <>","{game.phase === 'ATTACK' && (activeOnlineMatch ? actionTimerIndex === localViewer : game.attackTurn === bottomPlayer) && <>"],
 ]
 for(const [from,to] of replacements){if(!arena.includes(from))throw new Error(`gameplay flow patch: Arena prompt anchor missing: ${from}`);arena=arena.replace(from,to)}
 
@@ -33,4 +33,4 @@ if(beginRoundRepairs<2) throw new Error(`gameplay flow patch: expected 2 begin-r
 
 fs.writeFileSync(enginePath,engine)
 fs.writeFileSync(arenaPath,arena)
-console.log('Repaired Kapores persistence, zero-target choice deadlocks, and authoritative Arena SET_VS/turn/begin-round prompts')
+console.log('Repaired Kapores persistence, zero-target choice deadlocks, and authoritative Arena SET_VS/Effect/Attack/begin-round prompts')
