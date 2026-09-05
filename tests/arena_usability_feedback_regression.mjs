@@ -24,6 +24,8 @@ must(bridge.includes("addEventListener(AUDIO_REQUEST"), 'Arena audio bridge list
 must(bridge.includes("addEventListener(FEEDBACK_EVENT"), 'Arena feedback toast listener missing')
 must(bridge.includes("[data-audio-toggle]"), 'Arena AUDIO tab does not open existing audio settings panel')
 must(!bridge.includes("mute.click()"), 'Arena AUDIO tab must not directly toggle mute')
+must(bridge.includes('audioUiSyncQueued'),'Arena audio UI observer must coalesce mutation callbacks')
+must(bridge.includes("attributeFilter: ['class', 'hidden']"),'Arena audio UI observer must stay scoped to relevant attributes')
 must(audio.includes('[data-audio-music]') && audio.includes('[data-audio-sfx]') && audio.includes('[data-audio-mute]'), 'audio panel must expose MUSIC, SFX and MUTE controls')
 
-console.log('PASS Arena usability: AUDIO opens Music/SFX/Mute panel, glass prompt and STA feedback remain intact')
+console.log('PASS Arena usability: AUDIO opens Music/SFX/Mute panel, glass prompt and STA feedback remain intact without mutation-loop risk')
