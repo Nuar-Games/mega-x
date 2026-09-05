@@ -27,6 +27,16 @@ if(!source.includes('lastArenaVsCardIds')) throw new Error('VS card identity sta
 if(!source.includes('zone.dataset.vsCardId')) throw new Error('VS card identity reader missing')
 if(!source.includes('previous !== cardId && cardId')) throw new Error('VS card identity transition trigger missing')
 
+if(!source.includes("target.closest('.mx3-card-overlay-actions')")) {
+  const clickAnchor="    const label = (target.textContent ?? '').replace(/\\s+/g, ' ').trim().toUpperCase()\n"
+  if(!source.includes(clickAnchor)) throw new Error('audio click label anchor missing')
+  const directVsGesture="    if ((label === 'ATK' || label === 'DEF') && target.closest('.mx3-card-overlay-actions') && document.querySelector('.mx3-canvas.phase-set_vs')) { this.playSfx('vsEnter'); return }\n"
+  source=source.replace(clickAnchor,clickAnchor+directVsGesture)
+}
+if(!source.includes("label === 'ATK' || label === 'DEF'")) throw new Error('direct VS confirmation gesture SFX fallback missing')
+if(!source.includes("target.closest('.mx3-card-overlay-actions')")) throw new Error('direct VS confirmation gesture must stay scoped to VS action controls')
+if(!source.includes("document.querySelector('.mx3-canvas.phase-set_vs')")) throw new Error('direct VS confirmation gesture must stay scoped to SET_VS')
+
 const broadResult="    if (/PERLAWANAN\\s+TAMAT|MENANG!?|KALAH|YOU\\s+WIN|YOU\\s+LOSE|ANDA\\s+MENANG/.test(text)) this.playResultMusic()"
 const gatedResult="    if (document.querySelector('.mx3-canvas.phase-game_over')) this.playResultMusic()"
 if(source.includes(broadResult)) source=source.replace(broadResult,gatedResult)
@@ -53,4 +63,4 @@ if(source.includes('lastPromptAt')) throw new Error('time-based prompt debounce 
 
 if(source.includes("playSfx('fight')") || /\bFIGHT\b/.test(source)) throw new Error('FIGHT announcer must stay removed')
 fs.writeFileSync(path,source)
-console.log('Verified mobile audio; prompt SFX edge-triggered, louder VS intro/Arena music, much quieter card selection, VS entry tracked by card identity, result music gated to GAME_OVER, no FIGHT announcer')
+console.log('Verified mobile audio; VS entry now also fires directly from the ATK/DEF confirmation gesture, with card-identity fallback retained')
