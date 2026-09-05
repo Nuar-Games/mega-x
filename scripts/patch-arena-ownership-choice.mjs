@@ -13,8 +13,8 @@ function replaceRequired(source, from, to, label) {
 const replacements = [
   ["<span>X FIGHTER 1</span><strong>{playerDisplayName(0)}</strong>", "<span>{bottomPlayer === 0 ? 'ANDA' : 'LAWAN'}</span><strong>{playerDisplayName(0)}</strong>", 'left fighter ownership'],
   ["<span>X FIGHTER 2</span><strong>{playerDisplayName(1)}</strong>", "<span>{bottomPlayer === 1 ? 'ANDA' : 'LAWAN'}</span><strong>{playerDisplayName(1)}</strong>", 'right fighter ownership'],
-  ["<span>KAD VS X FIGHTER 1</span>", "<span>{bottomPlayer === 0 ? 'VS ANDA' : 'VS LAWAN'}</span>", 'left VS ownership'],
-  ["<span>KAD VS X FIGHTER 2</span>", "<span>{bottomPlayer === 1 ? 'VS ANDA' : 'VS LAWAN'}</span>", 'right VS ownership'],
+  ["KAD VS X FIGHTER 1", "{bottomPlayer === 0 ? 'VS ANDA' : 'VS LAWAN'}", 'left VS ownership'],
+  ["KAD VS X FIGHTER 2", "{bottomPlayer === 1 ? 'VS ANDA' : 'VS LAWAN'}", 'right VS ownership'],
   ["title: 'X FIGHTER 1 · ZON X'", "title: `${bottomPlayer === 0 ? 'ANDA' : 'LAWAN'} · ZON X`", 'P1 Zon X title'],
   ["title: 'X FIGHTER 1 · ZON TEPI'", "title: `${bottomPlayer === 0 ? 'ANDA' : 'LAWAN'} · ZON TEPI`", 'P1 Zon Tepi title'],
   ["title: 'X FIGHTER 2 · ZON X'", "title: `${bottomPlayer === 1 ? 'ANDA' : 'LAWAN'} · ZON X`", 'P2 Zon X title'],
