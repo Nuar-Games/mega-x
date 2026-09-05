@@ -11,14 +11,14 @@ function replaceRequired(source, from, to, label) {
 }
 
 const replacements = [
-  ["<span>X FIGHTER 1</span><strong>{playerDisplayName(0)}</strong>", "<span>{bottomPlayer === 0 ? 'ANDA' : 'LAWAN'}</span><strong>{playerDisplayName(0)}</strong>", 'left fighter ownership'],
-  ["<span>X FIGHTER 2</span><strong>{playerDisplayName(1)}</strong>", "<span>{bottomPlayer === 1 ? 'ANDA' : 'LAWAN'}</span><strong>{playerDisplayName(1)}</strong>", 'right fighter ownership'],
-  ["KAD VS X FIGHTER 1", "{bottomPlayer === 0 ? 'VS ANDA' : 'VS LAWAN'}", 'left VS ownership'],
-  ["KAD VS X FIGHTER 2", "{bottomPlayer === 1 ? 'VS ANDA' : 'VS LAWAN'}", 'right VS ownership'],
-  ["title: 'X FIGHTER 1 · ZON X'", "title: `${bottomPlayer === 0 ? 'ANDA' : 'LAWAN'} · ZON X`", 'P1 Zon X title'],
-  ["title: 'X FIGHTER 1 · ZON TEPI'", "title: `${bottomPlayer === 0 ? 'ANDA' : 'LAWAN'} · ZON TEPI`", 'P1 Zon Tepi title'],
-  ["title: 'X FIGHTER 2 · ZON X'", "title: `${bottomPlayer === 1 ? 'ANDA' : 'LAWAN'} · ZON X`", 'P2 Zon X title'],
-  ["title: 'X FIGHTER 2 · ZON TEPI'", "title: `${bottomPlayer === 1 ? 'ANDA' : 'LAWAN'} · ZON TEPI`", 'P2 Zon Tepi title'],
+  ["<span>X FIGHTER 1</span><strong>{playerDisplayName(0)}</strong><em>RANK</em>", "<strong>{playerDisplayName(0)}</strong><em>#{leaderboardRows.find((row) => row.player_id === activeOnlineMatch?.player1_id)?.place ?? '—'}</em>", 'left fighter name/rank'],
+  ["<span>X FIGHTER 2</span><strong>{playerDisplayName(1)}</strong><em>RANK</em>", "<strong>{playerDisplayName(1)}</strong><em>#{leaderboardRows.find((row) => row.player_id === activeOnlineMatch?.player2_id)?.place ?? '—'}</em>", 'right fighter name/rank'],
+  ["KAD VS X FIGHTER 1", "KAD VS", 'left neutral VS label'],
+  ["KAD VS X FIGHTER 2", "KAD VS", 'right neutral VS label'],
+  ["title: 'X FIGHTER 1 · ZON X'", "title: `${bottomPlayer === 0 ? 'PEMAIN' : 'LAWAN'} · ZON X`", 'P1 Zon X title'],
+  ["title: 'X FIGHTER 1 · ZON TEPI'", "title: `${bottomPlayer === 0 ? 'PEMAIN' : 'LAWAN'} · ZON TEPI`", 'P1 Zon Tepi title'],
+  ["title: 'X FIGHTER 2 · ZON X'", "title: `${bottomPlayer === 1 ? 'PEMAIN' : 'LAWAN'} · ZON X`", 'P2 Zon X title'],
+  ["title: 'X FIGHTER 2 · ZON TEPI'", "title: `${bottomPlayer === 1 ? 'PEMAIN' : 'LAWAN'} · ZON TEPI`", 'P2 Zon Tepi title'],
 ]
 
 for (const [from, to, label] of replacements) {
@@ -39,4 +39,4 @@ if (!app.includes('choice-overlay') || !app.includes('discard-panel') || !app.in
 
 fs.writeFileSync(fragmentPath, fragment)
 fs.writeFileSync(appPath, app)
-console.log('Applied player-relative arena ownership and removed legacy duplicate discard choice surface')
+console.log('Applied clean fighter name/rank plates, neutral VS labels, PEMAIN pile terminology, and removed legacy duplicate discard choice surface')
