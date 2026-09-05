@@ -2,6 +2,7 @@ const AUDIO_REQUEST = 'mega-x:audio-toggle-request'
 const FEEDBACK_EVENT = 'mega-x:arena-feedback'
 
 let toastTimer: number | null = null
+let audioUiSyncQueued = false
 
 function arenaVisible() {
   return Boolean(document.querySelector('.duel-shell.mx3-stage, .mx3-canvas'))
@@ -34,11 +35,20 @@ function syncArenaAudioButton() {
   const mute = document.querySelector<HTMLButtonElement>('#mx-audio-controls [data-audio-mute]')
   const arena = document.querySelector<HTMLButtonElement>('.mx3-audio')
   if (!arena) return false
-  arena.textContent = 'AUDIO'
+  if (arena.textContent !== 'AUDIO') arena.textContent = 'AUDIO'
   const muted = (mute?.textContent ?? '').trim().toUpperCase() === 'UNMUTE'
-  arena.classList.toggle('is-muted', muted)
-  arena.setAttribute('aria-label', 'Buka tetapan audio')
+  if (arena.classList.contains('is-muted') !== muted) arena.classList.toggle('is-muted', muted)
+  if (arena.getAttribute('aria-label') !== 'Buka tetapan audio') arena.setAttribute('aria-label', 'Buka tetapan audio')
   return true
+}
+
+function queueArenaAudioButtonSync() {
+  if (audioUiSyncQueued) return
+  audioUiSyncQueued = true
+  window.requestAnimationFrame(() => {
+    audioUiSyncQueued = false
+    if (arenaVisible()) syncArenaAudioButton()
+  })
 }
 
 function openArenaAudioSettings() {
@@ -48,7 +58,7 @@ function openArenaAudioSettings() {
     return
   }
   toggle.click()
-  window.setTimeout(() => syncArenaAudioButton(), 0)
+  queueArenaAudioButtonSync()
 }
 
 window.addEventListener(AUDIO_REQUEST, openArenaAudioSettings)
@@ -57,6 +67,12 @@ window.addEventListener(FEEDBACK_EVENT, (event) => {
   showArenaFeedback(message)
 })
 
-const arenaUsabilityObserver = new MutationObserver(() => { if (arenaVisible()) syncArenaAudioButton() })
-arenaUsabilityObserver.observe(document.documentElement, { childList: true, subtree: true })
-window.addEventListener('DOMContentLoaded', () => syncArenaAudioButton(), { once: true })
+const arenaUsabilityObserver = new MutationObserver(() => queueArenaAudioButtonSync())
+arenaUsabilityObserver.observe(document.documentElement, {
+  childList: true,
+  subtree: true,
+  attributes: true,
+  attributeFilter: ['class', 'hidden'],
+})
+window.addEventListener('DOMContentLoaded', () => queueArenaAudioButtonSync(), { once: true })
+queueArenaAudioButtonSync()
