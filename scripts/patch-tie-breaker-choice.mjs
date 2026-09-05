@@ -34,12 +34,12 @@ const chooseFn=`  async function chooseTieBreakerCard(cardId: number) {
   }`
 app=app.slice(0,onlineStart)+chooseFn+app.slice(onlineEnd)
 
-const stageStartNeedle="            {game.phase === 'TIE_BREAKER' && game.tieBreaker && ("
+const stageStartNeedle="{game.phase === 'TIE_BREAKER' && game.tieBreaker && ("
 const stageStart=app.indexOf(stageStartNeedle)
-const gameOverNeedle="            {game.phase === 'GAME_OVER' && ("
+const gameOverNeedle="{game.phase === 'GAME_OVER' && ("
 const gameOverAt=app.indexOf(gameOverNeedle,stageStart)
 if(stageStart<0||gameOverAt<0) throw new Error('tie-breaker stage bounds missing')
-const stage=`            {game.phase === 'TIE_BREAKER' && game.tieBreaker && (
+const stage=`{game.phase === 'TIE_BREAKER' && game.tieBreaker && (
               <div className="tie-breaker-stage tie-breaker-choice-stage" role="status" aria-live="polite">
                 <div className="tie-breaker-stage-energy" aria-hidden="true" />
                 <div className="tie-breaker-stage-title">PENENTUAN SERI</div>
@@ -74,7 +74,7 @@ const stage=`            {game.phase === 'TIE_BREAKER' && game.tieBreaker && (
                 </>}
               </div>
             )}
-`
+            `
 app=app.slice(0,stageStart)+stage+app.slice(gameOverAt)
 
 if(app.includes("'TIE_REVEAL'")) throw new Error('legacy online TIE_REVEAL survived')
