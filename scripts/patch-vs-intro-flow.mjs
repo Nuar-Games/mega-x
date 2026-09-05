@@ -1,6 +1,13 @@
 import fs from 'node:fs'
 import crypto from 'node:crypto'
 const appPath=process.argv[2]||'src/App.tsx';let app=fs.readFileSync(appPath,'utf8')
+const authPath='src/onlineAuth.ts';let auth=fs.readFileSync(authPath,'utf8')
+if(!auth.includes('player1_start_place?: number | null')){
+  const activeTypeAnchor="  status: 'COIN_TOSS' | 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'ABANDONED'\n  phase: string"
+  if(!auth.includes(activeTypeAnchor))throw new Error('VS intro ActiveOnlineMatch type anchor missing')
+  auth=auth.replace(activeTypeAnchor,"  status: 'VS_INTRO' | 'COIN_TOSS' | 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'ABANDONED'\n  player1_start_place?: number | null\n  player2_start_place?: number | null\n  phase: string")
+  fs.writeFileSync(authPath,auth)
+}
 const arenaBlock=(source)=>{const start=source.indexOf('<section className="duel-shell">');if(start<0)throw new Error('Recovered Arena root missing before VS intro patch');const end=source.indexOf('\n      )}',start);if(end<0)throw new Error('Recovered Arena closing anchor missing before VS intro patch');return source.slice(start,end)}
 const arenaHashBefore=crypto.createHash('sha256').update(arenaBlock(app)).digest('hex')
 const mustReplace=(label,pattern,replacement)=>{const before=app;app=app.replace(pattern,replacement);if(app===before)throw new Error(`VS intro patch anchor missing: ${label}`)}
@@ -24,4 +31,4 @@ mustReplace('Coin Toss JSX deletion',/\{!started \? \(\n\s*<section className=\{
 for(const token of ['COIN_TOSS','coin-screen-v1','startCoinSequence','chooseMatchCoin','startMatchAfterCoinSafe','coinChoice','coinStage','coinFace','coinArenaTransitionRef'])if(app.includes(token))throw new Error(`Deleted Coin Toss token survived: ${token}`)
 for(const required of ['VsIntroScreen',"status as string) === 'VS_INTRO'",'respondToChallengeVsIntro','joinMatchmakingVsIntro','getMyActiveMatchVsIntro','<section className="duel-shell">'])if(!app.includes(required))throw new Error(`VS intro integration missing required token: ${required}`)
 const arenaHashAfter=crypto.createHash('sha256').update(arenaBlock(app)).digest('hex');if(arenaHashAfter!==arenaHashBefore)throw new Error(`Arena markup changed during VS intro patch: ${arenaHashBefore} -> ${arenaHashAfter}`)
-fs.writeFileSync(appPath,app);console.log(`Applied isolated VS_INTRO flow; Coin Toss deleted; Arena markup preserved (${arenaHashAfter})`)
+fs.writeFileSync(appPath,app);console.log(`Applied isolated VS_INTRO flow with real-rank type support; Coin Toss deleted; Arena markup preserved (${arenaHashAfter})`)
