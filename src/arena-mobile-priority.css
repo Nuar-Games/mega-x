@@ -204,3 +204,24 @@
   .mx3-card-overlay-effect{max-height:96px!important}
   .mx-discard-confirm-cards{gap:8px!important}
 }
+
+/* Compact desktop / tablet browser: keep the inspector centered in the actual viewport.
+   Full desktop geometry above 900px remains untouched. */
+@media (min-width:561px) and (max-width:900px){
+  .mx3-card-overlay{
+    position:fixed!important;
+    inset:0!important;
+    z-index:2200!important;
+  }
+  .mx3-card-overlay-panel{
+    position:fixed!important;
+    left:50%!important;
+    right:auto!important;
+    bottom:18px!important;
+    width:min(calc(100vw - 32px),440px)!important;
+    max-width:440px!important;
+    max-height:min(72dvh,520px)!important;
+    transform:translateX(-50%)!important;
+    overflow:auto!important;
+  }
+}
