@@ -56,11 +56,11 @@ for(const id of [3,15,22]){
 }
 
 const blueprint=fs.readFileSync('src/arena-blueprint.fragment','utf8')
-assert(blueprint.includes("activeOnlineMatch ? game.effectTurn === onlineSession?.userId : game.effectTurn === bottomPlayer"),'Online Effect prompt must compare server turn UUID to the signed-in player UUID')
-assert(blueprint.includes("activeOnlineMatch ? game.attackTurn === onlineSession?.userId : game.attackTurn === bottomPlayer"),'Online Attack prompt must compare server turn UUID to the signed-in player UUID')
-assert(blueprint.includes("!activeOnlineMatch || game.firstPlayer === onlineSession?.userId"),'Online begin-round prompt must compare firstPlayer UUID to the signed-in player UUID')
+assert(blueprint.includes("activeOnlineMatch ? activeOnlineMatch.state?.effectTurn === onlineSession?.userId : game.effectTurn === bottomPlayer"),'Online Effect prompt must use authoritative server match-state UUID ownership')
+assert(blueprint.includes("activeOnlineMatch ? activeOnlineMatch.state?.attackTurn === onlineSession?.userId : game.attackTurn === bottomPlayer"),'Online Attack prompt must use authoritative server match-state UUID ownership')
+assert(blueprint.includes("!activeOnlineMatch || activeOnlineMatch.state?.firstPlayer === onlineSession?.userId"),'Online begin-round prompt must use authoritative server match-state UUID ownership')
 assert(blueprint.includes("game.phase === 'SET_VS' && game.needsVS[activeOnlineMatch ? localViewer : bottomPlayer]"),'SET_VS prompt is still keyed only to display orientation')
 assert(!blueprint.includes("activeOnlineMatch ? game.effectTurn === localViewer : game.effectTurn === bottomPlayer"),'Online Effect prompt must not compare a UUID to localViewer index')
 assert(!blueprint.includes("activeOnlineMatch ? game.attackTurn === localViewer : game.attackTurn === bottomPlayer"),'Online Attack prompt must not compare a UUID to localViewer index')
 
-console.log('PASS gameplay flow invariants: Kapores, Tembok, Waktu progression, zero-target choices, UUID-correct online prompts')
+console.log('PASS gameplay flow invariants: Kapores, Tembok, Waktu progression, zero-target choices, server-state UUID online prompts')
