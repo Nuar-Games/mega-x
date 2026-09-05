@@ -38,6 +38,19 @@ if(!source.includes('window.setInterval(() => this.syncArenaStateSfx(), 180)')) 
   source=source.replace(hook,"    this.syncArenaStateSfx()\n    window.setInterval(() => this.syncArenaStateSfx(), 180)\n  }\n\n  private unlock()")
 }
 if(!source.includes('window.setInterval(() => this.syncArenaStateSfx(), 180)')) throw new Error('Arena state SFX polling missing')
+
+// Prompt sound is edge-triggered from the live prompt UI, never from arbitrary DOM mutations.
+source=source.replace('  private lastPromptAt = 0\n','')
+const oldPrompt=`  private maybePlayPrompt(text: string) {\n    const match = text.match(/PILIH\\s+(?:KAD|VS|SASARAN|TARGET)|SELECT\\s+(?:CARD|TARGET)|CHOOSE\\s+(?:CARD|TARGET)/)\n    if (!match) return\n    const prompt = match[0]; const now = performance.now()\n    if (prompt === this.lastPrompt && now - this.lastPromptAt < 1200) return\n    this.lastPrompt = prompt; this.lastPromptAt = now; this.playSfx('prompt')\n  }`
+const newPrompt=`  private syncPromptSfx() {\n    const promptNodes = Array.from(document.querySelectorAll<HTMLElement>('.mx3-phase-prompt strong, .mx3-target-selection-title'))\n    const prompt = promptNodes.map((node) => (node.textContent ?? '').replace(/\\s+/g, ' ').trim().toUpperCase()).find((text) => /PILIH\\s+(?:KAD|VS|SASARAN|TARGET)|SELECT\\s+(?:CARD|TARGET)|CHOOSE\\s+(?:CARD|TARGET)/.test(text)) ?? ''\n    if (!prompt) { this.lastPrompt = ''; return }\n    if (prompt === this.lastPrompt) return\n    this.lastPrompt = prompt\n    this.playSfx('prompt')\n  }`
+if(source.includes(oldPrompt)) source=source.replace(oldPrompt,newPrompt)
+if(!source.includes('private syncPromptSfx()')) throw new Error('edge-triggered prompt synchronizer missing')
+source=source.replace('    this.syncArenaStateSfx()\n    for (const mutation of mutations) {','    this.syncArenaStateSfx()\n    this.syncPromptSfx()\n    for (const mutation of mutations) {')
+source=source.replace('        this.maybePlayPrompt(text)\n','')
+if(!source.includes('if (prompt === this.lastPrompt) return')) throw new Error('same prompt replay guard missing')
+if(!source.includes("if (!prompt) { this.lastPrompt = ''; return }")) throw new Error('prompt latch reset missing')
+if(source.includes('lastPromptAt')) throw new Error('time-based prompt debounce must be removed')
+
 if(source.includes("playSfx('fight')") || /\bFIGHT\b/.test(source)) throw new Error('FIGHT announcer must stay removed')
 fs.writeFileSync(path,source)
-console.log('Verified mobile audio; louder VS intro/Arena music, much quieter card selection, VS entry tracked by card identity, result music gated to GAME_OVER, no FIGHT announcer')
+console.log('Verified mobile audio; prompt SFX edge-triggered, louder VS intro/Arena music, much quieter card selection, VS entry tracked by card identity, result music gated to GAME_OVER, no FIGHT announcer')
