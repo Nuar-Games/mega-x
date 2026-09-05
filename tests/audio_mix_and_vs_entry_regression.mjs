@@ -4,8 +4,8 @@ const must = (ok, msg) => { if (!ok) throw new Error(msg) }
 
 must(audio.includes('const COIN_TOSS_GAIN = 1.0'), 'VS intro music must be raised to full user music level')
 must(audio.includes('const ARENA_GAIN = 0.88'), 'Arena music gain must be raised')
-must(audio.includes('card: 0.55'), 'card-selection SFX must be reduced')
-must(audio.includes('if (!this.unlocked && occupied) return'), 'occupied VS must not be marked as already seen before audio unlock')
-must(audio.includes("if (previous !== true && occupied) this.playSfx('vsEnter')"), 'VS entry cue transition must remain wired')
+must(audio.includes('card: 0.25'), 'card-selection SFX must be substantially reduced')
+must(audio.includes('if (!this.unlocked && cardId) return'), 'VS identity must remain pending before audio unlock')
+must(audio.includes("if (previous !== cardId && cardId) this.playSfx('vsEnter')"), 'VS entry cue must react to actual card identity changes')
 
-console.log('PASS audio mix: quieter card select, louder VS intro/Arena music, deferred occupied-VS cue until unlock')
+console.log('PASS audio mix: much quieter card select, louder VS intro/Arena music, VS entry tracked by card identity')
