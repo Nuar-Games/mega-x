@@ -58,4 +58,12 @@ if (!hypeCss.includes('width:48vw!important') || !hypeCss.includes('z-index:86!i
 if (!hypeCss.includes('translateX(140vw)') || !hypeCss.includes('opacity:0')) throw new Error('VS intro regression failed: reveal seam must fully evacuate the viewport')
 if (!jsx.includes("const VS_INTRO_AUDIO_SRC = '/audio/coin-toss/mega-x-coin-toss-v1.opus'")) throw new Error('VS intro regression failed: intro music source changed')
 
-console.log('PASS premium VS intro: real logo/ranks, plates clear of seam, visible upward seam core energy, full seam evacuation, preserved VS stomp/lens flare')
+const androidGuard = hypeCss.slice(hypeCss.indexOf('/* Android VS intro compositor stability */'))
+if (!androidGuard.startsWith('/* Android VS intro compositor stability */')) throw new Error('VS intro regression failed: Android compositor guard missing')
+if (!androidGuard.includes('@media(max-width:760px)')) throw new Error('VS intro regression failed: Android compositor guard is not mobile-scoped')
+if (!androidGuard.includes('.mx-vs-card{backdrop-filter:none!important;-webkit-backdrop-filter:none!important')) throw new Error('VS intro regression failed: mobile fighter plates still force backdrop-filter compositing')
+if (!androidGuard.includes('.mx-vs-seam{filter:none!important')) throw new Error('VS intro regression failed: mobile seam still uses oversized filter compositing')
+if (!androidGuard.includes('mix-blend-mode:normal!important')) throw new Error('VS intro regression failed: mobile blend layers are not neutralized')
+if (!androidGuard.includes('.mx-vs-noise{display:none!important}')) throw new Error('VS intro regression failed: rapid mobile noise compositor layer remains')
+
+console.log('PASS premium VS intro: real logo/ranks, plates clear of seam, visible upward seam core energy, full seam evacuation, preserved VS stomp/lens flare, Android compositor guard')

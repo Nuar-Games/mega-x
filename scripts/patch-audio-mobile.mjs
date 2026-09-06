@@ -18,24 +18,35 @@ if(!source.includes("kind === 'ENTER_VS') this.playSfx('vsEnter')")) throw new E
 
 source=source.replace('  private lastArenaVsOccupied: [boolean | null, boolean | null] = [null, null]','  private lastArenaVsCardIds: [string | null, string | null] = [null, null]')
 source=source.replace('    this.lastArenaVsOccupied = [null, null]','    this.lastArenaVsCardIds = [null, null]')
+if(!source.includes('private lastVsEntryGestureAt = 0')) source=source.replace('  private lastArenaVsCardIds: [string | null, string | null] = [null, null]','  private lastArenaVsCardIds: [string | null, string | null] = [null, null]\n  private lastVsEntryGestureAt = 0')
 const oldVsBlock=`      const occupied = Boolean(zone.querySelector('button, img'))\n      const previous = this.lastArenaVsOccupied[index]\n      if (previous !== true && occupied) this.playSfx('vsEnter')\n      this.lastArenaVsOccupied[index] = occupied`
 const oldDeferredVsBlock=`      const occupied = Boolean(zone.querySelector('button, img'))\n      if (!this.unlocked && occupied) return\n      const previous = this.lastArenaVsOccupied[index]\n      if (previous !== true && occupied) this.playSfx('vsEnter')\n      this.lastArenaVsOccupied[index] = occupied`
-const newVsBlock=`      const cardId = zone.dataset.vsCardId || null\n      if (!this.unlocked && cardId) return\n      const previous = this.lastArenaVsCardIds[index]\n      if (previous !== cardId && cardId) this.playSfx('vsEnter')\n      this.lastArenaVsCardIds[index] = cardId`
+const newVsBlock=`      const cardId = zone.dataset.vsCardId || null\n      if (!this.unlocked && cardId) return\n      const previous = this.lastArenaVsCardIds[index]\n      if (previous !== cardId && cardId && performance.now() - this.lastVsEntryGestureAt > 1200) this.playSfx('vsEnter')\n      this.lastArenaVsCardIds[index] = cardId`
 if(source.includes(oldDeferredVsBlock)) source=source.replace(oldDeferredVsBlock,newVsBlock)
 else if(source.includes(oldVsBlock)) source=source.replace(oldVsBlock,newVsBlock)
 if(!source.includes('lastArenaVsCardIds')) throw new Error('VS card identity state missing')
+if(!source.includes('lastVsEntryGestureAt')) throw new Error('VS entry gesture timestamp missing')
 if(!source.includes('zone.dataset.vsCardId')) throw new Error('VS card identity reader missing')
-if(!source.includes('previous !== cardId && cardId')) throw new Error('VS card identity transition trigger missing')
+if(!source.includes('performance.now() - this.lastVsEntryGestureAt > 1200')) throw new Error('VS card identity fallback must not duplicate the direct gesture sound')
 
-if(!source.includes("target.closest('.mx3-card-overlay-actions')")) {
-  const clickAnchor="    const label = (target.textContent ?? '').replace(/\\s+/g, ' ').trim().toUpperCase()\n"
-  if(!source.includes(clickAnchor)) throw new Error('audio click label anchor missing')
-  const directVsGesture="    if ((label === 'ATK' || label === 'DEF') && target.closest('.mx3-card-overlay-actions') && document.querySelector('.mx3-canvas.phase-set_vs')) { this.playSfx('vsEnter'); return }\n"
-  source=source.replace(clickAnchor,clickAnchor+directVsGesture)
+const oldDirectClick="    if ((label === 'ATK' || label === 'DEF') && target.closest('.mx3-card-overlay-actions') && document.querySelector('.mx3-canvas.phase-set_vs')) { this.playSfx('vsEnter'); return }\n"
+source=source.replace(oldDirectClick,'')
+if(!source.includes("document.addEventListener('pointerdown', this.onVsEntryPointerDown, true)")) {
+  const pointerAnchor="    document.addEventListener('pointerdown', () => this.unlock(), { once: true, capture: true })\n"
+  if(!source.includes(pointerAnchor)) throw new Error('audio pointer unlock anchor missing')
+  source=source.replace(pointerAnchor,pointerAnchor+"    document.addEventListener('pointerdown', this.onVsEntryPointerDown, true)\n")
 }
-if(!source.includes("label === 'ATK' || label === 'DEF'")) throw new Error('direct VS confirmation gesture SFX fallback missing')
+if(!source.includes('private onVsEntryPointerDown = (event: Event) =>')) {
+  const clickAnchor='  private onClick = (event: Event) => {\n'
+  if(!source.includes(clickAnchor)) throw new Error('audio click handler anchor missing')
+  const pointerHandler=`  private onVsEntryPointerDown = (event: Event) => {\n    if (!this.unlocked) this.unlock()\n    const target = event.target instanceof Element ? event.target.closest('button') : null\n    if (!target) return\n    const label = (target.textContent ?? '').replace(/\\s+/g, ' ').trim().toUpperCase()\n    if ((label === 'ATK' || label === 'DEF') && target.closest('.mx3-card-overlay-actions') && document.querySelector('.mx3-canvas.phase-set_vs')) {\n      this.lastVsEntryGestureAt = performance.now()\n      this.playSfx('vsEnter')\n    }\n  }\n\n`
+  source=source.replace(clickAnchor,pointerHandler+clickAnchor)
+}
+if(!source.includes("document.addEventListener('pointerdown', this.onVsEntryPointerDown, true)")) throw new Error('VS entry must listen on the earliest user gesture')
+if(!source.includes("label === 'ATK' || label === 'DEF'")) throw new Error('direct VS confirmation gesture SFX missing')
 if(!source.includes("target.closest('.mx3-card-overlay-actions')")) throw new Error('direct VS confirmation gesture must stay scoped to VS action controls')
 if(!source.includes("document.querySelector('.mx3-canvas.phase-set_vs')")) throw new Error('direct VS confirmation gesture must stay scoped to SET_VS')
+if(!source.includes("this.lastVsEntryGestureAt = performance.now()")) throw new Error('VS entry direct gesture timestamp missing')
 
 const broadResult="    if (/PERLAWANAN\\s+TAMAT|MENANG!?|KALAH|YOU\\s+WIN|YOU\\s+LOSE|ANDA\\s+MENANG/.test(text)) this.playResultMusic()"
 const gatedResult="    if (document.querySelector('.mx3-canvas.phase-game_over')) this.playResultMusic()"
@@ -63,4 +74,4 @@ if(source.includes('lastPromptAt')) throw new Error('time-based prompt debounce 
 
 if(source.includes("playSfx('fight')") || /\bFIGHT\b/.test(source)) throw new Error('FIGHT announcer must stay removed')
 fs.writeFileSync(path,source)
-console.log('Verified mobile audio; VS entry now also fires directly from the ATK/DEF confirmation gesture, with card-identity fallback retained')
+console.log('Verified audio: VS entry fires on ATK/DEF pointerdown with card-identity fallback retained and de-duplicated')
