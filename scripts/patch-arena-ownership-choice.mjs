@@ -62,7 +62,12 @@ if (!css.includes(mobileDiscardMarker)) {
 
 const mobileArenaMarker = '/* Android arena declutter authority */'
 if (!arenaCss.includes(mobileArenaMarker)) {
-  arenaCss += `\n${mobileArenaMarker}\n@media(max-width:560px) and (orientation:portrait){\n  .duel-shell.mx3-stage .mx3-premium-rail{display:none!important}\n  .duel-shell.mx3-stage .mx3-canvas::after{left:145px!important;right:145px!important;top:414px!important;height:430px!important;border:0!important;box-shadow:none!important;background:radial-gradient(ellipse at 50% 52%,rgba(22,99,170,.10),transparent 66%)!important}\n  .duel-shell.mx3-stage .mx3-local-hand{top:920px!important;height:176px!important}\n  .duel-shell.mx3-stage .mx3-local-hand .mx3-hand-label{top:0!important;height:28px!important;font-size:13px!important}\n  .duel-shell.mx3-stage .mx3-local-hand .mx3-hand-row{top:36px!important;height:140px!important}\n  .duel-shell.mx3-stage .mx3-local-hand.is-live::before{top:31px!important;height:145px!important;border-color:rgba(255,205,55,.10)!important;box-shadow:0 0 15px rgba(255,194,40,.07)!important}\n}\n`
+  arenaCss += `\n${mobileArenaMarker}\n@media(max-width:560px) and (orientation:portrait){\n  .duel-shell.mx3-stage .mx3-premium-rail{display:none!important}\n  .duel-shell.mx3-stage .mx3-canvas::after{left:145px!important;right:145px!important;top:414px!important;height:430px!important;border:0!important;box-shadow:none!important;background:radial-gradient(ellipse at 50% 52%,rgba(22,99,170,.10),transparent 66%)!important}\n  .duel-shell.mx3-stage .mx3-local-hand{top:940px!important;height:170px!important}\n  .duel-shell.mx3-stage .mx3-local-hand .mx3-hand-label{top:0!important;height:28px!important;font-size:13px!important}\n  .duel-shell.mx3-stage .mx3-local-hand .mx3-hand-row{top:42px!important;height:128px!important}\n  .duel-shell.mx3-stage .mx3-local-hand.is-live::before{top:35px!important;height:135px!important;border-color:rgba(255,205,55,.10)!important;box-shadow:0 0 15px rgba(255,194,40,.07)!important}\n}\n`
+} else {
+  arenaCss = arenaCss
+    .replace('top:920px!important;height:176px!important', 'top:940px!important;height:170px!important')
+    .replace('top:36px!important;height:140px!important', 'top:42px!important;height:128px!important')
+    .replace('top:31px!important;height:145px!important', 'top:35px!important;height:135px!important')
 }
 
 const mobileDiscardV2Marker = '/* Android discard tray final authority v2 */'
@@ -74,4 +79,4 @@ fs.writeFileSync(fragmentPath, fragment)
 fs.writeFileSync(appPath, app)
 fs.writeFileSync(cssPath, css)
 fs.writeFileSync(arenaCssPath, arenaCss)
-console.log('Applied PEMAIN terminology, compact Android discard authority, and mobile arena declutter')
+console.log('Applied PEMAIN terminology, compact Android discard authority, lower local hand, and mobile arena declutter')
