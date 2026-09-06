@@ -205,9 +205,9 @@
   .mx-discard-confirm-cards{gap:8px!important}
 }
 
-/* Compact desktop / tablet browser: keep the inspector centered in the actual viewport.
-   Full desktop geometry above 900px remains untouched. */
-@media (min-width:561px) and (max-width:900px){
+/* Desktop/tablet browser: the inspector lives outside the scaled Arena canvas,
+   so keep it centered in the actual viewport at every desktop width. */
+@media (min-width:561px){
   .mx3-card-overlay{
     position:fixed!important;
     inset:0!important;
