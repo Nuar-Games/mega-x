@@ -17,6 +17,29 @@ if (cardViewAt < 0 || cardViewAt > gridEnd) throw new Error('Discard CardView ta
 const directImage = `<img className="discard-card-art" src={\`/cards/game/\${String(card.id).padStart(2, '0')}.webp\`} alt={card.name} draggable={false} decoding="async" />`
 app = app.slice(0, cardViewAt) + directImage + app.slice(cardViewAt + cardViewNeedle.length)
 
+// Keep exactly one authoritative discard instruction/counter, using selectedDiscardIds.length.
+// Earlier patches may inject a stale duplicate above this recovered markup; replace only the
+// chooser copy between its heading and the card grid, leaving the waiting-opponent branch intact.
+const chooserHeadingNeedle = `<h3>{game.pendingSelfDiscard.reason.startsWith('SPUDUR') ? 'PILIH KAD UNTUK SPUDUR' : 'PILIH KAD UNTUK DIBUANG'}</h3>`
+const chooserHeadingAt = app.indexOf(chooserHeadingNeedle)
+if (chooserHeadingAt < 0) throw new Error('Authoritative discard chooser heading missing')
+const chooserCopyStart = chooserHeadingAt + chooserHeadingNeedle.length
+const chooserGridAt = app.indexOf('<div className="discard-card-grid">', chooserCopyStart)
+if (chooserGridAt < 0) throw new Error('Authoritative discard grid missing after chooser heading')
+const authoritativeChooserCopy = `
+                    <p>
+                      {game.pendingSelfDiscard.mode === 'ANY'
+                        ? 'Pilih mana-mana kad tangan yang mahu dibuang, kemudian sahkan. Boleh pilih 0 kad.'
+                        : \`Pilih tepat \${game.pendingSelfDiscard.count} kad. \${selectedDiscardIds.length}/\${game.pendingSelfDiscard.count} dipilih.\`}
+                    </p>
+                    `
+app = app.slice(0, chooserCopyStart) + authoritativeChooserCopy + app.slice(chooserGridAt)
+
+const chooserSectionEnd = app.indexOf('<div className="discard-card-grid">', chooserHeadingAt)
+const chooserSection = app.slice(chooserHeadingAt, chooserSectionEnd)
+if ((chooserSection.match(/Pilih tepat/g) || []).length !== 1) throw new Error('Discard chooser must contain exactly one selected/required counter')
+if (!chooserSection.includes('${selectedDiscardIds.length}/${game.pendingSelfDiscard.count} dipilih.')) throw new Error('Discard counter must use selectedDiscardIds.length as its source of truth')
+
 const marker = '/* Android discard direct-art authority */'
 const block = `${marker}\n@media(max-width:560px) and (orientation:portrait){\n  body.mx3-arena-present .choice-overlay:has(.discard-panel),body.mx3-arena-present .choice-overlay .discard-panel,body.mx3-arena-present .choice-overlay .discard-panel .discard-card-grid{pointer-events:auto!important}\n  body.mx3-arena-present .choice-overlay .discard-panel .discard-card-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-auto-rows:max-content!important;gap:10px!important;align-content:start!important;align-items:start!important;overflow-y:auto!important;overflow-x:hidden!important;padding:3px!important}\n  body.mx3-arena-present .choice-overlay .discard-panel .discard-card-choice{position:relative!important;z-index:1!important;display:flex!important;flex-direction:column!important;width:100%!important;min-width:0!important;max-width:none!important;height:max-content!important;min-height:0!important;max-height:none!important;aspect-ratio:auto!important;padding:0!important;margin:0!important;overflow:hidden!important;background:#050812!important;pointer-events:auto!important;touch-action:manipulation!important;cursor:pointer!important;transform:none!important}\n  body.mx3-arena-present .choice-overlay .discard-panel .discard-card-choice>.discard-card-art{position:static!important;inset:auto!important;z-index:1!important;display:block!important;width:100%!important;height:auto!important;min-width:0!important;min-height:0!important;max-width:100%!important;max-height:none!important;object-fit:contain!important;opacity:1!important;visibility:visible!important;filter:none!important;transform:none!important;clip-path:none!important;mix-blend-mode:normal!important;pointer-events:none!important}\n  body.mx3-arena-present .choice-overlay .discard-panel .discard-card-choice>.discard-check{position:absolute!important;left:4px!important;right:4px!important;bottom:4px!important;z-index:3!important;pointer-events:none!important}\n}\n`
 const oldAt = css.indexOf(marker)
@@ -40,4 +63,4 @@ if (runtime.includes("image.style.setProperty('position'")) throw new Error('Run
 fs.writeFileSync(appPath, app)
 fs.writeFileSync(cssPath, css)
 fs.writeFileSync(runtimePath, runtime)
-console.log('Discard grid locked to two non-overlapping natural-height rows; runtime no longer owns geometry')
+console.log('Discard grid locked to two non-overlapping natural-height rows; one authoritative live counter preserved')
