@@ -8,10 +8,12 @@ source=source.replace('const COIN_TOSS_GAIN = 0.78','const COIN_TOSS_GAIN = 1.0'
 source=source.replace('const ARENA_GAIN = 0.58','const ARENA_GAIN = 0.88')
 source=source.replace('  card: 0.95,','  card: 0.25,')
 source=source.replace('  card: 0.55,','  card: 0.25,')
+source=source.replace('  vsEnter: 1.25,','  vsEnter: 0.65,')
+source=source.replace('  vsEnter: 0.95,','  vsEnter: 0.65,')
 if(!source.includes('const COIN_TOSS_GAIN = 1.0')) throw new Error('VS intro music gain rebalance missing')
 if(!source.includes('const ARENA_GAIN = 0.88')) throw new Error('Arena music gain rebalance missing')
 if(!source.includes('card: 0.25')) throw new Error('card selection gain rebalance missing')
-if(!source.includes('vsEnter: 1.25')) throw new Error('dedicated VS-entry priority gain missing')
+if(!source.includes('vsEnter: 0.65')) throw new Error('balanced VS-entry gain missing')
 
 if(!source.includes("kind === 'ENTER_VS'")) source=source.replace("    if (kind === 'DRAW') this.playSfx('draw')\n    else if (kind === 'SUPPORT') this.playSfx('enter')", "    if (kind === 'DRAW') this.playSfx('draw')\n    else if (kind === 'ENTER_VS') this.playSfx('vsEnter')\n    else if (kind === 'SUPPORT') this.playSfx('enter')")
 if(!source.includes("kind === 'ENTER_VS') this.playSfx('vsEnter')")) throw new Error('dedicated VS-entry SFX trigger missing')
@@ -90,4 +92,4 @@ if(source.includes('lastPromptAt')) throw new Error('time-based prompt debounce 
 
 if(source.includes("playSfx('fight')") || /\bFIGHT\b/.test(source)) throw new Error('FIGHT announcer must stay removed')
 fs.writeFileSync(path,source)
-console.log('Verified audio: VS entry owns ATK/DEF transition; competing PILIH KAD VS prompt is suppressed')
+console.log('Verified audio: VS entry fires once from audio authority at balanced gain; PILIH KAD VS prompt remains suppressed')
