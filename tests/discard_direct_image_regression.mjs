@@ -1,0 +1,12 @@
+import fs from 'node:fs'
+const app = fs.readFileSync('src/App.tsx','utf8')
+const css = fs.readFileSync('src/arena-stage.css','utf8')
+const start = app.indexOf('<div className="discard-card-grid">')
+const end = app.indexOf('</div>', start)
+if (start < 0 || end < 0) throw new Error('discard grid missing')
+const section = app.slice(start, end)
+if (!section.includes('className="discard-card-art"')) throw new Error('discard cards are not rendered directly')
+if (section.includes('<CardView card={card} />')) throw new Error('discard cards still use shared CardView renderer')
+if (!css.includes('Android discard direct-art authority')) throw new Error('direct discard art CSS authority missing')
+if (!css.includes('>.discard-card-art{position:absolute!important;inset:0!important')) throw new Error('discard art is not hard-pinned to its button')
+console.log('PASS discard cards bypass shared digital-card CSS and render direct artwork')
