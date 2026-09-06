@@ -2,7 +2,6 @@ import fs from 'node:fs'
 
 const app = fs.readFileSync('src/App.tsx', 'utf8')
 const css = fs.readFileSync('src/arena-stage.css', 'utf8')
-const stage = fs.readFileSync('src/arena-stage.ts', 'utf8')
 const audio = fs.readFileSync('src/audio.ts', 'utf8')
 const assert = (condition, message) => { if (!condition) throw new Error(message) }
 
@@ -14,10 +13,11 @@ assert(css.includes('@keyframes mx3VSTurnChase'), 'VS turn chasing-light animati
 assert(!css.includes('@property --mx3-turn-angle'), 'VS turn light must not depend on CSS @property animation on Android')
 
 const enterEvent = "window.dispatchEvent(new CustomEvent('mega-x:motion', { detail: { kind: 'ENTER_VS' } }))"
-assert(app.includes(`setVS(bottomPlayer, focusedCard.id, 'ATK'); ${enterEvent}`), 'ATK VS confirmation must fire VS-entry sound in the user gesture')
-assert(app.includes(`setVS(bottomPlayer, focusedCard.id, 'DEF'); ${enterEvent}`), 'DEF VS confirmation must fire VS-entry sound in the user gesture')
-assert(stage.includes('previousVsCardIds'), 'Arena stage must retain opponent/rendered-state VS identity fallback')
-assert(stage.includes("zone.dataset.vsCardId"), 'VS identity fallback must use rendered card identity')
-assert(audio.includes("kind === 'ENTER_VS') this.playSfx('vsEnter')"), 'Audio engine must map ENTER_VS to dedicated VS-entry sound')
+assert(!app.includes(`setVS(bottomPlayer, focusedCard.id, 'ATK'); ${enterEvent}`), 'ATK must not emit a second App ENTER_VS event')
+assert(!app.includes(`setVS(bottomPlayer, focusedCard.id, 'DEF'); ${enterEvent}`), 'DEF must not emit a second App ENTER_VS event')
+assert(audio.includes("document.addEventListener('pointerdown', this.onVsEntryPointerDown, true)"), 'Audio engine must own VS confirmation on the Android user gesture')
+assert(audio.includes("this.playSfx('vsEnter')"), 'Audio engine must play dedicated VS-entry sound')
+assert(audio.includes('zone.dataset.vsCardId'), 'Audio engine must retain rendered VS identity fallback for opponent/non-click entry')
+assert(audio.includes('vsEnter: 0.65'), 'VS-entry SFX must use balanced gain')
 
-console.log('PASS final rendered Arena: Android-safe active VS chase light and direct VS-entry sound gesture')
+console.log('PASS final rendered Arena: Android-safe active VS chase light and single-authority VS-entry audio')
