@@ -49,6 +49,49 @@ function fitCanvas(shell: HTMLElement) {
   shell.dataset.arenaAspect = viewportWidth < viewportHeight ? 'portrait' : 'landscape'
 }
 
+function syncDesktopPresentation(shell: HTMLElement) {
+  if (window.innerWidth <= 560) return
+
+  const rail = shell.querySelector<HTMLElement>('.mx3-premium-rail')
+  if (rail) rail.style.setProperty('display', 'none', 'important')
+
+  const controls = document.getElementById('mx-audio-controls')
+  const audioButton = shell.querySelector<HTMLElement>('.mx3-audio')
+  if (!controls || !audioButton) return
+
+  const toggle = controls.querySelector<HTMLElement>('[data-audio-toggle]')
+  const panel = controls.querySelector<HTMLElement>('[data-audio-panel]')
+  const rect = audioButton.getBoundingClientRect()
+  const panelWidth = 220
+  const panelHeight = 150
+  const left = Math.max(8, Math.min(window.innerWidth - panelWidth - 8, rect.right - panelWidth))
+  const top = Math.max(8, Math.min(window.innerHeight - panelHeight - 8, rect.bottom + 6))
+
+  controls.style.setProperty('display', 'block', 'important')
+  controls.style.setProperty('position', 'fixed', 'important')
+  controls.style.setProperty('left', `${left}px`, 'important')
+  controls.style.setProperty('right', 'auto', 'important')
+  controls.style.setProperty('top', `${top}px`, 'important')
+  controls.style.setProperty('z-index', '1500', 'important')
+  if (toggle) toggle.style.setProperty('display', 'none', 'important')
+  if (panel) panel.style.setProperty('margin-top', '0', 'important')
+}
+
+function resetDesktopAudioControls() {
+  if (window.innerWidth <= 560) return
+  const controls = document.getElementById('mx-audio-controls')
+  if (!controls) return
+  const toggle = controls.querySelector<HTMLElement>('[data-audio-toggle]')
+  const panel = controls.querySelector<HTMLElement>('[data-audio-panel]')
+
+  controls.style.removeProperty('display')
+  controls.style.removeProperty('left')
+  controls.style.setProperty('right', '10px')
+  controls.style.setProperty('top', '10px')
+  if (toggle) toggle.style.removeProperty('display')
+  if (panel) panel.style.setProperty('margin-top', '6px')
+}
+
 function syncResultOutcome(shell: HTMLElement) {
   const localName = shell.querySelector<HTMLElement>('.mx3-fighter.is-local strong')?.textContent?.trim()
   if (!localName) return
@@ -86,10 +129,14 @@ function syncResultOutcome(shell: HTMLElement) {
 function mountArena() {
   const shell = document.querySelector<HTMLElement>(SHELL)
   document.body.classList.toggle('mx3-arena-present', Boolean(shell))
-  if (!shell) return
+  if (!shell) {
+    resetDesktopAudioControls()
+    return
+  }
   shell.classList.remove('mx2-stage')
   shell.classList.add('mx3-stage')
   fitCanvas(shell)
+  syncDesktopPresentation(shell)
   refreshFeedback(shell)
   syncResultOutcome(shell)
 }
