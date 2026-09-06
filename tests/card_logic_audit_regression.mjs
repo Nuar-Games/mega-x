@@ -6,7 +6,7 @@ const checks = [
   ['PELUNCUR can resolve hand/effect targets', engine.includes("kind==='PELUNCUR'") && engine.includes('target.effects.length')],
   ['BARA blocks position switch', engine.includes('hasEffect(s,other(actor),6)')],
   ['NAGA threshold ATK/DEF <=500', engine.includes('card(id).atk<=500||card(id).def<=500')],
-  ['effect-destroyed VS goes Zon Tepi', engine.includes('target.discard.push(c);target.vs=null;finishRound')],
+  ['effect-destroyed VS scores to Zon X', engine.includes('function destroyEffectTarget') && engine.includes('player(s,owner).x.push(cardId)') && engine.includes("if(destroyed==='VS')finishRound")],
 ]
 let failures = 0
 for (const [name, ok] of checks) { console.log(`${ok ? 'PASS' : 'FAIL'} ${name}`); if (!ok) failures++ }

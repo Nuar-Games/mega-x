@@ -1,0 +1,227 @@
+/* MEGA-X ARENA — narrow viewport priority layer.
+   Keeps the desktop Arena baseline untouched while protecting mobile hand and card inspector readability. */
+
+@media (max-width:560px){
+  /* The board still scales uniformly, but the local hand receives extra visual priority. */
+  .mx3-local-hand{
+    top:930px!important;
+    transform:scale(1.38)!important;
+    transform-origin:50% 100%!important;
+    z-index:90!important;
+    filter:drop-shadow(0 13px 20px rgba(0,0,0,.55))!important;
+  }
+  .mx3-local-hand .mx3-hand-label{
+    height:28px!important;
+    font-size:13px!important;
+  }
+  .mx3-local-hand .mx3-hand-row{
+    top:34px!important;
+    padding:5px 6px!important;
+  }
+  .mx3-hand-card{
+    box-shadow:0 7px 14px rgba(0,0,0,.62)!important;
+  }
+
+  /* The selected-card overlay lives outside the scaled canvas, so bound it to the viewport. */
+  .mx3-card-overlay{
+    position:fixed!important;
+    inset:0!important;
+    z-index:2200!important;
+  }
+  .mx3-card-overlay-dismiss{
+    background:rgba(0,3,8,.58)!important;
+    backdrop-filter:blur(2px)!important;
+  }
+  .mx3-card-overlay-panel{
+    left:50%!important;
+    right:auto!important;
+    bottom:max(12px,env(safe-area-inset-bottom))!important;
+    width:min(calc(100vw - 24px),440px)!important;
+    max-width:440px!important;
+    min-height:0!important;
+    max-height:min(62dvh,430px)!important;
+    padding:14px 14px 15px!important;
+    transform:translateX(-50%)!important;
+    overflow:auto!important;
+    clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 10px,100% calc(100% - 10px),calc(100% - 10px) 100%,10px 100%,0 calc(100% - 10px),0 10px)!important;
+    box-shadow:inset 0 0 0 1px rgba(255,216,92,.12),0 18px 48px rgba(0,0,0,.82),0 0 25px rgba(205,159,46,.20)!important;
+  }
+  .mx3-card-overlay-side{
+    gap:9px!important;
+  }
+  .mx3-card-overlay-kicker{
+    font-size:10px!important;
+  }
+  .mx3-card-overlay-name{
+    padding-right:34px!important;
+    font-size:clamp(18px,5.5vw,23px)!important;
+    line-height:1.08!important;
+  }
+  .mx3-card-overlay-stats{
+    display:grid!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:6px!important;
+  }
+  .mx3-card-overlay-stats span{
+    min-width:0!important;
+    padding:7px 6px!important;
+    text-align:center!important;
+    font-size:10px!important;
+    white-space:nowrap!important;
+  }
+  .mx3-card-overlay-stats b{
+    display:block!important;
+    margin:2px 0 0!important;
+    font-size:15px!important;
+  }
+  .mx3-card-overlay-effect{
+    max-height:112px!important;
+    padding:9px 10px!important;
+    font-size:12px!important;
+    line-height:1.42!important;
+  }
+  .mx3-card-overlay-actions{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:8px!important;
+  }
+  .mx3-card-overlay-actions button{
+    width:100%!important;
+    min-width:0!important;
+    min-height:42px!important;
+    padding:8px 10px!important;
+    font-size:14px!important;
+  }
+  .mx3-card-overlay-close{
+    right:8px!important;
+    top:8px!important;
+    min-width:34px!important;
+    min-height:34px!important;
+    display:grid!important;
+    place-items:center!important;
+    padding:0!important;
+    font-size:20px!important;
+  }
+
+  /* Shared mobile card-choice system.
+     All VS / EFFECT / discard selectors are promoted out of the scaled Arena coordinate system
+     and become one viewport-level surface. */
+  .duel-shell [class]:has(.mx-responsive-vs-title),
+  .duel-shell [class]:has(.mx-responsive-effect-title),
+  .duel-shell [class]:has(.mx-responsive-discard-title){
+    position:fixed!important;
+    inset:0!important;
+    width:100vw!important;
+    max-width:100vw!important;
+    height:100dvh!important;
+    max-height:100dvh!important;
+    margin:0!important;
+    padding:max(14px,env(safe-area-inset-top)) 12px max(14px,env(safe-area-inset-bottom))!important;
+    display:grid!important;
+    grid-template-rows:auto minmax(0,1fr) auto!important;
+    align-content:stretch!important;
+    background:rgba(2,5,11,.97)!important;
+    overflow:hidden!important;
+    transform:none!important;
+    z-index:2400!important;
+    box-sizing:border-box!important;
+  }
+  .duel-shell [class]:has(.mx-responsive-vs-title)>div,
+  .duel-shell [class]:has(.mx-responsive-effect-title)>div,
+  .duel-shell [class]:has(.mx-responsive-discard-title)>div{
+    min-height:0!important;
+    max-height:none!important;
+    overflow:auto!important;
+    overscroll-behavior:contain!important;
+    -webkit-overflow-scrolling:touch!important;
+  }
+  .mx-responsive-vs-title,.mx-responsive-effect-title,.mx-responsive-discard-title{
+    position:sticky!important;
+    top:0!important;
+    z-index:3!important;
+    width:100%!important;
+    max-width:100%!important;
+    margin:0!important;
+    padding:10px 8px 12px!important;
+    font-size:clamp(18px,5vw,24px)!important;
+    line-height:1.05!important;
+    text-align:center!important;
+    background:linear-gradient(180deg,rgba(9,19,32,.98),rgba(4,9,16,.94))!important;
+  }
+  .duel-shell [class]:has(.mx-responsive-vs-title) button,
+  .duel-shell [class]:has(.mx-responsive-effect-title) button,
+  .duel-shell [class]:has(.mx-responsive-discard-title) button{
+    touch-action:manipulation!important;
+  }
+
+  /* A self-discard confirmation sheet is the authoritative discard surface.
+     Hide only the duplicate discard selector underneath it; other choice types remain untouched. */
+  body:has(.mx-discard-confirm-sheet) .duel-shell [class]:has(.mx-responsive-discard-title){
+    display:none!important;
+  }
+  .mx-discard-confirm-sheet{
+    position:fixed!important;
+    inset:0!important;
+    left:0!important;
+    right:0!important;
+    top:0!important;
+    bottom:0!important;
+    width:100vw!important;
+    max-width:100vw!important;
+    height:100dvh!important;
+    max-height:100dvh!important;
+    padding:max(14px,env(safe-area-inset-top)) 12px max(14px,env(safe-area-inset-bottom))!important;
+    grid-template-rows:auto minmax(0,1fr) auto!important;
+    border-radius:0!important;
+    z-index:2500!important;
+  }
+  .mx-discard-confirm-cards{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    align-content:start!important;
+    gap:10px!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    padding:10px 2px!important;
+  }
+  .mx-discard-card{
+    width:100%!important;
+    max-width:none!important;
+    min-width:0!important;
+    flex:none!important;
+  }
+  .mx-confirm-discard{
+    position:sticky!important;
+    bottom:0!important;
+    min-height:48px!important;
+    font-size:14px!important;
+  }
+}
+
+@media (max-width:390px){
+  .mx3-local-hand{top:936px!important;transform:scale(1.32)!important}
+  .mx3-card-overlay-panel{width:calc(100vw - 16px)!important;padding:12px!important}
+  .mx3-card-overlay-effect{max-height:96px!important}
+  .mx-discard-confirm-cards{gap:8px!important}
+}
+
+/* Desktop/tablet browser: the inspector lives outside the scaled Arena canvas,
+   so keep it centered in the actual viewport at every desktop width. */
+@media (min-width:561px){
+  .mx3-card-overlay{
+    position:fixed!important;
+    inset:0!important;
+    z-index:2200!important;
+  }
+  .mx3-card-overlay-panel{
+    position:fixed!important;
+    left:50%!important;
+    right:auto!important;
+    bottom:18px!important;
+    width:min(calc(100vw - 32px),440px)!important;
+    max-width:440px!important;
+    max-height:min(72dvh,520px)!important;
+    transform:translateX(-50%)!important;
+    overflow:auto!important;
+  }
+}

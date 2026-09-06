@@ -1,190 +1,360 @@
-/* FINAL landing authority — this file must load last. */
+/* MEGA-X — LOCAL LANDING AUTHORITY
+   Stylized fighting-game START plate.
+   Replace src/landing-bg-force.css with this file.
+*/
+
+/* ---------- ARENA ---------- */
 #mx-main-landing .mx-main-portrait{
   position:absolute !important;
   isolation:isolate !important;
   background:url('/ui/landing/background-fixed.avif') center center/100% 100% no-repeat !important;
 }
-#mx-main-landing .mx-main-portrait::before{content:none !important;display:none !important}
-#mx-main-landing .mx-main-bg{display:none !important}
+
+#mx-main-landing .mx-main-portrait::before{
+  content:none !important;
+  display:none !important;
+}
+
+#mx-main-landing .mx-main-bg{
+  display:none !important;
+}
+
 #mx-main-landing .mx-main-vignette{
   z-index:1 !important;
-  background:linear-gradient(180deg,rgba(1,2,10,.01) 0%,rgba(1,2,10,.02) 64%,rgba(1,2,10,.10) 84%,rgba(1,2,10,.20) 100%) !important;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(1,2,10,.02) 0%,
+      rgba(1,2,10,.025) 58%,
+      rgba(1,2,10,.10) 80%,
+      rgba(1,2,10,.22) 100%
+    ) !important;
 }
+
 #mx-main-landing .mx-main-energy{z-index:2 !important;opacity:.08 !important}
 #mx-main-landing .mx-main-heroes{z-index:4 !important}
 #mx-main-landing .mx-main-cards{z-index:5 !important}
 #mx-main-landing .mx-main-features{z-index:8 !important}
 #mx-main-landing .mx-main-footer{z-index:8 !important}
 
-/* Obvious animated flare across the official MEGA-X logo. */
+/* ---------- LOGO FLARE ---------- */
 #mx-main-landing .mx-main-header{
   z-index:20 !important;
   overflow:visible !important;
   isolation:isolate !important;
 }
+
 #mx-main-landing .mx-main-header::before{
   content:"" !important;
   position:absolute !important;
   z-index:30 !important;
-  left:-20% !important;
+  left:-15% !important;
   top:31% !important;
-  width:140% !important;
-  height:4px !important;
-  pointer-events:none !important;
+  width:130% !important;
+  height:3px !important;
   opacity:0;
-  transform:translateX(-30%) scaleX(.25);
-  transform-origin:center;
-  background:linear-gradient(90deg,transparent 4%,#4bdcff 28%,#fff 46%,#fff27d 50%,#fff 54%,#ff51e2 72%,transparent 96%) !important;
-  filter:drop-shadow(0 0 6px #fff) drop-shadow(0 0 16px #63d7ff) drop-shadow(0 0 26px #ff4dde) !important;
+  pointer-events:none !important;
+  background:linear-gradient(
+    90deg,
+    transparent 0%,
+    #52e1ff 23%,
+    #ffffff 44%,
+    #ffe967 50%,
+    #ffffff 56%,
+    #ff4de0 77%,
+    transparent 100%
+  ) !important;
+  filter:
+    drop-shadow(0 0 5px #fff)
+    drop-shadow(0 0 13px #61ddff)
+    drop-shadow(0 0 23px #ff4fe2) !important;
   mix-blend-mode:screen !important;
-  animation:mxLogoBlast 3.1s ease-in-out infinite !important;
+  transform:translateX(-32%) scaleX(.22);
+  animation:mxLogoSlash 3.4s ease-in-out infinite !important;
 }
+
 #mx-main-landing .mx-main-header::after{
   content:"" !important;
   position:absolute !important;
   z-index:31 !important;
   left:51% !important;
   top:31% !important;
-  width:86px !important;
-  height:86px !important;
+  width:78px !important;
+  height:78px !important;
   border-radius:50% !important;
-  pointer-events:none !important;
   opacity:0;
-  transform:translate(-50%,-50%) scale(.2);
-  background:radial-gradient(circle,#fff 0 5%,#fff6a8 10%,rgba(105,210,255,.95) 24%,rgba(255,67,227,.5) 43%,transparent 70%) !important;
-  filter:drop-shadow(0 0 10px #fff) drop-shadow(0 0 26px #66d9ff) !important;
+  pointer-events:none !important;
+  transform:translate(-50%,-50%) scale(.18);
+  background:radial-gradient(
+    circle,
+    #fff 0 5%,
+    #fff59a 10%,
+    rgba(105,216,255,.96) 24%,
+    rgba(255,71,224,.46) 42%,
+    transparent 72%
+  ) !important;
+  filter:
+    drop-shadow(0 0 10px #fff)
+    drop-shadow(0 0 25px #65d8ff) !important;
   mix-blend-mode:screen !important;
-  animation:mxLogoStar 3.1s ease-in-out infinite !important;
+  animation:mxLogoCore 3.4s ease-in-out infinite !important;
 }
 
-/* MAIN SEKARANG — arcade fight-start cabinet, deliberately NOT a polygon. */
+/* ============================================================
+   MAIN SEKARANG — FIGHTING-GAME START PLATE
+   sharp, premium, high-impact, NOT a generic neon pill
+   ============================================================ */
+
 #mx-main-landing .mx-main-cta{
+  position:absolute !important;
   z-index:20 !important;
-  left:7% !important;
-  top:59.1% !important;
-  width:86% !important;
-  height:9.2% !important;
+  left:6.4% !important;
+  top:58.7% !important;
+  width:87.2% !important;
+  height:9.5% !important;
+
   padding:0 !important;
-  clip-path:none !important;
-  border-radius:18px !important;
-  border:3px solid #62e7ff !important;
+  margin:0 !important;
+  border:0 !important;
+  border-radius:0 !important;
+
+  clip-path:polygon(
+    4.5% 0,
+    95.5% 0,
+    100% 20%,
+    97.6% 50%,
+    100% 80%,
+    95.5% 100%,
+    4.5% 100%,
+    0 80%,
+    2.4% 50%,
+    0 20%
+  ) !important;
+
   background:
-    linear-gradient(90deg,rgba(255,72,232,.30),transparent 15% 85%,rgba(255,72,232,.30)),
-    linear-gradient(180deg,#24104b 0%,#09051b 46%,#170934 100%) !important;
+    linear-gradient(180deg,#2a123f 0%,#0a0510 44%,#07030b 58%,#1a0929 100%) !important;
+
   box-shadow:
-    inset 0 0 0 2px rgba(255,61,222,.72),
-    inset 0 0 24px rgba(102,71,255,.78),
-    0 0 6px #fff,
-    0 0 18px #56dfff,
-    0 0 34px rgba(236,55,255,.82),
-    0 14px 28px rgba(0,0,0,.62) !important;
-  overflow:visible !important;
+    inset 0 0 0 2px rgba(255,244,190,.95),
+    inset 0 0 0 5px rgba(255,188,62,.65),
+    inset 0 0 0 8px rgba(75,219,255,.35),
+    inset 0 0 30px rgba(119,56,255,.74),
+    0 0 4px #fff,
+    0 0 13px rgba(75,222,255,.95),
+    0 0 26px rgba(255,65,225,.82),
+    0 16px 30px rgba(0,0,0,.72) !important;
+
+  overflow:hidden !important;
   isolation:isolate !important;
-  animation:mxCabinetPulse 1.35s ease-in-out infinite !important;
+  cursor:pointer !important;
+  transform-origin:center !important;
+  animation:mxStartPlateBreath 1.25s cubic-bezier(.33,.6,.3,1) infinite !important;
 }
+
+/* metallic top/bottom rails */
 #mx-main-landing .mx-main-cta::before{
   content:"" !important;
   position:absolute !important;
-  z-index:3 !important;
-  left:5% !important;
-  right:5% !important;
-  top:-8px !important;
-  height:5px !important;
-  inset-block-end:auto !important;
-  clip-path:none !important;
-  transform:none !important;
-  opacity:1 !important;
-  background:linear-gradient(90deg,transparent,#5ee9ff 9%,#fff 24%,#ffdf55 50%,#ff57e4 76%,#fff 90%,transparent) !important;
-  background-size:180% 100% !important;
-  box-shadow:0 0 6px #fff,0 0 14px #62e8ff,0 0 24px #ff4ddd !important;
-  filter:none !important;
-  animation:mxRailRun .75s linear infinite !important;
+  z-index:5 !important;
+  inset:0 !important;
+  pointer-events:none !important;
+  clip-path:inherit !important;
+  background:
+    linear-gradient(180deg,
+      rgba(255,255,255,.98) 0 2px,
+      rgba(255,219,93,.96) 2px 5px,
+      rgba(78,216,255,.96) 5px 7px,
+      transparent 7px calc(100% - 7px),
+      rgba(255,89,225,.90) calc(100% - 7px) calc(100% - 5px),
+      rgba(77,210,255,.95) calc(100% - 5px) calc(100% - 3px),
+      rgba(255,238,166,.96) calc(100% - 3px) 100%
+    ),
+    linear-gradient(
+      110deg,
+      transparent 0 30%,
+      rgba(255,255,255,.05) 36%,
+      rgba(255,255,255,.78) 47%,
+      rgba(255,224,105,.55) 50%,
+      rgba(255,255,255,.22) 54%,
+      transparent 64% 100%
+    ) !important;
+  background-size:100% 100%,240% 100% !important;
+  background-position:0 0,140% 0 !important;
+  mix-blend-mode:screen !important;
+  filter:drop-shadow(0 0 5px #fff) !important;
+  animation:mxStartRailSweep 1.8s ease-in-out infinite !important;
 }
+
+/* recessed cabinet face / CRT depth */
 #mx-main-landing .mx-main-cta::after{
   content:"" !important;
   position:absolute !important;
-  z-index:0 !important;
-  inset:5px !important;
-  border-radius:11px !important;
-  clip-path:none !important;
+  z-index:1 !important;
+  inset:9px 12px !important;
+  pointer-events:none !important;
+  clip-path:polygon(
+    3.5% 0,
+    96.5% 0,
+    100% 16%,
+    98.5% 50%,
+    100% 84%,
+    96.5% 100%,
+    3.5% 100%,
+    0 84%,
+    1.5% 50%,
+    0 16%
+  ) !important;
   background:
-    linear-gradient(105deg,transparent 0 36%,rgba(255,255,255,.58) 45%,rgba(255,225,90,.48) 50%,rgba(255,255,255,.28) 55%,transparent 64%),
-    radial-gradient(ellipse at 50% 50%,rgba(140,57,220,.34),transparent 58%) !important;
-  background-size:250% 100%,100% 100% !important;
-  background-position:150% 0,0 0 !important;
-  filter:none !important;
-  animation:mxCabinetSweep 1.6s ease-in-out infinite !important;
+    repeating-linear-gradient(
+      180deg,
+      rgba(255,255,255,.022) 0 2px,
+      rgba(0,0,0,.07) 2px 4px
+    ),
+    radial-gradient(ellipse at 50% 48%,rgba(129,57,210,.30),transparent 60%),
+    linear-gradient(180deg,#180925 0%,#07030b 54%,#11071c 100%) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.11),
+    inset 0 0 0 3px rgba(255,55,219,.28),
+    inset 0 0 18px rgba(78,159,255,.28),
+    inset 0 -12px 18px rgba(0,0,0,.72) !important;
 }
+
+/* exact one-line title */
 #mx-main-landing .mx-main-cta-core{
-  position:relative !important;
-  z-index:6 !important;
-  color:#fff7db !important;
-  font-size:clamp(1.55rem,6.15vw,3rem) !important;
-  font-weight:1000 !important;
-  letter-spacing:.035em !important;
-  text-shadow:0 3px 0 #713700,0 0 4px #fff,0 0 11px #ffc448,0 0 22px #ff4fe8 !important;
-  animation:mxTextPunch 1.35s ease-in-out infinite !important;
+  position:absolute !important;
+  inset:0 !important;
+  z-index:10 !important;
+  width:100% !important;
+  height:100% !important;
+
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+
+  white-space:nowrap !important;
+  overflow:visible !important;
+  line-height:.9 !important;
+
+  font-family:
+    "Bahnschrift Condensed",
+    "Arial Narrow",
+    "Roboto Condensed",
+    "Franklin Gothic Condensed",
+    "Impact",
+    sans-serif !important;
+
+  font-size:clamp(1.34rem,5.15vw,2.55rem) !important;
+  font-stretch:condensed !important;
+  font-weight:900 !important;
+  letter-spacing:.05em !important;
+
+  color:#f8fbff !important;
+
+  -webkit-text-stroke:1px rgba(126,110,255,.78) !important;
+  paint-order:stroke fill !important;
+
+  text-shadow:
+    0 2px 0 rgba(20,24,44,.98),
+    0 4px 0 rgba(5,7,18,.92),
+    0 0 2px rgba(255,255,255,.95),
+    0 0 7px rgba(118,206,255,.72),
+    0 0 13px rgba(128,91,255,.46) !important;
+
+  filter:drop-shadow(0 6px 3px rgba(0,0,0,.55)) !important;
+  transform:none !important;
+  animation:none !important;
 }
+
+/* existing arc spans become stylized impact slashes */
 #mx-main-landing .mx-main-cta-arc{
-  z-index:7 !important;
-  inset:-16% -3% !important;
+  position:absolute !important;
+  z-index:8 !important;
+  inset:0 !important;
+  pointer-events:none !important;
   opacity:1 !important;
   background:none !important;
   clip-path:none !important;
   filter:none !important;
   animation:none !important;
-  pointer-events:none !important;
 }
+
 #mx-main-landing .mx-main-cta-arc::before,
 #mx-main-landing .mx-main-cta-arc::after{
   content:"" !important;
   position:absolute !important;
-  width:34% !important;
-  height:4px !important;
+  width:28% !important;
+  height:5px !important;
   opacity:0;
-  background:linear-gradient(90deg,transparent,#61e8ff 16%,#fff 34%,#f35aff 54%,#fff 72%,#ffe45e 86%,transparent) !important;
-  filter:drop-shadow(0 0 4px #fff) drop-shadow(0 0 9px #61dcff) drop-shadow(0 0 14px #e54cff) !important;
-  clip-path:polygon(0 45%,12% 28%,20% 0,29% 65%,40% 30%,49% 82%,61% 22%,73% 69%,84% 10%,100% 45%,84% 60%,73% 42%,61% 100%,49% 55%,40% 77%,29% 39%,20% 96%,12% 63%,0 57%) !important;
-  animation:mxArcSnap .82s steps(2,end) infinite !important;
+  background:linear-gradient(
+    90deg,
+    transparent,
+    #57e6ff 10%,
+    #fff 24%,
+    #ffda6d 43%,
+    #ff52e4 60%,
+    #fff 73%,
+    transparent
+  ) !important;
+  clip-path:polygon(
+    0 46%,10% 39%,19% 0,28% 64%,40% 28%,49% 86%,
+    61% 20%,72% 70%,82% 11%,100% 48%,83% 63%,73% 42%,
+    62% 100%,49% 56%,39% 80%,28% 43%,18% 96%,10% 61%,0 57%
+  ) !important;
+  filter:
+    drop-shadow(0 0 4px #fff)
+    drop-shadow(0 0 8px #58e5ff)
+    drop-shadow(0 0 13px #ff50e4) !important;
+  animation:mxStartSlash .88s steps(2,end) infinite !important;
 }
-#mx-main-landing .mx-main-cta-arc::before{left:0 !important;top:18% !important}
-#mx-main-landing .mx-main-cta-arc::after{right:0 !important;bottom:18% !important;animation-delay:-.30s !important}
-#mx-main-landing .arc-b{transform:none !important}
-#mx-main-landing .arc-b::before{right:0 !important;left:auto !important;top:18% !important;animation-delay:-.55s !important}
-#mx-main-landing .arc-b::after{left:0 !important;right:auto !important;bottom:18% !important;animation-delay:-.70s !important}
-#mx-main-landing .mx-main-cta:active{transform:scale(.965) !important;filter:brightness(1.35) !important}
 
-@keyframes mxLogoBlast{
-  0%,22%,100%{opacity:0;transform:translateX(-30%) scaleX(.25)}
-  32%{opacity:.55;transform:translateX(-10%) scaleX(.55)}
-  41%{opacity:1;transform:translateX(0) scaleX(1)}
-  49%{opacity:.42;transform:translateX(12%) scaleX(.72)}
-  58%{opacity:0;transform:translateX(30%) scaleX(.25)}
+#mx-main-landing .arc-a::before{left:1.5% !important;top:16% !important}
+#mx-main-landing .arc-a::after{right:1.5% !important;bottom:16% !important;animation-delay:-.38s !important}
+#mx-main-landing .arc-b::before{right:1.5% !important;left:auto !important;top:17% !important;animation-delay:-.61s !important}
+#mx-main-landing .arc-b::after{left:1.5% !important;right:auto !important;bottom:17% !important;animation-delay:-.74s !important}
+
+/* tiny "impact brackets" near center edges */
+#mx-main-landing .mx-main-cta .arc-a{
+  filter:
+    drop-shadow(0 0 8px rgba(90,225,255,.55))
+    drop-shadow(0 0 12px rgba(255,76,226,.38)) !important;
 }
-@keyframes mxLogoStar{
-  0%,27%,100%{opacity:0;transform:translate(-50%,-50%) scale(.2)}
-  39%{opacity:1;transform:translate(-50%,-50%) scale(1.45)}
-  47%{opacity:.7;transform:translate(-50%,-50%) scale(.82)}
-  57%{opacity:0;transform:translate(-50%,-50%) scale(.25)}
+
+#mx-main-landing .mx-main-cta:active{
+  transform:scale(.958) !important;
+  filter:brightness(1.38) saturate(1.18) !important;
 }
-@keyframes mxCabinetPulse{
+
+/* ---------- ANIMATION ---------- */
+@keyframes mxLogoSlash{
+  0%,22%,100%{opacity:0;transform:translateX(-32%) scaleX(.22)}
+  34%{opacity:.45;transform:translateX(-12%) scaleX(.52)}
+  42%{opacity:1;transform:translateX(0) scaleX(1)}
+  50%{opacity:.38;transform:translateX(13%) scaleX(.70)}
+  59%{opacity:0;transform:translateX(31%) scaleX(.22)}
+}
+
+@keyframes mxLogoCore{
+  0%,28%,100%{opacity:0;transform:translate(-50%,-50%) scale(.18)}
+  40%{opacity:1;transform:translate(-50%,-50%) scale(1.42)}
+  48%{opacity:.62;transform:translate(-50%,-50%) scale(.80)}
+  58%{opacity:0;transform:translate(-50%,-50%) scale(.24)}
+}
+
+@keyframes mxStartPlateBreath{
   0%,100%{transform:scale(1);filter:brightness(1)}
-  50%{transform:scale(1.018);filter:brightness(1.14)}
+  50%{transform:scale(1.010);filter:brightness(1.10)}
 }
-@keyframes mxRailRun{0%{background-position:0 0}100%{background-position:180% 0}}
-@keyframes mxCabinetSweep{
-  0%,20%{background-position:150% 0,0 0}
-  72%{background-position:-45% 0,0 0}
-  100%{background-position:-65% 0,0 0}
+
+@keyframes mxStartRailSweep{
+  0%,18%{background-position:0 0,140% 0}
+  70%{background-position:0 0,-35% 0}
+  100%{background-position:0 0,-55% 0}
 }
-@keyframes mxTextPunch{
-  0%,100%{transform:scale(1);filter:brightness(1)}
-  50%{transform:scale(1.025);filter:brightness(1.18)}
-}
-@keyframes mxArcSnap{
-  0%,18%,100%{opacity:0;transform:translateX(-4px) scaleX(.9)}
+
+@keyframes mxStartSlash{
+  0%,18%,100%{opacity:0;transform:translateX(-4px) scaleX(.90)}
   20%{opacity:1;transform:translateX(1px) scaleX(1.06)}
-  26%{opacity:.28;transform:translateX(-1px) scaleX(.96)}
-  31%{opacity:1;transform:translateX(3px) scaleX(1.04)}
-  37%,98%{opacity:0;transform:translateX(5px) scaleX(.92)}
+  25%{opacity:.28;transform:translateX(-1px) scaleX(.97)}
+  30%{opacity:1;transform:translateX(3px) scaleX(1.05)}
+  36%,98%{opacity:0;transform:translateX(5px) scaleX(.93)}
 }

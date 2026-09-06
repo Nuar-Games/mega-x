@@ -1,0 +1,159 @@
+/* Final Lobby polish: compact mobile sign-out, direct Top 3 layout, contact + footer. */
+.mx-lobby-contactbar{
+  grid-area:contact!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  min-height:42px!important;
+  padding:4px 0!important;
+  border:0!important;
+  background:transparent!important;
+}
+.mx-lobby-contact-button{
+  width:auto!important;
+  min-width:132px!important;
+  min-height:34px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:0 16px!important;
+  border:1px solid rgba(255,214,74,.55)!important;
+  border-radius:4px!important;
+  background:rgba(255,211,65,.08)!important;
+  color:#ffe16b!important;
+  text-decoration:none!important;
+  font:900 12px/1 'Barlow Condensed',Impact,sans-serif!important;
+  letter-spacing:.08em!important;
+  white-space:nowrap!important;
+}
+.mx-lobby-email-icon,
+.mx-lobby-email-address{display:none!important}
+
+.mx-lobby-studio-footer{
+  grid-area:footer!important;
+  width:100%!important;
+  min-height:62px!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:5px!important;
+  padding:14px 10px calc(14px + env(safe-area-inset-bottom))!important;
+  border-top:1px solid rgba(120,167,219,.22)!important;
+  text-align:center!important;
+}
+.mx-lobby-studio-footer strong{
+  color:#f5f8ff!important;
+  font:900 13px/1 'Barlow Condensed',Impact,sans-serif!important;
+  letter-spacing:.14em!important;
+}
+.mx-lobby-studio-footer span{
+  color:#8193aa!important;
+  font:600 10px/1.3 system-ui,sans-serif!important;
+}
+
+/* React already renders Top 3 as b / strong / span. Force that exact markup into three rows. */
+.mx-commercial-lobby .mx-leaderboard .mx-top-three > .mx-rank-card{
+  display:flex!important;
+  flex-direction:column!important;
+  flex-wrap:nowrap!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:8px!important;
+  min-height:132px!important;
+  height:auto!important;
+  text-align:center!important;
+  grid-template-columns:none!important;
+  grid-template-rows:none!important;
+  column-gap:0!important;
+  row-gap:8px!important;
+}
+.mx-commercial-lobby .mx-leaderboard .mx-top-three > .mx-rank-card > b,
+.mx-commercial-lobby .mx-leaderboard .mx-top-three > .mx-rank-card > strong,
+.mx-commercial-lobby .mx-leaderboard .mx-top-three > .mx-rank-card > span{
+  position:static!important;
+  display:block!important;
+  flex:0 0 auto!important;
+  width:100%!important;
+  max-width:100%!important;
+  margin:0!important;
+  padding:0!important;
+  text-align:center!important;
+  white-space:nowrap!important;
+  transform:none!important;
+}
+.mx-commercial-lobby .mx-leaderboard .mx-top-three > .mx-rank-card > b{
+  order:1!important;
+  font-size:clamp(28px,3vw,44px)!important;
+  line-height:.95!important;
+}
+.mx-commercial-lobby .mx-leaderboard .mx-top-three > .mx-rank-card > strong{
+  order:2!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  font-size:clamp(18px,2vw,28px)!important;
+  line-height:1!important;
+  color:#fff!important;
+}
+.mx-commercial-lobby .mx-leaderboard .mx-top-three > .mx-rank-card > span{
+  order:3!important;
+  font-size:clamp(15px,1.55vw,22px)!important;
+  line-height:1!important;
+}
+
+@media (min-width:760px){
+  .mx-commercial-lobby{
+    grid-template-areas:
+      "contact contact"
+      "player player"
+      "metrics metrics"
+      "banner banner"
+      "fighters leaderboard"
+      "fighters news"
+      "chat sponsor"
+      "footer footer"!important;
+  }
+}
+
+@media (max-width:759px){
+  .mx-commercial-lobby{
+    grid-template-areas:
+      "contact"
+      "player"
+      "metrics"
+      "banner"
+      "fighters"
+      "leaderboard"
+      "news"
+      "sponsor"
+      "chat"
+      "footer"!important;
+  }
+  .mx-commercial-lobby .mx-area-player{
+    position:relative!important;
+    min-height:72px!important;
+    padding:12px 104px 12px 12px!important;
+  }
+  .mx-commercial-lobby .mx-area-player .mx-signout-stable,
+  .mx-commercial-lobby .mx-signout-stable{
+    position:absolute!important;
+    top:12px!important;
+    right:12px!important;
+    left:auto!important;
+    bottom:auto!important;
+    width:82px!important;
+    min-width:82px!important;
+    max-width:82px!important;
+    height:34px!important;
+    min-height:34px!important;
+    max-height:34px!important;
+    padding:0 8px!important;
+    margin:0!important;
+    font-size:11px!important;
+    line-height:32px!important;
+    z-index:2!important;
+  }
+  .mx-lobby-contactbar{min-height:38px!important;padding:2px 0!important}
+  .mx-lobby-contact-button{width:auto!important;min-width:124px!important;min-height:32px!important}
+}

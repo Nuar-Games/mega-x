@@ -71,7 +71,7 @@ const setVsStart = "    if (activeOnlineMatch) {\n      if (player === localView
 if (app.includes(setVsStart)) {
   app = app.replace(
     /    if \(activeOnlineMatch\) \{\n      if \(player === localViewer && !matchNetworkBusy\) \{\n        snapshotVisibleCardRects\(\)[\s\S]*?        void dispatchOnlineAction\('SET_VS', \{ cardId, position \}\)\n      \}\n      return\n    \}/,
-    "    if (activeOnlineMatch) { if (player === localViewer && !matchNetworkBusyRef.current) { snapshotVisibleCardRects(); void dispatchOnlineAction('SET_VS', { cardId, position }); } return }",
+    "    if (activeOnlineMatch) { if (player === localViewer && !matchNetworkBusyRef.current) { snapshotVisibleCardRects(); void dispatchOnlineAction('SET_VS', { cardId, position }); window.dispatchEvent(new CustomEvent('mega-x:motion', { detail: { kind: 'ENTER_VS' } })); } return }",
   )
 }
 const effectStart = "    if (activeOnlineMatch) {\n      if (player === localViewer && !matchNetworkBusy) {\n        snapshotVisibleCardRects()"
@@ -92,4 +92,4 @@ if (!css.includes(marker)) {
 
 fs.writeFileSync(appPath, app)
 fs.writeFileSync(cssPath, css)
-console.log('Applied critical gameplay fixes: Gravitian, click locks, non-stretch card motion')
+console.log('Applied critical gameplay fixes: Gravitian, click locks, explicit VS-entry audio, non-stretch card motion')

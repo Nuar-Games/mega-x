@@ -1,6 +1,6 @@
-export type MegaXSfx = 'card' | 'draw' | 'enter' | 'vsEnter' | 'attack' | 'destroy' | 'zonX' | 'prompt' | 'win'
+export type MegaXSfx = 'card' | 'draw' | 'enter' | 'vsEnter' | 'attack' | 'destroy' | 'zonX' | 'prompt'
 
-const SFX_REV = '20260901-final3'
+const SFX_REV = '20260905-arena-mix-v2'
 
 export const SFX_ASSETS: Record<MegaXSfx, string> = {
   card: `/audio/replacements/card-selected.opus?v=${SFX_REV}`,
@@ -11,7 +11,6 @@ export const SFX_ASSETS: Record<MegaXSfx, string> = {
   destroy: `/audio/replacements/card-destroyed.opus?v=${SFX_REV}`,
   zonX: `/audio/replacements/card-goes-to-zon-x.opus?v=${SFX_REV}`,
   prompt: `/audio/replacements/prompt-needed.opus?v=${SFX_REV}`,
-  win: `/audio/replacements/player-win.opus?v=${SFX_REV}`,
 }
 
 export const LOBBY_TRACK = '/audio/replacements/lobby.opus' as const
@@ -23,4 +22,5 @@ export const ARENA_TRACKS = [
 
 export const MUSIC_ASSETS = {
   coinToss: '/audio/coin-toss/mega-x-coin-toss-v1.opus',
+  winLose: '/audio/replacements/win-lose-screen.opus',
 } as const

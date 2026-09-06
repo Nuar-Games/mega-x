@@ -1,0 +1,17 @@
+/* MAIN BACKGROUND — single final authority. */
+html body #mx-main-landing .mx-main-portrait {
+  background-color: #02030a !important;
+  background-image: url('/ui/landing/main-background.webp') !important;
+  background-position: center center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+}
+
+/* The portrait itself owns the background. Do not render a second competing image layer. */
+html body #mx-main-landing .mx-main-bg {
+  display: none !important;
+}
+
+html body #mx-main-landing .mx-main-vignette {
+  z-index: 1 !important;
+}
