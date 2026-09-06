@@ -18,7 +18,9 @@ source = source.replace(oldBlock, newBlock)
 fs.writeFileSync(path, source)
 
 const appPath = 'src/App.tsx'
+const onlineCssPath = 'src/Online.css'
 let app = fs.readFileSync(appPath, 'utf8')
+let onlineCss = fs.readFileSync(onlineCssPath, 'utf8')
 
 const startupPattern = /if \(!profile\?\.fighter_handle\) \{\s*if \(googleSession\) setOnlineScreen\('HANDLE'\)\s*return\s*\}\s*const \[leaders, match\] = await Promise\.all\(\[getTop10Leaderboard\(session\), getMyActiveMatch\(session\)\]\)\s*if \(disposed\) return\s*setLeaderboardRows\(leaders\)\s*if \(match\) \{\s*if \(googleSession\) applyOnlineMatchView\(match\)\s*else \{\s*latestMatchIdRef\.current = match\.id\s*latestMatchVersionRef\.current = Number\(match\.state_version\)\s*setActiveOnlineMatch\(match\)\s*\}\s*\} else if \(googleSession\) \{\s*setOnlineScreen\('LOBBY'\)\s*\}/
 
@@ -50,6 +52,32 @@ const submitNew = `setOnlineSession(session)
 
 if (!submitPattern.test(app)) throw new Error('email sign-in lobby transition anchor missing')
 app = app.replace(submitPattern, submitNew)
-fs.writeFileSync(appPath, app)
 
-console.log('Forced active auth key, added sign-in timeout, and fixed auth-to-Lobby transitions')
+// Resume-match branding is scoped to the existing RESUME MATCH screen only.
+const resumeAnchor = app.indexOf('RESUME MATCH')
+if (resumeAnchor < 0) throw new Error('resume-match screen anchor missing')
+const resumeStart = Math.max(0, resumeAnchor - 6000)
+const resumeEnd = Math.min(app.length, resumeAnchor + 6000)
+let resumeBlock = app.slice(resumeStart, resumeEnd)
+
+const subtitlePattern = /<([a-z][a-z0-9]*)\b[^>]*>\s*[^<]*ENTER\s+THE\s+ARENA[^<]*<\/\1>/i
+if (!subtitlePattern.test(resumeBlock)) throw new Error('resume-match ENTER THE ARENA subtitle missing')
+resumeBlock = resumeBlock.replace(subtitlePattern, '')
+
+const textLogoPattern = /<(h1|h2|div|span)\b[^>]*>\s*MEGA\s*-\s*X\s*<\/\1>/i
+if (!textLogoPattern.test(resumeBlock)) throw new Error('resume-match MEGA - X text logo missing')
+resumeBlock = resumeBlock.replace(textLogoPattern, '<img className="mx-resume-official-logo" src="/ui/landing/logo.avif" alt="MEGA-X" />')
+
+if (/ENTER\s+THE\s+ARENA/i.test(resumeBlock)) throw new Error('resume-match subtitle survived removal')
+if (!resumeBlock.includes('className="mx-resume-official-logo"') || !resumeBlock.includes('src="/ui/landing/logo.avif"')) throw new Error('official resume-match logo replacement missing')
+app = app.slice(0, resumeStart) + resumeBlock + app.slice(resumeEnd)
+
+const resumeBrandMarker = '/* Resume match official MEGA-X branding */'
+if (!onlineCss.includes(resumeBrandMarker)) {
+  onlineCss += `\n${resumeBrandMarker}\n.mx-resume-official-logo{display:block!important;width:min(560px,84vw)!important;max-width:84vw!important;height:auto!important;margin:0 auto clamp(18px,3vh,32px)!important;object-fit:contain!important;filter:drop-shadow(0 8px 18px rgba(0,0,0,.6)) drop-shadow(0 0 20px rgba(255,223,126,.22))!important}\n@media(max-width:560px){.mx-resume-official-logo{width:min(430px,88vw)!important;max-width:88vw!important;margin-bottom:18px!important}}\n`
+}
+
+fs.writeFileSync(appPath, app)
+fs.writeFileSync(onlineCssPath, onlineCss)
+
+console.log('Forced active auth key, fixed auth-to-Lobby transitions, and applied official resume-match branding')
