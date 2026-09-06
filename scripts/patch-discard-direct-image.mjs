@@ -18,45 +18,26 @@ const directImage = `<img className="discard-card-art" src={\`/cards/game/\${Str
 app = app.slice(0, cardViewAt) + directImage + app.slice(cardViewAt + cardViewNeedle.length)
 
 const marker = '/* Android discard direct-art authority */'
-const block = `${marker}\n@media(max-width:560px) and (orientation:portrait){\n  body.mx3-arena-present .choice-overlay:has(.discard-panel),body.mx3-arena-present .choice-overlay .discard-panel,body.mx3-arena-present .choice-overlay .discard-panel .discard-card-grid{pointer-events:auto!important}\n  body.mx3-arena-present .choice-overlay .discard-panel .discard-card-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;align-content:start!important;align-items:start!important;overflow-y:auto!important;overflow-x:hidden!important;padding:3px!important}\n  body.mx3-arena-present .choice-overlay .discard-panel .discard-card-choice{position:relative!important;z-index:1!important;display:block!important;width:100%!important;min-width:0!important;max-width:none!important;height:auto!important;min-height:0!important;max-height:none!important;aspect-ratio:auto!important;padding:0!important;margin:0!important;overflow:hidden!important;background:#050812!important;pointer-events:auto!important;touch-action:manipulation!important;cursor:pointer!important}\n  body.mx3-arena-present .choice-overlay .discard-panel .discard-card-choice>.discard-card-art{position:relative!important;inset:auto!important;z-index:1!important;display:block!important;width:100%!important;height:auto!important;min-width:0!important;min-height:0!important;max-width:100%!important;max-height:none!important;object-fit:contain!important;opacity:1!important;visibility:visible!important;filter:none!important;transform:none!important;clip-path:none!important;mix-blend-mode:normal!important;pointer-events:none!important}\n  body.mx3-arena-present .choice-overlay .discard-panel .discard-card-choice>.discard-check{position:absolute!important;left:4px!important;right:4px!important;bottom:4px!important;z-index:3!important;pointer-events:none!important}\n}\n`
+const block = `${marker}\n@media(max-width:560px) and (orientation:portrait){\n  body.mx3-arena-present .choice-overlay:has(.discard-panel),body.mx3-arena-present .choice-overlay .discard-panel,body.mx3-arena-present .choice-overlay .discard-panel .discard-card-grid{pointer-events:auto!important}\n  body.mx3-arena-present .choice-overlay .discard-panel .discard-card-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-auto-rows:max-content!important;gap:10px!important;align-content:start!important;align-items:start!important;overflow-y:auto!important;overflow-x:hidden!important;padding:3px!important}\n  body.mx3-arena-present .choice-overlay .discard-panel .discard-card-choice{position:relative!important;z-index:1!important;display:flex!important;flex-direction:column!important;width:100%!important;min-width:0!important;max-width:none!important;height:max-content!important;min-height:0!important;max-height:none!important;aspect-ratio:auto!important;padding:0!important;margin:0!important;overflow:hidden!important;background:#050812!important;pointer-events:auto!important;touch-action:manipulation!important;cursor:pointer!important;transform:none!important}\n  body.mx3-arena-present .choice-overlay .discard-panel .discard-card-choice>.discard-card-art{position:static!important;inset:auto!important;z-index:1!important;display:block!important;width:100%!important;height:auto!important;min-width:0!important;min-height:0!important;max-width:100%!important;max-height:none!important;object-fit:contain!important;opacity:1!important;visibility:visible!important;filter:none!important;transform:none!important;clip-path:none!important;mix-blend-mode:normal!important;pointer-events:none!important}\n  body.mx3-arena-present .choice-overlay .discard-panel .discard-card-choice>.discard-check{position:absolute!important;left:4px!important;right:4px!important;bottom:4px!important;z-index:3!important;pointer-events:none!important}\n}\n`
 const oldAt = css.indexOf(marker)
 if (oldAt >= 0) css = css.slice(0, oldAt)
 css += `\n${block}`
 
-runtime = runtime.replaceAll("repeat(3,minmax(0,1fr))", "repeat(2,minmax(0,1fr))")
-runtime = runtime
-  .replace("    button.style.setProperty('aspect-ratio', '420 / 595', 'important')\n", "    button.style.setProperty('aspect-ratio', 'auto', 'important')\n")
-  .replace("    image.style.setProperty('position', 'absolute', 'important')\n", "    image.style.setProperty('position', 'relative', 'important')\n")
-  .replace("    image.style.setProperty('inset', '0', 'important')\n", "    image.style.setProperty('inset', 'auto', 'important')\n")
-  .replace("    image.style.setProperty('height', '100%', 'important')\n", "    image.style.setProperty('height', 'auto', 'important')\n")
-  .replace("    image.style.setProperty('max-width', 'none', 'important')\n", "    image.style.setProperty('max-width', '100%', 'important')\n")
-if (!runtime.includes("button.style.setProperty('pointer-events', 'auto', 'important')")) {
-  runtime = runtime.replace(
-    "button.style.setProperty('position', 'relative', 'important')",
-    "button.style.setProperty('position', 'relative', 'important')\n    button.style.setProperty('pointer-events', 'auto', 'important')\n    button.style.setProperty('touch-action', 'manipulation', 'important')\n    button.style.setProperty('z-index', '1', 'important')",
-  )
-}
-if (!runtime.includes("image.style.setProperty('pointer-events', 'none', 'important')")) {
-  runtime = runtime.replace(
-    "image.style.setProperty('z-index', '2', 'important')",
-    "image.style.setProperty('z-index', '2', 'important')\n    image.style.setProperty('pointer-events', 'none', 'important')",
-  )
-}
-if (!runtime.includes("check.style.setProperty('pointer-events', 'none', 'important')")) {
-  runtime = runtime.replace(
-    "check.style.setProperty('opacity', '1', 'important')",
-    "check.style.setProperty('opacity', '1', 'important')\n    check.style.setProperty('pointer-events', 'none', 'important')",
-  )
-}
+const runtimeStart = runtime.indexOf('function enforceMobileDiscardVisibility() {')
+const runtimeEnd = runtime.indexOf('\nfunction syncDesktopPresentation', runtimeStart)
+if (runtimeStart < 0 || runtimeEnd < 0) throw new Error('Discard runtime function missing')
+const cleanRuntime = `function enforceMobileDiscardVisibility() {\n  if (window.innerWidth > 560) return\n  const panel = document.querySelector<HTMLElement>('.choice-overlay .discard-panel')\n  if (!panel) return\n  const grid = panel.querySelector<HTMLElement>('.discard-card-grid')\n  if (!grid) return\n  grid.style.setProperty('display', 'grid', 'important')\n  grid.style.setProperty('grid-template-columns', 'repeat(2,minmax(0,1fr))', 'important')\n  grid.style.setProperty('grid-auto-rows', 'max-content', 'important')\n  grid.style.setProperty('overflow-y', 'auto', 'important')\n  grid.style.setProperty('overflow-x', 'hidden', 'important')\n  grid.querySelectorAll<HTMLElement>('.discard-card-choice').forEach((button) => {\n    button.style.setProperty('pointer-events', 'auto', 'important')\n    button.style.setProperty('touch-action', 'manipulation', 'important')\n    button.style.setProperty('visibility', 'visible', 'important')\n    button.style.setProperty('opacity', '1', 'important')\n  })\n  grid.querySelectorAll<HTMLImageElement>('.discard-card-choice img').forEach((image) => {\n    image.style.setProperty('pointer-events', 'none', 'important')\n    image.style.setProperty('visibility', 'visible', 'important')\n    image.style.setProperty('opacity', '1', 'important')\n  })\n}\n`
+runtime = runtime.slice(0, runtimeStart) + cleanRuntime + runtime.slice(runtimeEnd)
 
 if (!app.includes('className="discard-card-art"')) throw new Error('Direct discard artwork not installed')
 if (!css.includes('grid-template-columns:repeat(2,minmax(0,1fr))')) throw new Error('Discard grid must be two columns')
-if (!css.includes('>.discard-card-art{position:relative!important;inset:auto!important')) throw new Error('Discard artwork must participate in natural button height')
-if (!runtime.includes("repeat(2,minmax(0,1fr))")) throw new Error('Runtime discard grid must be two columns')
-if (!runtime.includes("button.style.setProperty('pointer-events', 'auto', 'important')")) throw new Error('Discard buttons must receive taps')
-if (!runtime.includes("image.style.setProperty('pointer-events', 'none', 'important')")) throw new Error('Discard artwork must not intercept taps')
+if (!css.includes('grid-auto-rows:max-content!important')) throw new Error('Discard rows must use natural non-overlapping height')
+if (!css.includes('>.discard-card-art{position:static!important')) throw new Error('Discard artwork must remain in normal flow')
+if (!runtime.includes("grid.style.setProperty('grid-auto-rows', 'max-content', 'important')")) throw new Error('Runtime must preserve non-overlapping rows')
+if (runtime.includes("button.style.setProperty('height'")) throw new Error('Runtime must not force discard button height')
+if (runtime.includes("image.style.setProperty('position'")) throw new Error('Runtime must not force discard image geometry')
 
 fs.writeFileSync(appPath, app)
 fs.writeFileSync(cssPath, css)
 fs.writeFileSync(runtimePath, runtime)
-console.log('Discard selector uses natural card height in two columns with button-owned tap handling')
+console.log('Discard grid locked to two non-overlapping natural-height rows; runtime no longer owns geometry')
