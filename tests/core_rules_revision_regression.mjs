@@ -87,25 +87,32 @@ let exhaustedTransition
   exhaustedTransition=s
 }
 
-// Complete replacement + BEGIN_ROUND; only then is the exhausted-deck score evaluated.
+// Replacement setup and BEGIN_ROUND must not end the match. Both Effect turns complete;
+// only after the non-active player resolves does exhausted-deck scoring occur.
 {
   let s=act(exhaustedTransition,P2,'SET_VS',{cardId:7,position:'ATK'})
   assert(s.phase==='SET_VS'&&s.winner===null,'match ended before mandatory round transition')
   s=act(s,P2,'BEGIN_ROUND')
-  assert(s.phase==='GAME_OVER','exhausted Master Deck must finish at next safe endpoint')
+  assert(s.phase==='EFFECT'&&s.effectTurn===P2&&s.winner===null,'BEGIN_ROUND must not terminate an exhausted-deck match')
+  s=act(s,P2,'END_EFFECT_TURN')
+  assert(s.phase==='EFFECT'&&s.effectTurn===P1&&s.winner===null,'active Effect turn did not hand control to non-active player')
+  s=act(s,P1,'END_EFFECT_TURN')
+  assert(s.phase==='GAME_OVER','exhausted Master Deck must finish after non-active player resolves')
   assert(s.winner===P1,'safe endpoint must compare Zon X totals')
 }
 
-// Equal Zon X at the same safe endpoint uses existing tie-breaker.
+// Equal Zon X at the same post-non-active endpoint uses existing tie-breaker.
 {
   let s=state({p1Hand:[3,4,5,6],p2Hand:[7,8,9,10,11],p1Vs:vs(20,'ATK'),p2Vs:vs(1,'ATK'),deck:[12],p1X:[],p2X:[],phase:'EFFECT',effectTurn:P1})
   s=act(s,P1,'END_EFFECT_TURN'); s=act(s,P2,'END_EFFECT_TURN'); s=act(s,P1,'ATTACK')
-  // P1 gained one trophy. Give P2 one existing trophy to make score 1-1 at safe endpoint.
   s.player2.x.push(30)
   s=act(s,P2,'SET_VS',{cardId:7,position:'ATK'})
   s=act(s,P2,'BEGIN_ROUND')
-  assert(s.phase==='TIE_BREAKER'&&s.winner===null,'equal Zon X must enter tie-breaker at safe endpoint')
+  assert(s.phase==='EFFECT'&&s.winner===null,'tie scenario ended at BEGIN_ROUND')
+  s=act(s,P2,'END_EFFECT_TURN')
+  s=act(s,P1,'END_EFFECT_TURN')
+  assert(s.phase==='TIE_BREAKER'&&s.winner===null,'equal Zon X must enter tie-breaker after non-active resolution')
   assert(s.tieBreaker?.status==='WAITING','tie-breaker state was not initialized')
 }
 
-console.log('PASS core rules revision: VS destruction scores, BLACK HOLE symmetry, safe Master Deck exhaustion')
+console.log('PASS core rules revision: VS destruction scores, BLACK HOLE symmetry, deck exhaustion waits for non-active resolution')
