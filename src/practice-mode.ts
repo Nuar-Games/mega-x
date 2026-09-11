@@ -31,6 +31,19 @@ export function startPractice() {
     hiddenSiblings.clear()
   }
 
+  const quitPractice = (event: MouseEvent) => {
+    if (!document.documentElement.classList.contains('mx-practice-active')) return
+    const target = event.target instanceof Element ? event.target.closest('button') : null
+    if (!target || target.textContent?.trim().toUpperCase() !== 'QUIT MATCH') return
+
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    restoreHiddenSiblings()
+    document.documentElement.classList.remove('mx-practice-active')
+    observer.disconnect()
+    window.location.reload()
+  }
+
   const syncPracticeViewport = () => {
     const arena = document.querySelector('.duel-shell')
     if (arena) {
@@ -42,11 +55,13 @@ export function startPractice() {
     if (arenaSeen) {
       restoreHiddenSiblings()
       document.documentElement.classList.remove('mx-practice-active')
+      document.removeEventListener('click', quitPractice, true)
       observer.disconnect()
     }
   }
 
   const observer = new MutationObserver(syncPracticeViewport)
+  document.addEventListener('click', quitPractice, true)
   observer.observe(document.body, { childList: true, subtree: true })
   queueMicrotask(syncPracticeViewport)
 }
