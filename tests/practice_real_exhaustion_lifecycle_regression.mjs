@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import {
   startPracticeMatch,
   submitPracticeAction,
@@ -53,4 +54,10 @@ if (!match.state.deckExhausted) {
   throw new Error('Practice lifecycle concluded before exercising Master Deck exhaustion')
 }
 
-console.log(`PASS real Practice lifecycle concludes after Master Deck exhaustion via ${match.phase}`)
+const arena = fs.readFileSync('src/arena-blueprint.fragment', 'utf8')
+const fallback = "activeOnlineMatch?.id?.startsWith('practice-local:') && activeOnlineMatch?.state?.effectTurn === onlineSession?.userId"
+if (!arena.includes(fallback)) {
+  throw new Error('Practice human Effect turn has no direct Arena fallback; an exhausted match can show PEMAIN · EFFECT without TAMAT GILIRAN')
+}
+
+console.log(`PASS real Practice lifecycle concludes after Master Deck exhaustion via ${match.phase} and always exposes local Effect completion`)
