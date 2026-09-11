@@ -1,3 +1,5 @@
+import './practice-mode.css'
+
 const SUPABASE_URL = ((import.meta as any).env?.VITE_SUPABASE_URL || 'https://mmtorfzxnidsczcdygbp.supabase.co') as string
 const SUPABASE_KEY = ((import.meta as any).env?.VITE_SUPABASE_KEY || 'sb_publishable_fXF7LXgKXeH4p5_Bwai0nQ_d-NWdOk_') as string
 
@@ -153,6 +155,25 @@ function metricCard(key: keyof LobbyMetrics, label: string) {
   `
 }
 
+function ensurePracticeButton(screen: HTMLElement, player: HTMLElement | null) {
+  if (!player || screen.querySelector('[data-practice-entry]')) return
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.className = 'mx-practice-entry'
+  button.dataset.practiceEntry = 'true'
+  button.innerHTML = '<b>PRACTICE</b><span>BEGINNER BOT</span>'
+  button.addEventListener('click', async () => {
+    button.disabled = true
+    try {
+      const { startPractice } = await import('./practice-mode.ts')
+      startPractice()
+    } finally {
+      button.disabled = false
+    }
+  })
+  player.appendChild(button)
+}
+
 function ensureCommercialPanels(screen: HTMLElement) {
   screen.classList.add('mx-commercial-lobby')
   const player = directChildFor(screen, screen.querySelector<HTMLElement>('.mx-lobby-player'))
@@ -163,6 +184,7 @@ function ensureCommercialPanels(screen: HTMLElement) {
   fighters?.classList.add('mx-area-fighters')
   leaderboard?.classList.add('mx-area-leaderboard')
   chat?.classList.add('mx-area-chat')
+  ensurePracticeButton(screen, player)
   document.querySelectorAll<HTMLElement>('[data-mx-fights-played]').forEach((node) => node.remove())
 
   if (!screen.querySelector('[data-mx-metrics]')) {
@@ -202,8 +224,8 @@ function ensureCommercialPanels(screen: HTMLElement) {
       </div>
       <article class="mx-news-feature">
         <span class="mx-news-kicker">LATEST</span>
-        <strong>WELCOME, X FIGHTER</strong>
-        <p>Official updates, events and announcements will appear here.</p>
+        <strong>MEGA X 1.0 — OFFICIALLY LAUNCHED</strong>
+        <p>Arena kini dibuka. Selamat datang, X Fighter.</p>
       </article>
     `
     screen.appendChild(news)
