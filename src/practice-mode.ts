@@ -10,7 +10,7 @@ export function startPractice() {
     let node: HTMLElement | null = arena as HTMLElement
 
     while (node && node !== root) {
-      const parent = node.parentElement
+      const parent: HTMLElement | null = node.parentElement
       if (!parent) break
 
       for (const sibling of Array.from(parent.children)) {
