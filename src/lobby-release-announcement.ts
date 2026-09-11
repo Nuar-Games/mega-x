@@ -10,8 +10,8 @@ function applyReleaseAnnouncement() {
 
   const title = feature.querySelector<HTMLElement>('strong')
   const message = feature.querySelector<HTMLElement>('p')
-  if (title) title.textContent = RELEASE_TITLE
-  if (message) message.textContent = RELEASE_MESSAGE
+  if (title && title.textContent !== RELEASE_TITLE) title.textContent = RELEASE_TITLE
+  if (message && message.textContent !== RELEASE_MESSAGE) message.textContent = RELEASE_MESSAGE
 }
 
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
