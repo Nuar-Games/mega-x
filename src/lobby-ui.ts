@@ -155,8 +155,8 @@ function metricCard(key: keyof LobbyMetrics, label: string) {
   `
 }
 
-function ensurePracticeButton(screen: HTMLElement, player: HTMLElement | null) {
-  if (!player || screen.querySelector('[data-practice-entry]')) return
+function ensurePracticeButton(screen: HTMLElement, banner: HTMLElement | null) {
+  if (!banner || screen.querySelector('[data-practice-entry]')) return
   const button = document.createElement('button')
   button.type = 'button'
   button.className = 'mx-practice-entry'
@@ -171,7 +171,15 @@ function ensurePracticeButton(screen: HTMLElement, player: HTMLElement | null) {
       button.disabled = false
     }
   })
-  player.appendChild(button)
+  banner.style.setProperty('position', 'relative', 'important')
+  banner.style.setProperty('margin-bottom', '58px', 'important')
+  button.style.setProperty('position', 'absolute', 'important')
+  button.style.setProperty('left', '0', 'important')
+  button.style.setProperty('top', 'calc(100% + 10px)', 'important')
+  button.style.setProperty('width', '100%', 'important')
+  button.style.setProperty('margin', '0', 'important')
+  button.style.setProperty('min-height', '46px', 'important')
+  banner.appendChild(button)
 }
 
 function ensureCommercialPanels(screen: HTMLElement) {
@@ -184,7 +192,6 @@ function ensureCommercialPanels(screen: HTMLElement) {
   fighters?.classList.add('mx-area-fighters')
   leaderboard?.classList.add('mx-area-leaderboard')
   chat?.classList.add('mx-area-chat')
-  ensurePracticeButton(screen, player)
   document.querySelectorAll<HTMLElement>('[data-mx-fights-played]').forEach((node) => node.remove())
 
   if (!screen.querySelector('[data-mx-metrics]')) {
@@ -212,6 +219,8 @@ function ensureCommercialPanels(screen: HTMLElement) {
     `
     screen.appendChild(banner)
   }
+
+  ensurePracticeButton(screen, screen.querySelector<HTMLElement>('[data-mx-banner-slot]'))
 
   if (!screen.querySelector('[data-mx-news]')) {
     const news = document.createElement('section')
