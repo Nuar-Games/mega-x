@@ -7,6 +7,8 @@ const must = (ok, message) => { if (!ok) throw new Error(message) }
 must(entry.includes("classList.add('mx-practice-active')"), 'practice entry must mark the document before entering Arena')
 must(css.includes('.mx-practice-active .duel-shell'), 'practice Arena must have a dedicated full-viewport scope')
 must(css.includes('position:fixed!important') && css.includes('inset:0!important'), 'practice Arena must replace the lobby viewport instead of appearing below it')
-must(css.includes('.mx-practice-active .mx-lobby-shell'), 'lobby must be hidden while the practice Arena is active')
+must(entry.includes('isolateArenaBranch') && entry.includes('parent.children'), 'practice Arena must isolate its DOM branch from every lobby/footer sibling')
+must(entry.includes("style.setProperty('display', 'none', 'important')"), 'all non-Arena sibling branches must be hidden while practice is active')
+must(entry.includes('restoreHiddenSiblings'), 'hidden lobby/footer branches must be restored after leaving practice')
 
-console.log('PASS practice Arena replaces the lobby viewport instead of rendering below it')
+console.log('PASS practice Arena exclusively owns the viewport and restores lobby after exit')
