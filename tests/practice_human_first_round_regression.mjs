@@ -11,7 +11,7 @@ for (let attempt = 0; attempt < 40; attempt += 1) {
 }
 
 if (!match) throw new Error('could not produce a human-first practice match')
-if (!match.state.player2.vs) throw new Error('Beginner Bot should commit its opening VS')
+if (!match.state.player2.vsCommitted) throw new Error('Beginner Bot should commit its opening VS')
 if (!match.state.needsVS[0]) throw new Error('human should still need to set opening VS')
 
 const cardId = match.state.player1.hand[0]
