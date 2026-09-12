@@ -70,12 +70,10 @@ app = app.replace(submitPattern, submitNew)
 
 if (!app.includes('FORGOT PASSWORD?')) {
   if (!app.includes('requestPasswordReset')) app = `import { requestPasswordReset } from './onlineAuth'\n` + app
-  const authStart = app.indexOf("onlineScreen === 'AUTH'")
-  if (authStart < 0) throw new Error('AUTH screen anchor missing for password recovery')
-  const formEnd = app.indexOf('</form>', authStart)
-  if (formEnd < 0 || formEnd - authStart > 20000) throw new Error('AUTH form end anchor missing for password recovery')
-  const forgotButton = `\n              <button type="button" className="mx-auth-forgot" onClick={async () => {\n                const email = window.prompt('EMAIL FOR PASSWORD RESET')\n                if (!email?.trim()) return\n                try {\n                  await requestPasswordReset(email.trim())\n                  setOnlineMessage('PASSWORD RESET EMAIL SENT')\n                } catch (error) {\n                  setOnlineMessage(error instanceof Error ? error.message.replaceAll('_', ' ') : 'PASSWORD RESET FAILED')\n                }\n              }}>FORGOT PASSWORD?</button>`
-  app = app.slice(0, formEnd) + forgotButton + '\n            ' + app.slice(formEnd)
+  const passwordInput = `<input type="password" autoComplete={authMode === 'SIGN_IN' ? 'current-password' : 'new-password'} placeholder="PASSWORD" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submitEmailAuth()} />`
+  if (!app.includes(passwordInput)) throw new Error('AUTH password input anchor missing for password recovery')
+  const forgotButton = `${passwordInput}\n            {authMode === 'SIGN_IN' && <button type="button" className="mx-auth-forgot" onClick={async () => {\n              if (!authEmail.trim()) { setOnlineMessage('ENTER YOUR EMAIL FIRST'); return }\n              try {\n                await requestPasswordReset(authEmail.trim())\n                setOnlineMessage('PASSWORD RESET EMAIL SENT')\n              } catch (error) {\n                setOnlineMessage(error instanceof Error ? error.message.replaceAll('_', ' ') : 'PASSWORD RESET FAILED')\n              }\n            }}>FORGOT PASSWORD?</button>}`
+  app = app.replace(passwordInput, forgotButton)
 }
 
 // Resume-match branding is scoped to the existing RESUME MATCH screen only.
