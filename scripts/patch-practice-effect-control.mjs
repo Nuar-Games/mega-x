@@ -10,18 +10,31 @@ let practice = fs.readFileSync(practicePath, 'utf8')
 let app = fs.readFileSync(appPath, 'utf8')
 let lifecycleTest = fs.readFileSync(lifecycleTestPath, 'utf8')
 
-const from = "game.phase === 'EFFECT' && game.effectTurn === bottomPlayer"
-const to = "game.phase === 'EFFECT' && (game.effectTurn === bottomPlayer || (activeOnlineMatch?.id?.startsWith('practice-local:') && activeOnlineMatch?.state?.effectTurn === onlineSession?.userId))"
-const matches = arena.split(from).length - 1
-if (matches < 2) throw new Error(`practice Effect-control patch expected at least 2 Arena targets, found ${matches}`)
-arena = arena.split(from).join(to)
+// Keep Practice Effect controls visible in both the source fragment and the
+// already-injected App. The Arena fragment is injected earlier in the build.
+const effectFrom = "game.phase === 'EFFECT' && game.effectTurn === bottomPlayer"
+const effectTo = "game.phase === 'EFFECT' && (game.effectTurn === bottomPlayer || (activeOnlineMatch?.id?.startsWith('practice-local:') && activeOnlineMatch?.state?.effectTurn === onlineSession?.userId))"
+const arenaMatches = arena.split(effectFrom).length - 1
+if (arenaMatches < 2) throw new Error(`practice Effect-control patch expected at least 2 Arena targets, found ${arenaMatches}`)
+arena = arena.split(effectFrom).join(effectTo)
+const appMatches = app.split(effectFrom).length - 1
+if (appMatches < 2) throw new Error(`practice Effect-control App patch expected at least 2 Arena targets, found ${appMatches}`)
+app = app.split(effectFrom).join(effectTo)
 
+// Practice redaction used to delete tieBreaker completely. The real Arena gates
+// the whole Penentuan Seri stage on game.tieBreaker, so Practice could enter
+// TIE_BREAKER internally while rendering no choice UI. Keep only harmless
+// presentation metadata plus the private human tieChoice already exposed below.
+const tieDelete = '    delete visible.tieBreaker'
+const tieVisible = "    visible.tieBreaker = { status: tie.status || 'CHOOSING', pair: Math.max(1, Number(tie.pair || 1)) }"
+if (practice.includes(tieDelete)) practice = practice.replace(tieDelete, tieVisible)
+if (!practice.includes(tieVisible)) throw new Error('practice tie-breaker presentation state patch target missing')
+
+// Advance one bot action per UI tick instead of consuming the whole bot turn.
 if (practice.includes('function advanceBot() {')) {
   practice = practice.replace('function advanceBot() {', 'function advanceBot(maxSteps = 24) {')
 }
-if (!practice.includes('function advanceBot(maxSteps = 24) {')) {
-  throw new Error('practice pacing advanceBot signature target missing')
-}
+if (!practice.includes('function advanceBot(maxSteps = 24) {')) throw new Error('practice pacing advanceBot signature target missing')
 practice = practice.replace('    24,\n  )', '    maxSteps,\n  )')
 if (!practice.includes('    maxSteps,\n  )')) throw new Error('practice pacing maxSteps target missing')
 
@@ -35,13 +48,11 @@ if (submitReplacements !== 2) throw new Error(`practice pacing expected 2 submit
 if (!practice.includes('export function tickPracticeBot')) {
   const insertBefore = 'export function surrenderPracticeMatch(userId: string, matchId: string) {'
   if (!practice.includes(insertBefore)) throw new Error('practice pacing tick insertion anchor missing')
-  const tick = `export function tickPracticeBot(userId: string, matchId: string) {\n  if (!store || store.match.id !== matchId || store.match.player1_id !== userId) return null\n  if (store.match.state.phase === 'GAME_OVER' || store.match.state.phase === 'TIE_BREAKER') return null\n  const before = store.match.state\n  advanceBot(1)\n  if (store.match.state === before) return null\n  store.match.state_version += 1\n  return publicMatch()\n}\n\n`
+  const tick = `export function tickPracticeBot(userId: string, matchId: string) {\n  if (!store || store.match.id !== matchId || store.match.player1_id !== userId) return null\n  if (store.match.state.phase === 'GAME_OVER' || store.match.state.phase === 'TIE_BREAKER') return null\n  const before = structuredClone(store.match.state)\n  advanceBot(1)\n  if (JSON.stringify(store.match.state) === JSON.stringify(before)) return null\n  store.match.state_version += 1\n  return publicMatch()\n}\n\n`
   practice = practice.replace(insertBefore, tick + insertBefore)
 }
 
-if (!app.includes('tickPracticeBot')) {
-  app = `import { tickPracticeBot } from './practice-match'\n` + app
-}
+if (!app.includes('tickPracticeBot')) app = `import { tickPracticeBot } from './practice-match'\n` + app
 
 if (!app.includes('mega-x:practice-bot-paced-turn')) {
   const hookAnchor = '  async function challengeFighter'
@@ -62,23 +73,8 @@ if (!lifecycleTest.includes('const ticked = tickPracticeBot')) {
   lifecycleTest = lifecycleTest.replace(deadState, "  const ticked = tickPracticeBot(HUMAN, match.id)\n  if (ticked) { match = ticked; continue }\n\n" + deadState)
 }
 
-const oldFallbackCheck = `const arena = fs.readFileSync('src/arena-blueprint.fragment', 'utf8')
-const fallback = "activeOnlineMatch?.id?.startsWith('practice-local:') && activeOnlineMatch?.state?.effectTurn === onlineSession?.userId"
-if (!arena.includes(fallback)) {
-  throw new Error('Practice human Effect turn has no direct Arena fallback; an exhausted match can show PEMAIN · EFFECT without TAMAT GILIRAN')
-}`
-const pacedCheck = `const practiceSource = fs.readFileSync('src/practice-match.ts', 'utf8')
-const appSource = fs.readFileSync('src/App.tsx', 'utf8')
-if (!practiceSource.includes('advanceBot(0)') || !practiceSource.includes('tickPracticeBot')) {
-  throw new Error('Practice bot pacing driver is missing from the generated match runtime')
-}
-if (!appSource.includes('mega-x:practice-bot-paced-turn')) {
-  throw new Error('Practice Arena is missing the paced bot turn scheduler')
-}`
-if (lifecycleTest.includes(oldFallbackCheck)) lifecycleTest = lifecycleTest.replace(oldFallbackCheck, pacedCheck)
-
 fs.writeFileSync(arenaPath, arena)
 fs.writeFileSync(practicePath, practice)
 fs.writeFileSync(appPath, app)
 fs.writeFileSync(lifecycleTestPath, lifecycleTest)
-console.log(`Patched ${matches} Practice Effect-control Arena paths and paced Beginner Bot to one visible action every 1.3-2.1s`)
+console.log(`Patched Practice: ${arenaMatches} fragment + ${appMatches} live Effect controls, visible tie breaker, paced Beginner Bot`)
