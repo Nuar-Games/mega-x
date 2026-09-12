@@ -55,9 +55,14 @@ if (!match.state.deckExhausted) {
 }
 
 const arena = fs.readFileSync('src/App.tsx', 'utf8')
-const fallback = "activeOnlineMatch?.id?.startsWith('practice-local:') && activeOnlineMatch?.state?.effectTurn === onlineSession?.userId"
-if (!arena.includes(fallback)) {
-  throw new Error('Practice human Effect turn has no direct Arena fallback; an exhausted match can show PEMAIN · EFFECT without TAMAT GILIRAN')
+const uuidFallback = "activeOnlineMatch?.id?.startsWith('practice-local:') && activeOnlineMatch?.state?.effectTurn === onlineSession?.userId"
+if (!arena.includes(uuidFallback)) {
+  throw new Error('Practice human Effect turn has no UUID Arena fallback')
 }
 
-console.log(`PASS real Practice lifecycle concludes after Master Deck exhaustion via ${match.phase} and final Arena always exposes local Effect completion`)
+const indexFallback = "activeOnlineMatch?.state?.effectTurn === 0"
+if (!arena.includes(indexFallback)) {
+  throw new Error('Practice local Effect control can disappear when the displayed match has already normalized effectTurn to player index 0')
+}
+
+console.log(`PASS real Practice lifecycle concludes after Master Deck exhaustion via ${match.phase} and Arena accepts both UUID and normalized player-index Effect ownership`)
