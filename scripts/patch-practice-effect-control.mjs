@@ -62,6 +62,21 @@ if (!lifecycleTest.includes('const ticked = tickPracticeBot')) {
   lifecycleTest = lifecycleTest.replace(deadState, "  const ticked = tickPracticeBot(HUMAN, match.id)\n  if (ticked) { match = ticked; continue }\n\n" + deadState)
 }
 
+const oldFallbackCheck = `const arena = fs.readFileSync('src/arena-blueprint.fragment', 'utf8')
+const fallback = "activeOnlineMatch?.id?.startsWith('practice-local:') && activeOnlineMatch?.state?.effectTurn === onlineSession?.userId"
+if (!arena.includes(fallback)) {
+  throw new Error('Practice human Effect turn has no direct Arena fallback; an exhausted match can show PEMAIN · EFFECT without TAMAT GILIRAN')
+}`
+const pacedCheck = `const practiceSource = fs.readFileSync('src/practice-match.ts', 'utf8')
+const appSource = fs.readFileSync('src/App.tsx', 'utf8')
+if (!practiceSource.includes('advanceBot(0)') || !practiceSource.includes('tickPracticeBot')) {
+  throw new Error('Practice bot pacing driver is missing from the generated match runtime')
+}
+if (!appSource.includes('mega-x:practice-bot-paced-turn')) {
+  throw new Error('Practice Arena is missing the paced bot turn scheduler')
+}`
+if (lifecycleTest.includes(oldFallbackCheck)) lifecycleTest = lifecycleTest.replace(oldFallbackCheck, pacedCheck)
+
 fs.writeFileSync(arenaPath, arena)
 fs.writeFileSync(practicePath, practice)
 fs.writeFileSync(appPath, app)
