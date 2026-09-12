@@ -5,52 +5,111 @@ import {
 } from '../src/practice-match.ts'
 
 const HUMAN = 'practice-regression-human'
-let match = startPracticeMatch(HUMAN, 'TEST FIGHTER')
+const STRESS_MATCHES = 200
+const SAFE_EFFECTS = new Set([1, 4, 5, 6, 8, 11, 12, 13, 14, 16, 17, 19, 20, 21, 24, 25, 27, 28, 29, 30])
 
-function step(action, payload = {}) {
-  const next = submitPracticeAction(HUMAN, match.id, match.state_version, action, payload)
-  match = { ...match, ...next }
+function seededRandom(seed) {
+  let value = seed >>> 0
+  return () => {
+    value = (Math.imul(value, 1664525) + 1013904223) >>> 0
+    return value / 0x100000000
+  }
 }
 
-for (let guard = 0; guard < 300 && match.phase !== 'GAME_OVER' && match.phase !== 'TIE_BREAKER'; guard += 1) {
-  const s = match.state
+function drivePracticeMatch(seed, exerciseEffects = true) {
+  const originalRandom = Math.random
+  const random = seededRandom(seed)
+  Math.random = random
+  let match = startPracticeMatch(HUMAN, `STRESS ${seed}`)
+  const playedEffects = new Set()
+  const firstPlayer = match.state.firstPlayer
 
-  if (s.pendingSelfDiscard?.player === 0) {
-    const count = Number(s.pendingSelfDiscard.count || 0)
-    step('RESOLVE_SELF_DISCARD', { cardIds: s.player1.hand.slice(0, count) })
-    continue
+  function step(action, payload = {}) {
+    const next = submitPracticeAction(HUMAN, match.id, match.state_version, action, payload)
+    match = { ...match, ...next }
   }
 
-  if (s.phase === 'SET_VS' && s.needsVS?.[0]) {
-    const cardId = s.player1.hand[0]
-    if (cardId == null) throw new Error('Practice reached SET_VS with no human card before conclusion')
-    step('SET_VS', { cardId, position: 'ATK' })
-    continue
-  }
+  try {
+    for (let guard = 0; guard < 800; guard += 1) {
+      const s = match.state
+      if (match.phase === 'GAME_OVER' || match.phase === 'TIE_BREAKER') {
+        return { match, playedEffects, firstPlayer, steps: guard }
+      }
 
-  if (s.phase === 'SET_VS' && !s.needsVS?.[0] && !s.needsVS?.[1] && s.firstPlayer === HUMAN) {
-    step('BEGIN_ROUND')
-    continue
-  }
+      if (s.pendingSelfDiscard?.player === 0) {
+        const count = Number(s.pendingSelfDiscard.count || 0)
+        step('RESOLVE_SELF_DISCARD', { cardIds: s.player1.hand.slice(0, count) })
+        continue
+      }
 
-  if (s.phase === 'EFFECT' && s.effectTurn === HUMAN) {
-    step('END_EFFECT_TURN')
-    continue
-  }
+      if (s.pendingBoardChoice?.chooser === 0) {
+        const cardId = s.pendingBoardChoice.cardIds?.[0]
+        if (cardId == null) throw new Error(`Practice pending board choice has no legal target; seed=${seed}`)
+        step('RESOLVE_BOARD_CHOICE', { cardId })
+        continue
+      }
 
-  if (s.phase === 'ATTACK' && s.attackTurn === HUMAN) {
-    step(s.player1.vs?.position === 'ATK' ? 'ATTACK' : 'PASS_ATTACK')
-    continue
-  }
+      if (s.pendingChoice?.chooser === 0) {
+        if (Number(s.pendingChoice.hiddenCount || 0) > 0) {
+          step('RESOLVE_HIDDEN_CHOICE', { slot: 0 })
+          continue
+        }
+        throw new Error(`Practice exposed an unresolved human choice with no public continuation; seed=${seed} kind=${s.pendingChoice.kind}`)
+      }
 
-  throw new Error(`Practice dead state before conclusion: phase=${s.phase} effectTurn=${s.effectTurn} attackTurn=${s.attackTurn} deck=${s.deckCount ?? s.deck?.length ?? 'hidden'} deckExhausted=${s.deckExhausted}`)
+      if (s.phase === 'SET_VS' && s.needsVS?.[0]) {
+        const hand = s.player1.hand
+        const cardId = hand[Math.floor(random() * hand.length)]
+        if (cardId == null) throw new Error(`Practice reached SET_VS with no human card before conclusion; seed=${seed}`)
+        step('SET_VS', { cardId, position: random() < 0.35 ? 'DEF' : 'ATK' })
+        continue
+      }
+
+      if (s.phase === 'SET_VS' && !s.needsVS?.[0] && !s.needsVS?.[1] && s.firstPlayer === HUMAN) {
+        step('BEGIN_ROUND')
+        continue
+      }
+
+      if (s.phase === 'EFFECT' && (s.effectTurn === HUMAN || s.effectTurn === 0)) {
+        if (exerciseEffects && !s.effectActionTaken?.[0] && random() < 0.72) {
+          const candidates = s.player1.hand.filter((cardId) => SAFE_EFFECTS.has(cardId))
+          while (candidates.length) {
+            const index = Math.floor(random() * candidates.length)
+            const cardId = candidates.splice(index, 1)[0]
+            try {
+              step('PLAY_EFFECT', { cardId })
+              playedEffects.add(cardId)
+              break
+            } catch {
+              // The authoritative engine rejected this situational Effect; try another legal candidate.
+            }
+          }
+          if (match.state !== s) continue
+        }
+        step('END_EFFECT_TURN')
+        continue
+      }
+
+      if (s.phase === 'ATTACK' && (s.attackTurn === HUMAN || s.attackTurn === 0)) {
+        const canAttack = s.player1.vs?.position === 'ATK'
+        step(canAttack && random() < 0.82 ? 'ATTACK' : 'PASS_ATTACK')
+        continue
+      }
+
+      throw new Error(`Practice dead state before conclusion: phase=${s.phase} effectTurn=${s.effectTurn} attackTurn=${s.attackTurn} deck=${s.deckCount ?? s.deck?.length ?? 'hidden'} deckExhausted=${s.deckExhausted}`)
+    }
+
+    throw new Error(`Practice exceeded 800 transitions without conclusion; seed=${seed} phase=${match.phase}`)
+  } finally {
+    Math.random = originalRandom
+  }
 }
 
-if (match.phase !== 'GAME_OVER' && match.phase !== 'TIE_BREAKER') {
-  throw new Error(`Practice failed to conclude after full lifecycle; final phase=${match.phase}`)
+const baseline = drivePracticeMatch(0x4d454741, false)
+if (baseline.match.phase !== 'GAME_OVER' && baseline.match.phase !== 'TIE_BREAKER') {
+  throw new Error(`Practice failed to conclude after full lifecycle; final phase=${baseline.match.phase}`)
 }
-
-if (!match.state.deckExhausted) {
+if (!baseline.match.state.deckExhausted) {
   throw new Error('Practice lifecycle concluded before exercising Master Deck exhaustion')
 }
 
@@ -62,4 +121,29 @@ if (!arena.includes("activeOnlineMatch?.state?.effectTurn === 0")) {
   throw new Error('Practice local Effect control can disappear when the displayed match has already normalized effectTurn to player index 0')
 }
 
-console.log(`PASS real Practice lifecycle concludes after Master Deck exhaustion via ${match.phase} and Arena accepts both UUID and normalized player-index Effect ownership`)
+let gameOver = 0
+let tieBreaker = 0
+let exhausted = 0
+let humanFirst = 0
+let botFirst = 0
+let maxSteps = 0
+const effectCoverage = new Set()
+
+for (let seed = 1; seed <= STRESS_MATCHES; seed += 1) {
+  const result = drivePracticeMatch(0x9e3779b9 ^ seed, true)
+  if (result.match.phase === 'GAME_OVER') gameOver += 1
+  else if (result.match.phase === 'TIE_BREAKER') tieBreaker += 1
+  else throw new Error(`Stress seed ${seed} ended in non-terminal phase ${result.match.phase}`)
+  if (result.match.state.deckExhausted) exhausted += 1
+  if (result.firstPlayer === HUMAN) humanFirst += 1
+  else botFirst += 1
+  maxSteps = Math.max(maxSteps, result.steps)
+  for (const cardId of result.playedEffects) effectCoverage.add(cardId)
+}
+
+if (humanFirst === 0 || botFirst === 0) throw new Error(`Practice stress did not cover both starting-player paths: human=${humanFirst} bot=${botFirst}`)
+if (exhausted < 20) throw new Error(`Practice stress under-covered Master Deck exhaustion: ${exhausted}/${STRESS_MATCHES}`)
+if (effectCoverage.size < 10) throw new Error(`Practice stress under-covered Effect cards: ${effectCoverage.size} unique cards`)
+
+console.log(`PASS real Practice lifecycle baseline concludes via ${baseline.match.phase} and Arena accepts both UUID and normalized player-index Effect ownership`)
+console.log(`PRACTICE_STRESS_PASS ${STRESS_MATCHES}/${STRESS_MATCHES} terminal; GAME_OVER=${gameOver} TIE_BREAKER=${tieBreaker} deckExhausted=${exhausted} humanFirst=${humanFirst} botFirst=${botFirst} effects=${effectCoverage.size} maxSteps=${maxSteps}`)
