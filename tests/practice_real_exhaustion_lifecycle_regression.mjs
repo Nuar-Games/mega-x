@@ -16,6 +16,30 @@ function seededRandom(seed) {
   }
 }
 
+function stateDigest(s) {
+  return {
+    round: s.round,
+    phase: s.phase,
+    effectTurn: s.effectTurn,
+    attackTurn: s.attackTurn,
+    firstPlayer: s.firstPlayer,
+    needsVS: s.needsVS,
+    effectActionTaken: s.effectActionTaken,
+    deckCount: s.deckCount ?? s.deck?.length ?? 'hidden',
+    deckExhausted: s.deckExhausted,
+    p1Hand: s.player1?.hand?.length,
+    p2Hand: s.player2?.handCount ?? s.player2?.hand?.length,
+    p1X: s.player1?.x?.length,
+    p2X: s.player2?.x?.length,
+    p1VS: s.player1?.vs?.card ?? null,
+    p2VS: s.player2?.vs?.card ?? null,
+    pendingSelfDiscard: s.pendingSelfDiscard,
+    pendingBoardChoice: s.pendingBoardChoice,
+    pendingChoice: s.pendingChoice,
+    message: s.message,
+  }
+}
+
 function drivePracticeMatch(seed, exerciseEffects = true) {
   const originalRandom = Math.random
   const random = seededRandom(seed)
@@ -23,13 +47,21 @@ function drivePracticeMatch(seed, exerciseEffects = true) {
   let match = startPracticeMatch(HUMAN, `STRESS ${seed}`)
   const playedEffects = new Set()
   const firstPlayer = match.state.firstPlayer
+  const recent = []
+
+  function remember(label) {
+    recent.push({ label, ...stateDigest(match.state) })
+    if (recent.length > 12) recent.shift()
+  }
 
   function step(action, payload = {}) {
     const next = submitPracticeAction(HUMAN, match.id, match.state_version, action, payload)
     match = { ...match, ...next }
+    remember(`human:${action}`)
   }
 
   try {
+    remember('start')
     for (let guard = 0; guard < 800; guard += 1) {
       const s = match.state
       if (match.phase === 'GAME_OVER' || match.phase === 'TIE_BREAKER') {
@@ -99,7 +131,7 @@ function drivePracticeMatch(seed, exerciseEffects = true) {
       throw new Error(`Practice dead state before conclusion: phase=${s.phase} effectTurn=${s.effectTurn} attackTurn=${s.attackTurn} deck=${s.deckCount ?? s.deck?.length ?? 'hidden'} deckExhausted=${s.deckExhausted}`)
     }
 
-    throw new Error(`Practice exceeded 800 transitions without conclusion; seed=${seed} phase=${match.phase}`)
+    throw new Error(`Practice exceeded 800 transitions; seed=${seed}; recent=${JSON.stringify(recent)}`)
   } finally {
     Math.random = originalRandom
   }
