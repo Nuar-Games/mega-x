@@ -12,6 +12,9 @@ const next = {
   attackTurn: 'human',
   winner: null,
   tieBreaker: null,
+  pendingSelfDiscard: null,
+  pendingBoardChoice: null,
+  pendingChoice: null,
   player1: { x: [1] },
   player2: { x: [2, 3] },
 }
@@ -28,4 +31,26 @@ if (next.attackTurn !== null || next.effectTurn !== null) {
   throw new Error('Practice conclusion must clear turn ownership')
 }
 
-console.log('PASS Practice concludes after deck exhaustion at the same safe endpoint as online matches')
+// Once the final Effect sequence has already reached ATTACK, Practice must not
+// depend on the exact action/actor that exposed that state. A missed transition
+// used to leave Master Deck 0 sitting in ATTACK forever.
+const stranded = {
+  phase: 'ATTACK',
+  firstPlayer: 'human',
+  effectTurn: null,
+  attackTurn: 'human',
+  winner: null,
+  tieBreaker: null,
+  pendingSelfDiscard: null,
+  pendingBoardChoice: null,
+  pendingChoice: null,
+  player1: { x: [1] },
+  player2: { x: [2, 3] },
+}
+
+preservePracticeExhaustedDeckTurnCompletion(stranded, previous, 'RESOLVE_SELF_DISCARD', 'human', 'human', 'bot')
+if (stranded.phase !== 'GAME_OVER') {
+  throw new Error(`Practice exhausted-deck ATTACK dead state reproduced; got ${stranded.phase}`)
+}
+
+console.log('PASS Practice concludes whenever exhausted Master Deck reaches the post-Effect attack boundary')
