@@ -15,6 +15,21 @@ const newBlock = `export async function signInWithEmail(email: string, password:
 
 if (!source.includes(oldBlock)) throw new Error('signInWithEmail anchor not found')
 source = source.replace(oldBlock, newBlock)
+
+if (!source.includes('export async function requestPasswordReset')) {
+  const googleAnchor = 'export function signInWithGoogle() {'
+  if (!source.includes(googleAnchor)) throw new Error('Google sign-in anchor missing for recovery helpers')
+  const recoveryHelpers = `export async function requestPasswordReset(email: string): Promise<void> {\n  const cleanEmail = email.trim()\n  if (!cleanEmail) throw new Error('EMAIL_REQUIRED')\n  const redirectTo = encodeURIComponent(\`${'${location.origin}'}/reset-password.html\`)\n  const response = await fetch(\`${'${SUPABASE_URL}'}/auth/v1/recover?redirect_to=${'${redirectTo}'}\`, {\n    method: 'POST', headers: headers(), body: JSON.stringify({ email: cleanEmail }),\n  })\n  await readJson(response)\n}\n\nexport function consumeRecoverySessionFromHash(): OnlineSession | null {\n  if (!location.hash.includes('access_token=')) return null\n  const params = new URLSearchParams(location.hash.slice(1))\n  if (params.get('type') !== 'recovery') return null\n  const accessToken = params.get('access_token')\n  const refreshToken = params.get('refresh_token')\n  if (!accessToken || !refreshToken) return null\n  const tokenPayload = JSON.parse(atob(accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))\n  const session: OnlineSession = {\n    accessToken,\n    refreshToken,\n    expiresAt: Date.now() + Number(params.get('expires_in') || 3600) * 1000,\n    userId: String(tokenPayload.sub),\n    email: tokenPayload.email,\n  }\n  history.replaceState(null, '', location.pathname + location.search)\n  saveSession(session)\n  return session\n}\n\nexport async function updatePassword(session: OnlineSession, password: string): Promise<void> {\n  if (password.length < 8) throw new Error('PASSWORD_TOO_SHORT')\n  const response = await fetch(\`${'${SUPABASE_URL}'}/auth/v1/user\`, {\n    method: 'PUT', headers: headers(session.accessToken), body: JSON.stringify({ password }),\n  })\n  await readJson(response)\n}\n\n`
+  source = source.replace(googleAnchor, recoveryHelpers + googleAnchor)
+}
+
+const googleHashAnchor = `export function consumeGoogleSessionFromHash(): OnlineSession | null {\n  if (!location.hash.includes('access_token=')) return null`
+if (!source.includes(googleHashAnchor)) throw new Error('Google hash consumer anchor missing')
+source = source.replace(
+  googleHashAnchor,
+  `export function consumeGoogleSessionFromHash(): OnlineSession | null {\n  if (location.hash.includes('type=recovery')) return null\n  if (!location.hash.includes('access_token=')) return null`,
+)
+
 fs.writeFileSync(path, source)
 
 const appPath = 'src/App.tsx'
@@ -53,6 +68,16 @@ const submitNew = `setOnlineSession(session)
 if (!submitPattern.test(app)) throw new Error('email sign-in lobby transition anchor missing')
 app = app.replace(submitPattern, submitNew)
 
+if (!app.includes('FORGOT PASSWORD?')) {
+  if (!app.includes('requestPasswordReset')) app = `import { requestPasswordReset } from './onlineAuth'\n` + app
+  const authStart = app.indexOf("onlineScreen === 'AUTH'")
+  if (authStart < 0) throw new Error('AUTH screen anchor missing for password recovery')
+  const formEnd = app.indexOf('</form>', authStart)
+  if (formEnd < 0 || formEnd - authStart > 20000) throw new Error('AUTH form end anchor missing for password recovery')
+  const forgotButton = `\n              <button type="button" className="mx-auth-forgot" onClick={async () => {\n                const email = window.prompt('EMAIL FOR PASSWORD RESET')\n                if (!email?.trim()) return\n                try {\n                  await requestPasswordReset(email.trim())\n                  setOnlineMessage('PASSWORD RESET EMAIL SENT')\n                } catch (error) {\n                  setOnlineMessage(error instanceof Error ? error.message.replaceAll('_', ' ') : 'PASSWORD RESET FAILED')\n                }\n              }}>FORGOT PASSWORD?</button>`
+  app = app.slice(0, formEnd) + forgotButton + '\n            ' + app.slice(formEnd)
+}
+
 // Resume-match branding is scoped to the existing RESUME MATCH screen only.
 const resumeAnchor = app.indexOf('RESUME MATCH')
 if (resumeAnchor < 0) throw new Error('resume-match screen anchor missing')
@@ -77,7 +102,12 @@ if (!onlineCss.includes(resumeBrandMarker)) {
   onlineCss += `\n${resumeBrandMarker}\n.mx-resume-official-logo{display:block!important;width:min(560px,84vw)!important;max-width:84vw!important;height:auto!important;margin:0 auto clamp(18px,3vh,32px)!important;object-fit:contain!important;filter:drop-shadow(0 8px 18px rgba(0,0,0,.6)) drop-shadow(0 0 20px rgba(255,223,126,.22))!important}\n@media(max-width:560px){.mx-resume-official-logo{width:min(430px,88vw)!important;max-width:88vw!important;margin-bottom:18px!important}}\n`
 }
 
+if (!onlineCss.includes('/* Password recovery action */')) {
+  onlineCss += `\n/* Password recovery action */\n.mx-auth-forgot{background:transparent!important;border:0!important;color:rgba(255,255,255,.72)!important;text-decoration:underline!important;font-size:12px!important;letter-spacing:.08em!important;margin-top:8px!important;cursor:pointer!important}\n.mx-auth-forgot:hover{color:#fff!important}\n`
+}
+
+if (!source.includes('requestPasswordReset') || !source.includes('consumeRecoverySessionFromHash') || !source.includes('updatePassword') || !app.includes('FORGOT PASSWORD?')) throw new Error('password recovery patch incomplete')
 fs.writeFileSync(appPath, app)
 fs.writeFileSync(onlineCssPath, onlineCss)
 
-console.log('Forced active auth key, fixed auth-to-Lobby transitions, and applied official resume-match branding')
+console.log('Forced active auth key, fixed auth-to-Lobby transitions, added password recovery, and applied official resume-match branding')
