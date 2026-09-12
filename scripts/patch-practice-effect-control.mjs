@@ -10,8 +10,6 @@ let practice = fs.readFileSync(practicePath, 'utf8')
 let app = fs.readFileSync(appPath, 'utf8')
 let lifecycleTest = fs.readFileSync(lifecycleTestPath, 'utf8')
 
-// Keep Practice Effect controls visible in both the source fragment and the
-// already-injected App. The Arena fragment is injected earlier in the build.
 const effectFrom = "game.phase === 'EFFECT' && game.effectTurn === bottomPlayer"
 const effectTo = "game.phase === 'EFFECT' && (game.effectTurn === bottomPlayer || (activeOnlineMatch?.id?.startsWith('practice-local:') && activeOnlineMatch?.state?.effectTurn === onlineSession?.userId))"
 const arenaMatches = arena.split(effectFrom).length - 1
@@ -21,19 +19,12 @@ const appMatches = app.split(effectFrom).length - 1
 if (appMatches < 2) throw new Error(`practice Effect-control App patch expected at least 2 Arena targets, found ${appMatches}`)
 app = app.split(effectFrom).join(effectTo)
 
-// Practice redaction used to delete tieBreaker completely. The real Arena gates
-// the whole Penentuan Seri stage on game.tieBreaker, so Practice could enter
-// TIE_BREAKER internally while rendering no choice UI. Keep only harmless
-// presentation metadata plus the private human tieChoice already exposed below.
 const tieDelete = '    delete visible.tieBreaker'
 const tieVisible = "    visible.tieBreaker = { status: tie.status || 'CHOOSING', pair: Math.max(1, Number(tie.pair || 1)) }"
 if (practice.includes(tieDelete)) practice = practice.replace(tieDelete, tieVisible)
 if (!practice.includes(tieVisible)) throw new Error('practice tie-breaker presentation state patch target missing')
 
-// Advance one bot action per UI tick instead of consuming the whole bot turn.
-if (practice.includes('function advanceBot() {')) {
-  practice = practice.replace('function advanceBot() {', 'function advanceBot(maxSteps = 24) {')
-}
+if (practice.includes('function advanceBot() {')) practice = practice.replace('function advanceBot() {', 'function advanceBot(maxSteps = 24) {')
 if (!practice.includes('function advanceBot(maxSteps = 24) {')) throw new Error('practice pacing advanceBot signature target missing')
 practice = practice.replace('    24,\n  )', '    maxSteps,\n  )')
 if (!practice.includes('    maxSteps,\n  )')) throw new Error('practice pacing maxSteps target missing')
@@ -52,7 +43,11 @@ if (!practice.includes('export function tickPracticeBot')) {
   practice = practice.replace(insertBefore, tick + insertBefore)
 }
 
-if (!app.includes('tickPracticeBot')) app = `import { tickPracticeBot } from './practice-match'\n` + app
+if (!app.includes("from './practice-match'")) {
+  app = `import { startPracticeMatch, tickPracticeBot } from './practice-match'\n` + app
+} else if (!app.includes('tickPracticeBot')) {
+  app = app.replace("import { startPracticeMatch } from './practice-match'", "import { startPracticeMatch, tickPracticeBot } from './practice-match'")
+}
 
 if (!app.includes('mega-x:practice-bot-paced-turn')) {
   const hookAnchor = '  async function challengeFighter'
