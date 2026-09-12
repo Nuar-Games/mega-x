@@ -32,9 +32,9 @@ for (const fn of ['admin_list_players', 'admin_set_silenced', 'admin_set_suspend
 check(/CANNOT_MODERATE_SELF/.test(moderation), 'self-moderation guard missing')
 check(/where not exists\(select 1 from public\.admin_users/.test(moderation), 'admin accounts are not excluded from player moderation list')
 
-for (const fn of ['admin_list_players\(\)', 'admin_set_silenced\(uuid,boolean\)', 'admin_set_suspended\(uuid,boolean\)']) {
-  check(new RegExp(`revoke execute on function public\\.${fn} from public, anon`, 'i').test(hardening), `${fn} remains public/anon executable`)
-  check(new RegExp(`grant execute on function public\\.${fn} to authenticated`, 'i').test(hardening), `${fn} authenticated grant missing`)
+for (const signature of ['admin_list_players()', 'admin_set_silenced(uuid,boolean)', 'admin_set_suspended(uuid,boolean)']) {
+  check(hardening.toLowerCase().includes(`revoke execute on function public.${signature} from public, anon`), `${signature} remains public/anon executable`)
+  check(hardening.toLowerCase().includes(`grant execute on function public.${signature} to authenticated`), `${signature} authenticated grant missing`)
 }
 
 if (failures.length) {
