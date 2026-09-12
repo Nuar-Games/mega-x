@@ -76,6 +76,21 @@ if (securityMigration) {
   check(/grant execute on function public\.admin_list_players\(\) to authenticated/i.test(securityMigration), 'admin_list_players authenticated grant is missing')
 }
 
+const authSource = read(path.join(root, 'src', 'onlineAuth.ts'))
+const resetPage = read(path.join(root, 'public', 'reset-password.html'))
+check(/export async function requestPasswordReset\(/.test(authSource), 'requestPasswordReset auth helper is missing')
+check(/\/auth\/v1\/recover/.test(authSource), 'password recovery endpoint is missing')
+check(/export function consumeRecoverySessionFromHash\(/.test(authSource), 'recovery-session hash consumer is missing')
+check(/export async function updatePassword\(/.test(authSource), 'updatePassword auth helper is missing')
+check(/\/auth\/v1\/user/.test(authSource), 'password update endpoint is missing')
+check(/FORGOT PASSWORD\?/i.test(app), 'AUTH screen has no FORGOT PASSWORD action')
+check(Boolean(resetPage), 'reset-password.html is missing')
+if (resetPage) {
+  check(/type=recovery|type['"]?\s*[:=]\s*['"]recovery/i.test(resetPage), 'reset page does not verify recovery flow')
+  check(/NEW PASSWORD/i.test(resetPage), 'reset page has no new-password UI')
+  check(/\/auth\/v1\/user/.test(resetPage), 'reset page does not update password through Supabase Auth')
+}
+
 if (failures.length) {
   console.error('GATE1_VERIFY_FAIL')
   for (const failure of failures) console.error(`- ${failure}`)
