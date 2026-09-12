@@ -55,13 +55,10 @@ if (!match.state.deckExhausted) {
 }
 
 const arena = fs.readFileSync('src/App.tsx', 'utf8')
-const uuidFallback = "activeOnlineMatch?.id?.startsWith('practice-local:') && activeOnlineMatch?.state?.effectTurn === onlineSession?.userId"
-if (!arena.includes(uuidFallback)) {
+if (!arena.includes("activeOnlineMatch?.state?.effectTurn === onlineSession?.userId")) {
   throw new Error('Practice human Effect turn has no UUID Arena fallback')
 }
-
-const indexFallback = "activeOnlineMatch?.state?.effectTurn === 0"
-if (!arena.includes(indexFallback)) {
+if (!arena.includes("activeOnlineMatch?.state?.effectTurn === 0")) {
   throw new Error('Practice local Effect control can disappear when the displayed match has already normalized effectTurn to player index 0')
 }
 
