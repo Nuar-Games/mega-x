@@ -18,7 +18,17 @@ const cardId = match.state.player1.hand[0]
 const result = submitPracticeAction(humanId, match.id, match.state_version, 'SET_VS', { cardId, position: 'ATK' })
 
 if (result.phase !== 'EFFECT') {
-  throw new Error(`practice dead turn reproduced: expected EFFECT after both VS were set, got ${result.phase}`)
+  const diag = {
+    cardId,
+    firstPlayer: result.state.firstPlayer,
+    needsVS: result.state.needsVS,
+    player1VS: result.state.player1.vs,
+    player2VSCommitted: result.state.player2.vsCommitted,
+    effectTurn: result.state.effectTurn,
+    attackTurn: result.state.attackTurn,
+    message: result.state.message,
+  }
+  throw new Error(`practice dead turn reproduced: expected EFFECT after both VS were set, got ${result.phase}; state=${JSON.stringify(diag)}`)
 }
 if (result.state.effectTurn !== humanId) {
   throw new Error(`expected human Effect turn after automatic round start, got ${result.state.effectTurn}`)
