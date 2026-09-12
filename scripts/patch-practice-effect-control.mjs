@@ -11,7 +11,7 @@ let app = fs.readFileSync(appPath, 'utf8')
 let lifecycleTest = fs.readFileSync(lifecycleTestPath, 'utf8')
 
 const effectFrom = "game.phase === 'EFFECT' && game.effectTurn === bottomPlayer"
-const effectTo = "game.phase === 'EFFECT' && (game.effectTurn === bottomPlayer || (activeOnlineMatch?.id?.startsWith('practice-local:') && activeOnlineMatch?.state?.effectTurn === onlineSession?.userId))"
+const effectTo = "game.phase === 'EFFECT' && (game.effectTurn === bottomPlayer || (activeOnlineMatch?.id?.startsWith('practice-local:') && (activeOnlineMatch?.state?.effectTurn === onlineSession?.userId || activeOnlineMatch?.state?.effectTurn === 0)))"
 const arenaMatches = arena.split(effectFrom).length - 1
 if (arenaMatches < 2) throw new Error(`practice Effect-control patch expected at least 2 Arena targets, found ${arenaMatches}`)
 arena = arena.split(effectFrom).join(effectTo)
@@ -72,4 +72,4 @@ fs.writeFileSync(arenaPath, arena)
 fs.writeFileSync(practicePath, practice)
 fs.writeFileSync(appPath, app)
 fs.writeFileSync(lifecycleTestPath, lifecycleTest)
-console.log(`Patched Practice: ${arenaMatches} fragment + ${appMatches} live Effect controls, visible tie breaker, paced Beginner Bot`)
+console.log(`Patched Practice: ${arenaMatches} fragment + ${appMatches} live Effect controls, normalized ownership fallback, visible tie breaker, paced Beginner Bot`)
