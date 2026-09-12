@@ -65,6 +65,17 @@ if (!fs.existsSync(game) || !fs.existsSync(inspect)) {
 
 check(/turnDeadline|turn_deadline|actionDeadline|action_deadline/.test(app), 'client has no authoritative normal-turn deadline field yet')
 
+const securityMigration = read(path.join(root, 'supabase', 'migrations', '20260912_security_definer_hardening.sql'))
+check(Boolean(securityMigration), 'security definer hardening migration is missing')
+if (securityMigration) {
+  check(/revoke execute on function public\.admin_list_players\(\) from public, anon/i.test(securityMigration), 'admin_list_players is not explicitly revoked from public/anon')
+  check(/revoke execute on function public\.admin_set_silenced\(uuid,boolean\) from public, anon/i.test(securityMigration), 'admin_set_silenced is not explicitly revoked from public/anon')
+  check(/revoke execute on function public\.admin_set_suspended\(uuid,boolean\) from public, anon/i.test(securityMigration), 'admin_set_suspended is not explicitly revoked from public/anon')
+  check(/revoke execute on function public\.assign_pending_admin\(\) from public, anon, authenticated/i.test(securityMigration), 'trigger-only assign_pending_admin is remotely executable')
+  check(/revoke execute on function public\.handle_new_auth_user\(\) from public, anon, authenticated/i.test(securityMigration), 'trigger-only handle_new_auth_user is remotely executable')
+  check(/grant execute on function public\.admin_list_players\(\) to authenticated/i.test(securityMigration), 'admin_list_players authenticated grant is missing')
+}
+
 if (failures.length) {
   console.error('GATE1_VERIFY_FAIL')
   for (const failure of failures) console.error(`- ${failure}`)
