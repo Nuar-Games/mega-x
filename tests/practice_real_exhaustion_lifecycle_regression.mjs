@@ -17,6 +17,10 @@ function seededRandom(seed) {
   }
 }
 
+function isHumanOwner(value) {
+  return value === 0 || value === HUMAN
+}
+
 function drivePracticeMatch(seed, options = {}) {
   const { exerciseEffects = true, forceAggressive = false, maxSteps = STRESS_STEPS } = options
   const originalRandom = Math.random
@@ -38,20 +42,20 @@ function drivePracticeMatch(seed, options = {}) {
         return { match, playedEffects, firstPlayer, steps: guard, terminal: true }
       }
 
-      if (s.pendingSelfDiscard?.player === 0) {
+      if (s.pendingSelfDiscard && isHumanOwner(s.pendingSelfDiscard.player)) {
         const count = Number(s.pendingSelfDiscard.count || 0)
         step('RESOLVE_SELF_DISCARD', { cardIds: s.player1.hand.slice(0, count) })
         continue
       }
 
-      if (s.pendingBoardChoice?.chooser === 0) {
+      if (s.pendingBoardChoice && isHumanOwner(s.pendingBoardChoice.chooser)) {
         const cardId = s.pendingBoardChoice.cardIds?.[0]
         if (cardId == null) throw new Error(`Practice pending board choice has no legal target; seed=${seed}`)
         step('RESOLVE_BOARD_CHOICE', { cardId })
         continue
       }
 
-      if (s.pendingChoice?.chooser === 0) {
+      if (s.pendingChoice && isHumanOwner(s.pendingChoice.chooser)) {
         if (Number(s.pendingChoice.hiddenCount || 0) > 0) {
           step('RESOLVE_HIDDEN_CHOICE', { slot: 0 })
           continue
@@ -59,7 +63,9 @@ function drivePracticeMatch(seed, options = {}) {
         throw new Error(`Practice exposed an unresolved human choice with no public continuation; seed=${seed} kind=${s.pendingChoice.kind}`)
       }
 
-      if (s.phase === 'SET_VS' && s.needsVS?.[0]) {
+      const hasPending = Boolean(s.pendingSelfDiscard || s.pendingBoardChoice || s.pendingChoice)
+
+      if (!hasPending && s.phase === 'SET_VS' && s.needsVS?.[0]) {
         const hand = s.player1.hand
         const cardId = forceAggressive ? hand[0] : hand[Math.floor(random() * hand.length)]
         if (cardId == null) throw new Error(`Practice reached SET_VS with no human card before conclusion; seed=${seed}`)
@@ -67,12 +73,12 @@ function drivePracticeMatch(seed, options = {}) {
         continue
       }
 
-      if (s.phase === 'SET_VS' && !s.needsVS?.[0] && !s.needsVS?.[1] && s.firstPlayer === HUMAN) {
+      if (!hasPending && s.phase === 'SET_VS' && !s.needsVS?.[0] && !s.needsVS?.[1] && s.firstPlayer === HUMAN) {
         step('BEGIN_ROUND')
         continue
       }
 
-      if (s.phase === 'EFFECT' && (s.effectTurn === HUMAN || s.effectTurn === 0)) {
+      if (!hasPending && s.phase === 'EFFECT' && (s.effectTurn === HUMAN || s.effectTurn === 0)) {
         if (exerciseEffects && !s.effectActionTaken?.[0] && random() < 0.72) {
           const candidates = s.player1.hand.filter((cardId) => SAFE_EFFECTS.has(cardId))
           while (candidates.length) {
@@ -92,7 +98,7 @@ function drivePracticeMatch(seed, options = {}) {
         continue
       }
 
-      if (s.phase === 'ATTACK' && (s.attackTurn === HUMAN || s.attackTurn === 0)) {
+      if (!hasPending && s.phase === 'ATTACK' && (s.attackTurn === HUMAN || s.attackTurn === 0)) {
         const canAttack = s.player1.vs?.position === 'ATK'
         step(canAttack && (forceAggressive || random() < 0.82) ? 'ATTACK' : 'PASS_ATTACK')
         continue
