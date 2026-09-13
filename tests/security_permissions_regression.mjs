@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 
 const hardening = fs.readFileSync('supabase/migrations/20260912_security_definer_hardening.sql', 'utf8').toLowerCase()
+const lobbyTableHardening = fs.readFileSync('supabase/migrations/20260913_lobby_visits_table_privilege_hardening.sql', 'utf8').toLowerCase()
 const failures = []
 const check = (ok, message) => { if (!ok) failures.push(message) }
 
@@ -71,6 +72,11 @@ for (const signature of ['get_completed_fight_count()', 'get_lobby_metrics()', '
     `${signature} intentional anonymous surface is undocumented in hardening migration`,
   )
 }
+
+check(
+  lobbyTableHardening.includes('revoke all privileges on table public.lobby_visits from anon, authenticated'),
+  'lobby_visits direct table privileges must be revoked from anon/authenticated',
+)
 
 if (failures.length) {
   console.error('SECURITY_PERMISSIONS_REGRESSION_FAIL')
