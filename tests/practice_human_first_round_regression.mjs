@@ -1,20 +1,19 @@
 import { startPracticeMatch, submitPracticeAction } from '../src/practice-match.ts'
 
 const humanId = 'practice-human-test'
-const safeOpeningCardIds = new Set([1, 2, 4, 12, 19, 20, 21, 24, 29])
 let match = null
 let cardId = null
 for (let attempt = 0; attempt < 40; attempt += 1) {
   const candidate = startPracticeMatch(humanId, 'TEST FIGHTER')
-  const safeCard = candidate.state.player1.hand.find((card) => safeOpeningCardIds.has(card.id))
-  if (candidate.state.firstPlayer === humanId && safeCard) {
+  const nonChoiceCard = candidate.state.player1.hand.find((card) => card.id !== 26)
+  if (candidate.state.firstPlayer === humanId && nonChoiceCard) {
     match = candidate
-    cardId = safeCard.id
+    cardId = nonChoiceCard.id
     break
   }
 }
 
-if (!match || cardId === null) throw new Error('could not produce a human-first practice match with a non-choice opening VS')
+if (!match || cardId === null) throw new Error('could not produce a human-first practice match with a non-SPUDUR opening VS')
 if (!match.state.player2.vsCommitted) throw new Error('Beginner Bot should commit its opening VS')
 if (!match.state.needsVS[0]) throw new Error('human should still need to set opening VS')
 
