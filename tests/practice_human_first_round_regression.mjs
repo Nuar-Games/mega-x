@@ -5,10 +5,10 @@ let match = null
 let cardId = null
 for (let attempt = 0; attempt < 40; attempt += 1) {
   const candidate = startPracticeMatch(humanId, 'TEST FIGHTER')
-  const nonChoiceCard = candidate.state.player1.hand.find((card) => card.id !== 26)
-  if (candidate.state.firstPlayer === humanId && nonChoiceCard) {
+  const nonChoiceCardId = candidate.state.player1.hand.find((id) => id !== 26)
+  if (candidate.state.firstPlayer === humanId && nonChoiceCardId !== undefined) {
     match = candidate
-    cardId = nonChoiceCard.id
+    cardId = nonChoiceCardId
     break
   }
 }
