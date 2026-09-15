@@ -22,6 +22,9 @@ export type ArenaRenderState={
   opponentZonX:ArenaCardRef|null
   localEffects:ArenaCardRef[]
   opponentEffects:ArenaCardRef[]
+  tieBreakerCards:ArenaCardRef[]
+  tieBreakerReveal:ArenaCardRef[]
+  tieBreakerMessage:string
   phase:string
   prompt:string
   timer:string
@@ -59,7 +62,7 @@ const statsFrom=(root:ParentNode,side:LeftOrRight):ArenaStats=>({
 const positionFrom=(root:ParentNode,side:LeftOrRight)=>firstText(root,`.mx3-position-${side}`).replace(/^POSISI\s*/i,'').trim()||'—'
 
 export function readArenaRenderState(shell:HTMLElement):ArenaRenderState{
-  const allControls=Array.from(shell.querySelectorAll<HTMLButtonElement>('.mx3-phase-prompt button,.mx3-local-hand button,.mx3-position,.mx3-quit,.mx3-audio')).filter(btn=>!btn.disabled&&btn.offsetParent!==null)
+  const allControls=Array.from(shell.querySelectorAll<HTMLButtonElement>('.mx3-phase-prompt button,.mx3-local-hand button,.mx3-position,.mx3-quit,.mx3-audio,.tie-breaker-choice-hand button')).filter(btn=>!btn.disabled&&btn.offsetParent!==null)
   allControls.forEach((button,index)=>actionIdFor(button,index))
 
   const leftFighter=shell.querySelector<HTMLElement>('.mx3-fighter-left')
@@ -81,7 +84,7 @@ export function readArenaRenderState(shell:HTMLElement):ArenaRenderState{
   const localEffectsSelector=localSide==='left'?'.mx3-effects-left img':'.mx3-effects-right img'
   const opponentEffectsSelector=localSide==='left'?'.mx3-effects-right img':'.mx3-effects-left img'
 
-  const phaseControls=allControls.filter(button=>!button.closest('.mx3-local-hand'))
+  const phaseControls=allControls.filter(button=>!button.closest('.mx3-local-hand')&&!button.closest('.tie-breaker-choice-hand'))
   const legalActions=phaseControls.map((button,index)=>{
     const id=button.dataset.arenaActionId||actionIdFor(button,index)
     return {id,label:button.textContent?.trim()||'ACTION',selector:`[data-arena-action-id="${id}"]`}
@@ -114,6 +117,9 @@ export function readArenaRenderState(shell:HTMLElement):ArenaRenderState{
     opponentZonX:cardFrom(shell,opponentXSelector),
     localEffects:cardsFrom(shell,localEffectsSelector),
     opponentEffects:cardsFrom(shell,opponentEffectsSelector),
+    tieBreakerCards:cardsFrom(shell,'.tie-breaker-choice-hand img'),
+    tieBreakerReveal:cardsFrom(shell,'.tie-breaker-last-reveal img,.tie-breaker-pair img'),
+    tieBreakerMessage:firstText(shell,'.tie-breaker-choice-copy em')||firstText(shell,'.tie-breaker-tied')||'',
     phase,
     prompt:firstText(shell,'.mx3-phase-prompt strong'),
     timer:firstText(shell,'.mx3-timer strong')||'—',
