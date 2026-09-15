@@ -62,7 +62,7 @@ export class ArenaScene extends Phaser.Scene{
     const wash=this.add.graphics().setDepth(-35)
     wash.fillStyle(0x01040a,0.66).fillRect(0,0,w,h)
     wash.fillStyle(ARENA_THEME.colors.player,0.07).fillTriangle(0,h,0,h*0.26,w*0.46,h)
-    wash.fillStyle(ARENA_THEME.colors.opponent,0.07).fillTriangle(w,0,w*h*0+0.74*h,w*0+0.54*w,0)
+    wash.fillStyle(ARENA_THEME.colors.opponent,0.07).fillTriangle(w,0,w,h*0.74,w*0.54,0)
     this.rails.push(wash)
 
     if(this.textures.exists(`asset:${ARENA_ASSETS.vs.player}`)){
