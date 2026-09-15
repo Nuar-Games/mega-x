@@ -7,6 +7,7 @@ import { ArenaHud } from './ArenaHud'
 import { ArenaEffects } from './ArenaEffects'
 import { ArenaInput, createDomArenaDispatch } from './ArenaInput'
 import { ArenaAudio } from './ArenaAudio'
+import { ArenaInspect } from './ArenaInspect'
 import { ARENA_THEME } from './arena-theme'
 
 export class ArenaScene extends Phaser.Scene{
@@ -15,6 +16,7 @@ export class ArenaScene extends Phaser.Scene{
   private hud!:ArenaHud
   private effects!:ArenaEffects
   private inputLayer!:ArenaInput
+  private inspectLayer!:ArenaInspect
   private audioLayer=new ArenaAudio()
   private previous:ArenaRenderState|null=null
   private layout!:ArenaLayoutSnapshot
@@ -34,11 +36,12 @@ export class ArenaScene extends Phaser.Scene{
 
   create(){
     const dispatch=createDomArenaDispatch(this.shell)
-    this.cards=new ArenaCards(this,dispatch)
+    this.inspectLayer=new ArenaInspect(this)
+    this.cards=new ArenaCards(this,dispatch,card=>this.inspectLayer.show(card))
     this.hud=new ArenaHud(this)
     this.effects=new ArenaEffects(this)
     this.inputLayer=new ArenaInput(this,dispatch)
-    this.scale.on('resize',()=>this.renderArena(true))
+    this.scale.on('resize',()=>{this.inspectLayer.close();this.renderArena(true)})
     this.renderArena(true)
   }
 
