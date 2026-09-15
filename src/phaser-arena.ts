@@ -9,8 +9,18 @@ const GOLD = 0xf4c04b
 const PURPLE = 0xbb72ff
 const GREEN = 0x4dde92
 
+function textureKeyFor(source: string) {
+  let hash = 2166136261
+  for (let i = 0; i < source.length; i += 1) {
+    hash ^= source.charCodeAt(i)
+    hash = Math.imul(hash, 16777619)
+  }
+  return `mx-card-${(hash >>> 0).toString(16)}`
+}
+
 class MegaXArenaScene extends Phaser.Scene {
   private backdrop?: Phaser.GameObjects.Graphics
+  private cardLayer?: Phaser.GameObjects.Container
 
   constructor() {
     super('mega-x-arena')
@@ -19,6 +29,7 @@ class MegaXArenaScene extends Phaser.Scene {
   create() {
     this.backdrop = this.add.graphics()
     this.backdrop.setDepth(-1000)
+    this.cardLayer = this.add.container(0, 0).setDepth(20)
     this.drawArenaChrome()
     this.scale.on('resize', () => this.drawArenaChrome())
     this.time.delayedCall(40, () => this.drawArenaChrome())
@@ -127,6 +138,32 @@ class MegaXArenaScene extends Phaser.Scene {
     g.fillCircle(center, top + laneHeight / 2, 34)
   }
 
+  private syncCardSprites() {
+    const layer = this.cardLayer
+    if (!layer || !currentShell) return
+
+    layer.removeAll(true)
+    currentShell.querySelectorAll<HTMLImageElement>('img.mx-phaser-card-mirrored').forEach((image) => image.classList.remove('mx-phaser-card-mirrored'))
+
+    const images = currentShell.querySelectorAll<HTMLImageElement>('.mx3-canvas .digital-card, .mx3-canvas .mx3-card-back img, .mx3-canvas .mx3-master-core img, .mx3-canvas .mx3-vs img')
+    images.forEach((image) => {
+      if (!image.complete || image.naturalWidth < 2 || image.naturalHeight < 2) return
+      const rect = image.getBoundingClientRect()
+      if (rect.width < 2 || rect.height < 2 || rect.bottom <= 0 || rect.right <= 0 || rect.top >= window.innerHeight || rect.left >= window.innerWidth) return
+
+      const source = image.currentSrc || image.src
+      if (!source) return
+      const textureKey = textureKeyFor(source)
+      if (!this.textures.exists(textureKey)) this.textures.addImage(textureKey, image)
+      if (!this.textures.exists(textureKey)) return
+
+      const sprite = this.add.image(rect.left + rect.width / 2, rect.top + rect.height / 2, textureKey)
+      sprite.setDisplaySize(rect.width, rect.height)
+      layer.add(sprite)
+      image.classList.add('mx-phaser-card-mirrored')
+    })
+  }
+
   private drawArenaChrome() {
     const g = this.backdrop
     if (!g) return
@@ -176,6 +213,8 @@ class MegaXArenaScene extends Phaser.Scene {
       g.lineStyle(1, BLUE, 0.32)
       g.strokeRoundedRect(rect.left + 1, rect.top + 1, Math.max(0, rect.width - 2), Math.max(0, rect.height - 2), 8)
     })
+
+    this.syncCardSprites()
   }
 }
 
@@ -184,6 +223,7 @@ let currentShell: HTMLElement | null = null
 let redrawQueued = false
 
 function destroyArena() {
+  currentShell?.querySelectorAll<HTMLImageElement>('img.mx-phaser-card-mirrored').forEach((image) => image.classList.remove('mx-phaser-card-mirrored'))
   currentShell?.classList.remove('mx-phaser-rendered')
   game?.destroy(true)
   game = null
