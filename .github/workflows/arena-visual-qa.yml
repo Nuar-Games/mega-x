@@ -20,7 +20,7 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Capture actual preview
         env:
-          MEGAX_PREVIEW_URL: "https://mega-x-git-arena-clean-rebuild-nuargita96-2452.vercel.app/?_vercel_share=OQNGgS4GbQAOXxpzA6se13BRNRLPkt9q"
+          MEGAX_PREVIEW_URL: "https://mega-k3b9m9x7l-nuargita96-2452.vercel.app/?_vercel_share=HelFvNp60n4RtzXzzkvp7TTXPbzeILTq"
         run: |
           cat > arena-qa.mjs <<'EOF'
           import { chromium } from 'playwright'
@@ -40,18 +40,17 @@ jobs:
             await page.waitForTimeout(5000)
             records.push(`[${label}] title=${await page.title()}`)
             records.push(`[${label}] text=${(await page.locator('body').innerText()).slice(0,5000)}`)
-            const buttons=await page.locator('button').allTextContents()
-            records.push(`[${label}] buttons=${JSON.stringify(buttons)}`)
+            records.push(`[${label}] buttons=${JSON.stringify(await page.locator('button').allTextContents())}`)
             await page.screenshot({path:`${out}/${label}-landing.png`,fullPage:true})
 
             const clickText=async rx=>{
-              const candidates=page.getByRole('button').filter({hasText:rx})
-              const count=await candidates.count()
-              if(!count)return false
+              const buttons=page.getByRole('button')
+              const count=await buttons.count()
               for(let i=0;i<count;i++){
-                const b=candidates.nth(i)
-                if(await b.isVisible().catch(()=>false)&&await b.isEnabled().catch(()=>false)){
-                  records.push(`[${label}] click=${await b.innerText()}`)
+                const b=buttons.nth(i)
+                const text=(await b.innerText().catch(()=>''))
+                if(rx.test(text)&&await b.isVisible().catch(()=>false)&&await b.isEnabled().catch(()=>false)){
+                  records.push(`[${label}] click=${text}`)
                   await b.click()
                   await page.waitForTimeout(2500)
                   return true
