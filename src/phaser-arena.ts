@@ -65,14 +65,21 @@ class MegaXArenaScene extends Phaser.Scene {
     const rail = Math.max(8, Math.min(width, height) * 0.014)
     g.lineStyle(2, 0x78ccff, 0.28)
     g.strokeRoundedRect(rail, rail, width - rail * 2, height - rail * 2, 20)
+  }
 
-    const seamX = width / 2
+  private drawCombatLane(g: Phaser.GameObjects.Graphics, width: number, height: number) {
+    const portrait = height >= width
     const laneTop = portrait ? height * 0.20 : height * 0.16
     const laneBottom = portrait ? height * 0.77 : height * 0.80
+    const laneX = width * 0.13
+    const laneWidth = width * 0.74
+    const laneHeight = laneBottom - laneTop
+    const seamX = width / 2
+
     g.fillStyle(0x071726, 0.78)
-    g.fillRoundedRect(width * 0.13, laneTop, width * 0.74, laneBottom - laneTop, 26)
+    g.fillRoundedRect(laneX, laneTop, laneWidth, laneHeight, 26)
     g.lineStyle(2, 0x3d9bd3, 0.28)
-    g.strokeRoundedRect(width * 0.13, laneTop, width * 0.74, laneBottom - laneTop, 26)
+    g.strokeRoundedRect(laneX, laneTop, laneWidth, laneHeight, 26)
     g.lineStyle(2, GOLD, 0.2)
     g.lineBetween(seamX, laneTop + 18, seamX, laneBottom - 18)
   }
@@ -129,6 +136,7 @@ class MegaXArenaScene extends Phaser.Scene {
 
     g.clear()
     this.drawBackdrop(g, width, height)
+    this.drawCombatLane(g, width, height)
 
     this.drawZoneFrame('.mx3-fighter-left', BLUE, 0x08263d, 0.68, 12)
     this.drawZoneFrame('.mx3-fighter-right', RED, 0x35101a, 0.68, 12)
