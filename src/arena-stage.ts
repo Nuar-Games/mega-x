@@ -206,7 +206,19 @@ function mountArena() {
   syncResultOutcome(shell)
 }
 
-const observer = new MutationObserver(() => mountArena())
+let lowSpecMutationTimer = 0
+const observer = new MutationObserver(() => {
+  if (!document.documentElement.classList.contains('mx-low-spec')) {
+    mountArena()
+    return
+  }
+
+  if (lowSpecMutationTimer) return
+  lowSpecMutationTimer = window.setTimeout(() => {
+    lowSpecMutationTimer = 0
+    mountArena()
+  }, 250)
+})
 observer.observe(document.documentElement, { childList: true, subtree: true, characterData: true })
 window.addEventListener('resize', mountArena, { passive: true })
 window.addEventListener('orientationchange', mountArena)
