@@ -20,7 +20,7 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Capture actual Practice arena
         env:
-          MEGAX_PREVIEW_URL: "https://mega-x-git-arena-clean-rebuild-nuargita96-2452.vercel.app/?_vercel_share=vhicByzf5McbPAb3ki7W1IYMViBmwSOk"
+          MEGAX_PREVIEW_URL: "https://mega-hkxw255kh-nuargita96-2452.vercel.app/?_vercel_share=qgNBw4r3DV6PSu9YoFLsvdrCK1WWA9BF"
         run: |
           cat > arena-qa.mjs <<'EOF'
           import { chromium } from 'playwright'
