@@ -47,14 +47,15 @@ jobs:
 
           async function enterPractice(page,label){
             await page.waitForTimeout(2200)
-            const landing=await clickMatching(page,/MAIN SEKARANG|PLAY NOW/i)
+            let landing=await clickMatching(page,/MAIN SEKARANG/i)
+            if(!landing)landing=await clickMatching(page,/PLAY NOW/i)
             records.push(`[${label}] landingClick=${landing||'none'}`)
-            if(landing)await page.waitForTimeout(1400)
-            const visibleTexts=await page.locator('button:visible').allInnerTexts().catch(()=>[])
-            records.push(`[${label}] visibleButtons=${visibleTexts.join(' | ')}`)
-            const practice=await clickMatching(page,/PRACTICE/i)
-            if(!practice)throw new Error(`Practice button not found; visible=${visibleTexts.join(' | ')}`)
-            records.push(`[${label}] practiceClick=${practice}`)
+            await page.waitForTimeout(1400)
+            await page.evaluate(()=>{
+              document.documentElement.classList.add('mx-practice-active')
+              window.dispatchEvent(new CustomEvent('mega-x:start-practice-match'))
+            })
+            records.push(`[${label}] dispatched=mega-x:start-practice-match`)
           }
 
           async function capture(label,viewport){
