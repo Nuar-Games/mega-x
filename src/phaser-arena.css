@@ -41,3 +41,50 @@ body.mx3-arena-present{
   background:transparent!important;
   box-shadow:none!important;
 }
+
+/* Phaser now owns the arena's visible frame and zone chrome.
+   DOM remains above it only for live text, cards and click targets. */
+.mx-phaser-rendered .mx3-zone,
+.mx-phaser-rendered .mx3-fighter,
+.mx-phaser-rendered .mx3-status,
+.mx-phaser-rendered .mx3-quit,
+.mx-phaser-rendered .mx3-audio,
+.mx-phaser-rendered .mx3-vs,
+.mx-phaser-rendered .mx3-position,
+.mx-phaser-rendered .mx3-phase-prompt,
+.mx-phaser-rendered .mx3-timer,
+.mx-phaser-rendered .mx3-center-vs,
+.mx-phaser-rendered .mx3-effects,
+.mx-phaser-rendered .mx3-local-hand,
+.mx-phaser-rendered .mx3-opponent-hand,
+.mx-phaser-rendered .mx3-stats>div,
+.mx-phaser-rendered .mx3-effect{
+  background:transparent!important;
+  box-shadow:none!important;
+  border-color:transparent!important;
+  clip-path:none!important;
+}
+
+.mx-phaser-rendered .mx3-premium-rail,
+.mx-phaser-rendered .mx3-particles{
+  display:none!important;
+}
+
+.mx-phaser-rendered .mx3-fighter::after{
+  display:none!important;
+}
+
+.mx-phaser-rendered .mx3-zone-label,
+.mx-phaser-rendered .mx3-vs-label,
+.mx-phaser-rendered .mx3-hand-label{
+  box-shadow:none!important;
+}
+
+.mx-phaser-rendered .mx3-canvas{
+  background:transparent!important;
+}
+
+.mx-phaser-rendered .mx3-canvas::before,
+.mx-phaser-rendered .mx3-canvas::after{
+  content:none!important;
+}
