@@ -73,7 +73,7 @@ export class ArenaScene extends Phaser.Scene{
     const next=readArenaRenderState(this.shell)
     this.texturePool.ensureState(next)
     if(force)this.drawArenaFrame()
-    this.cards.render(next,this.layout);this.hud.render(next,this.layout);this.inputLayer.render(next);this.tieBreaker.render(next)
+    this.cards.render(next,this.layout);this.hud.render(next,this.layout);this.inputLayer.render(next,this.layout);this.tieBreaker.render(next)
     this.effects.transition(this.previous,next);this.audioLayer.sync(next);this.previous=next
   }
 }
