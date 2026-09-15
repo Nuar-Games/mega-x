@@ -59,7 +59,7 @@ jobs:
               return false
             }
 
-            await clickText(/ENTER|PLAY|FIGHT|START/i)
+            if(!await clickText(/MAIN SEKARANG/i)) await clickText(/ENTER|PLAY|FIGHT|START/i)
             await page.screenshot({path:`${out}/${label}-step1.png`,fullPage:true})
             records.push(`[${label}] step1 text=${(await page.locator('body').innerText()).slice(0,5000)}`)
             records.push(`[${label}] step1 buttons=${JSON.stringify(await page.locator('button').allTextContents())}`)
