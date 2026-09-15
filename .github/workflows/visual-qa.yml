@@ -1,0 +1,70 @@
+name: visual-qa
+
+on:
+  push:
+    branches:
+      - phaser-arena-rebuild
+  workflow_dispatch:
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm install --no-save playwright
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/mega-preview.log 2>&1 &
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:4173 >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/mega-preview.log
+          exit 1
+      - name: Capture player viewports
+        run: |
+          node --input-type=module <<'EOF'
+          import { chromium } from 'playwright'
+          import fs from 'node:fs'
+          fs.mkdirSync('visual-qa', { recursive: true })
+          const browser = await chromium.launch({ headless: true })
+          const cases = [
+            ['mobile-portrait', 412, 915],
+            ['mobile-landscape', 915, 412],
+            ['laptop-1366x768', 1366, 768],
+            ['desktop-1920x1080', 1920, 1080],
+          ]
+          for (const [name, width, height] of cases) {
+            const page = await browser.newPage({ viewport: { width, height } })
+            await page.goto('http://127.0.0.1:4173', { waitUntil: 'networkidle' })
+            await page.screenshot({ path: `visual-qa/${name}-entry.png`, fullPage: true })
+            const practice = page.getByRole('button', { name: /practice|latihan/i }).first()
+            if (await practice.count()) {
+              try {
+                await practice.click({ timeout: 2500 })
+                await page.waitForTimeout(1200)
+                await page.screenshot({ path: `visual-qa/${name}-after-practice.png`, fullPage: true })
+              } catch {}
+            }
+            const arena = page.locator('.duel-shell').first()
+            if (await arena.count()) {
+              const box = await arena.boundingBox()
+              const canvas = page.locator('.mx3-canvas').first()
+              const canvasBox = await canvas.count() ? await canvas.boundingBox() : null
+              fs.writeFileSync(`visual-qa/${name}-geometry.json`, JSON.stringify({ viewport:{width,height}, shell:box, canvas:canvasBox }, null, 2))
+            }
+            await page.close()
+          }
+          await browser.close()
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mega-x-visual-qa
+          path: visual-qa
+          if-no-files-found: error
