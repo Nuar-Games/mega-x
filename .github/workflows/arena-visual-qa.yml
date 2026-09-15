@@ -30,6 +30,38 @@ jobs:
           fs.mkdirSync(out,{recursive:true})
           const browser=await chromium.launch({headless:true})
           const records=[]
+
+          const syntheticArena=()=>`
+            <section class="duel-shell" style="position:fixed;inset:0;background:#05070b;color:white">
+              <div class="mx3-canvas phase-attack"></div>
+              <div class="mx3-fighter-left is-local"><strong>AKIRA</strong></div>
+              <div class="mx3-fighter-right"><strong>BEGINNER BOT</strong></div>
+              <div class="mx3-stats-left"><span class="mx3-atk"><strong>1700</strong></span><span class="mx3-def"><strong>900</strong></span><span class="mx3-sta"><strong>4</strong></span></div>
+              <div class="mx3-stats-right"><span class="mx3-atk"><strong>1200</strong></span><span class="mx3-def"><strong>1300</strong></span><span class="mx3-sta"><strong>3</strong></span></div>
+              <div class="mx3-position-left">POSISI ATK</div><div class="mx3-position-right">POSISI DEF</div>
+              <div class="mx3-opponent-hand"><span class="mx3-hand-label">5 KAD</span>${'<div class="mx3-card-back"></div>'.repeat(5)}</div>
+              <div class="mx3-local-hand">
+                <button type="button"><img src="/cards/game/04.webp" alt="TABUAN BARA"></button>
+                <button type="button"><img src="/cards/game/16.webp" alt="PENGANGKAT"></button>
+                <button type="button"><img src="/cards/game/21.webp" alt="ULAR PELARI"></button>
+                <button type="button"><img src="/cards/game/29.webp" alt="JUARA BARA"></button>
+                <button type="button"><img src="/cards/game/30.webp" alt="PIPIT"></button>
+              </div>
+              <div class="mx3-vs-left"><img src="/cards/game/20.webp" alt="TINFORGE"></div>
+              <div class="mx3-vs-right"><img src="/cards/game/18.webp" alt="GERGASI"></div>
+              <div class="mx3-effects-left"><img src="/cards/game/12.webp" alt="IMP BARA"><img src="/cards/game/14.webp" alt="WAKTU"></div>
+              <div class="mx3-effects-right"><img src="/cards/game/06.webp" alt="BARA NANDEZ"></div>
+              <div class="mx3-p1-x"><img src="/cards/game/03.webp" alt="ABNER"></div><div class="mx3-p1-counter">4</div>
+              <div class="mx3-p2-x"><img src="/cards/game/10.webp" alt="TIKUS"></div><div class="mx3-p2-counter">3</div>
+              <div class="mx3-p1-discard"><img src="/cards/game/01.webp" alt="XANDER"></div>
+              <div class="mx3-p2-discard"><img src="/cards/game/02.webp" alt="SINGAU"></div>
+              <div class="mx3-master-counter">18</div>
+              <div class="mx3-timer"><strong>18</strong></div>
+              <div class="mx3-status">PRACTICE · BEGINNER BOT</div>
+              <div class="mx3-phase-prompt"><strong>SERANG ATAU PASS</strong><button type="button">SERANG</button><button type="button">PASS</button></div>
+              <button type="button" class="mx3-quit">QUIT</button><button type="button" class="mx3-audio">AUDIO</button>
+            </section>`
+
           async function capture(label,viewport){
             const context=await browser.newContext({viewportSize:viewport,isMobile:viewport.width<600,deviceScaleFactor:1})
             const page=await context.newPage()
@@ -62,15 +94,20 @@ jobs:
             if(!await clickText(/MAIN SEKARANG/i)) await clickText(/ENTER|PLAY|FIGHT|START/i)
             await page.screenshot({path:`${out}/${label}-step1.png`,fullPage:true})
             records.push(`[${label}] step1 text=${(await page.locator('body').innerText()).slice(0,5000)}`)
-            records.push(`[${label}] step1 buttons=${JSON.stringify(await page.locator('button').allTextContents())}`)
 
-            const practice=await clickText(/PRACTICE|BEGINNER BOT|BOT/i)
-            if(practice){
-              await page.waitForTimeout(6000)
-              await page.screenshot({path:`${out}/${label}-arena.png`,fullPage:true})
-              records.push(`[${label}] arena text=${(await page.locator('body').innerText()).slice(0,5000)}`)
-              records.push(`[${label}] canvas=${await page.locator('canvas').count()} duelShell=${await page.locator('.duel-shell').count()}`)
-            }
+            await page.goto(url,{waitUntil:'domcontentloaded',timeout:90000})
+            await page.waitForTimeout(3500)
+            await page.evaluate(html=>{
+              const root=document.getElementById('root')
+              if(!root)throw new Error('root missing')
+              root.innerHTML=html
+              window.dispatchEvent(new HashChangeEvent('hashchange'))
+            },syntheticArena())
+            await page.waitForSelector('#mx-clean-arena canvas',{timeout:30000})
+            await page.waitForTimeout(5000)
+            records.push(`[${label}] arena canvas=${await page.locator('#mx-clean-arena canvas').count()} duelShell=${await page.locator('.duel-shell').count()}`)
+            records.push(`[${label}] arena buttons=${JSON.stringify(await page.locator('.duel-shell button').allTextContents())}`)
+            await page.screenshot({path:`${out}/${label}-arena.png`,fullPage:true})
             await context.close()
           }
           try{
