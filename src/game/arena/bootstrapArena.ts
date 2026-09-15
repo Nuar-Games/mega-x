@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 import { ArenaScene } from './ArenaScene'
+import { ARENA_ASSETS } from './ArenaAssets'
 
 export type ArenaHandle={destroy:()=>void;refresh:()=>void}
 
@@ -15,9 +16,23 @@ export function bootstrapArena(shell:HTMLElement):ArenaHandle{
   const host=document.createElement('div')
   host.id='mx-clean-arena'
   Object.assign(host.style,{position:'fixed',inset:'0',width:'100vw',height:'100dvh',zIndex:'30',overflow:'hidden',background:'#05070b'})
+
+  const boot=document.createElement('div')
+  Object.assign(boot.style,{position:'absolute',inset:'0',display:'grid',placeItems:'center',background:'#03060b',zIndex:'2',transition:'opacity 220ms ease'})
+  const mark=document.createElement('img')
+  mark.src=ARENA_ASSETS.arenaUi.loadingMark
+  mark.alt='Loading arena'
+  Object.assign(mark.style,{width:'clamp(88px,16vw,160px)',height:'auto',opacity:'0.9'})
+  boot.appendChild(mark)
+  host.appendChild(boot)
   shell.appendChild(host)
+  mark.animate([{transform:'rotate(0deg)'},{transform:'rotate(360deg)'}],{duration:1100,iterations:Infinity})
 
   scene=new ArenaScene(shell)
+  scene.events.once(Phaser.Scenes.Events.CREATE,()=>{
+    boot.style.opacity='0'
+    window.setTimeout(()=>boot.remove(),240)
+  })
   const game=new Phaser.Game({
     type:Phaser.AUTO,
     parent:host,
