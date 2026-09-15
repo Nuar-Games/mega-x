@@ -27,7 +27,7 @@ jobs:
           done
           cat /tmp/mega-preview.log
           exit 1
-      - name: Capture player viewports
+      - name: Capture real arena viewports
         run: |
           node --input-type=module <<'EOF'
           import { chromium } from 'playwright'
@@ -43,27 +43,34 @@ jobs:
           for (const [name, width, height] of cases) {
             const page = await browser.newPage({ viewport: { width, height } })
             await page.goto('http://127.0.0.1:4173', { waitUntil: 'networkidle' })
-            await page.screenshot({ path: `visual-qa/${name}-entry.png`, fullPage: true })
+
             const practice = page.getByRole('button', { name: /practice|latihan/i }).first()
             if (await practice.count()) {
-              try {
-                await practice.click({ timeout: 2500 })
-                await page.waitForTimeout(1200)
-                await page.screenshot({ path: `visual-qa/${name}-after-practice.png`, fullPage: true })
-              } catch {}
+              await practice.click({ timeout: 3000 })
+              await page.waitForTimeout(1500)
             }
+
             const arena = page.locator('.duel-shell').first()
-            if (await arena.count()) {
-              const box = await arena.boundingBox()
-              const canvas = page.locator('.mx3-canvas').first()
-              const canvasBox = await canvas.count() ? await canvas.boundingBox() : null
-              fs.writeFileSync(`visual-qa/${name}-geometry.json`, JSON.stringify({ viewport:{width,height}, shell:box, canvas:canvasBox }, null, 2))
+            if (!(await arena.count())) {
+              await page.screenshot({ path: `visual-qa/${name}-QA-FAILED-no-arena.png`, fullPage: true })
+              throw new Error(`VISUAL QA FAILED: ${name} never reached the match arena. A landing-page screenshot is not arena QA.`)
+            }
+
+            const box = await arena.boundingBox()
+            const canvas = page.locator('.mx3-canvas').first()
+            const canvasBox = await canvas.count() ? await canvas.boundingBox() : null
+            await page.screenshot({ path: `visual-qa/${name}-arena.png`, fullPage: true })
+            fs.writeFileSync(`visual-qa/${name}-geometry.json`, JSON.stringify({ viewport:{width,height}, shell:box, canvas:canvasBox }, null, 2))
+
+            if (!box || box.width < width * 0.95 || box.height < height * 0.95) {
+              throw new Error(`VISUAL QA FAILED: ${name} arena does not own the viewport: ${JSON.stringify(box)}`)
             }
             await page.close()
           }
           await browser.close()
           EOF
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: mega-x-visual-qa
           path: visual-qa
