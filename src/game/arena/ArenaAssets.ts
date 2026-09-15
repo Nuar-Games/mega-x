@@ -9,6 +9,12 @@ export const ARENA_ASSETS = {
   logo: '/ui/landing/logo.avif',
   background: '/ui/landing/main-background.webp',
   backgroundFallback: '/ui/landing/background.avif',
+  arenaUi: {
+    hudPlayer: '/ui/arena/hud-player.svg',
+    hudOpponent: '/ui/arena/hud-opponent.svg',
+    commandRibbon: '/ui/arena/command-ribbon.svg',
+    zoneFixture: '/ui/arena/zone-fixture.svg',
+  },
   vs: {
     mark: '/ui/vs.webp',
     player: '/ui/vs-blue.webp',
