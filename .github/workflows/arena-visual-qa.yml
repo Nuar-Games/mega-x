@@ -31,6 +31,32 @@ jobs:
           const browser=await chromium.launch({headless:true})
           const records=[]
 
+          async function clickMatching(page,rx){
+            const buttons=page.locator('button:visible')
+            const count=await buttons.count()
+            for(let i=0;i<count;i++){
+              const button=buttons.nth(i)
+              const text=(await button.innerText().catch(()=>'' )).replace(/\s+/g,' ').trim()
+              if(rx.test(text)&&await button.isEnabled().catch(()=>false)){
+                await button.click({force:true})
+                return text
+              }
+            }
+            return null
+          }
+
+          async function enterPractice(page,label){
+            await page.waitForTimeout(2200)
+            const landing=await clickMatching(page,/MAIN SEKARANG|PLAY NOW/i)
+            records.push(`[${label}] landingClick=${landing||'none'}`)
+            if(landing)await page.waitForTimeout(1400)
+            const visibleTexts=await page.locator('button:visible').allInnerTexts().catch(()=>[])
+            records.push(`[${label}] visibleButtons=${visibleTexts.join(' | ')}`)
+            const practice=await clickMatching(page,/PRACTICE/i)
+            if(!practice)throw new Error(`Practice button not found; visible=${visibleTexts.join(' | ')}`)
+            records.push(`[${label}] practiceClick=${practice}`)
+          }
+
           async function capture(label,viewport){
             const context=await browser.newContext({viewport,isMobile:viewport.width<600,deviceScaleFactor:1})
             const page=await context.newPage()
@@ -38,14 +64,10 @@ jobs:
             page.on('pageerror',err=>records.push(`[${label} pageerror] ${err.message}`))
             const response=await page.goto(url,{waitUntil:'domcontentloaded',timeout:90000})
             records.push(`[${label}] status=${response?.status()} viewport=${viewport.width}x${viewport.height}`)
-            await page.waitForTimeout(2500)
-            await page.evaluate(()=>{
-              document.documentElement.classList.add('mx-practice-active')
-              window.dispatchEvent(new CustomEvent('mega-x:start-practice-match'))
-            })
+            await enterPractice(page,label)
             await page.waitForSelector('.duel-shell',{timeout:30000})
             await page.waitForSelector('#mx-clean-arena canvas',{timeout:30000})
-            await page.waitForTimeout(4500)
+            await page.waitForTimeout(3500)
             records.push(`[${label}] cleanCanvas=${await page.locator('#mx-clean-arena canvas').count()} duelShell=${await page.locator('.duel-shell').count()}`)
             await page.screenshot({path:`${out}/${label}-practice-arena.png`,fullPage:false})
             await context.close()
@@ -61,7 +83,9 @@ jobs:
             throw error
           }finally{
             await browser.close()
-            fs.writeFileSync(`${out}/report.txt`,records.join('\n\n'))
+            const report=records.join('\n\n')
+            console.log(report)
+            fs.writeFileSync(`${out}/report.txt`,report)
           }
           EOF
           node arena-qa.mjs
