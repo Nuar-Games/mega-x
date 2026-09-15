@@ -42,8 +42,8 @@ body.mx3-arena-present{
   box-shadow:none!important;
 }
 
-/* Phaser now owns the arena's visible frame and zone chrome.
-   DOM remains above it only for live text, cards and click targets. */
+/* Phaser owns the arena's visible frame and zone chrome.
+   DOM remains above it only for text and interaction targets. */
 .mx-phaser-rendered .mx3-zone,
 .mx-phaser-rendered .mx3-fighter,
 .mx-phaser-rendered .mx3-status,
@@ -87,4 +87,10 @@ body.mx3-arena-present{
 .mx-phaser-rendered .mx3-canvas::before,
 .mx-phaser-rendered .mx3-canvas::after{
   content:none!important;
+}
+
+/* Once a card image is successfully mirrored into Phaser, keep its DOM box
+   for layout/click behavior but stop painting the duplicate artwork. */
+.mx-phaser-rendered img.mx-phaser-card-mirrored{
+  opacity:0!important;
 }
