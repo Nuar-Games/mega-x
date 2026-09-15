@@ -22,7 +22,7 @@ jobs:
         env:
           MEGAX_PREVIEW_URL: "https://mega-x-git-arena-clean-rebuild-nuargita96-2452.vercel.app/?_vercel_share=OQNGgS4GbQAOXxpzA6se13BRNRLPkt9q"
         run: |
-          cat > /tmp/arena-qa.mjs <<'EOF'
+          cat > arena-qa.mjs <<'EOF'
           import { chromium } from 'playwright'
           import fs from 'node:fs'
           const url=process.env.MEGAX_PREVIEW_URL
@@ -74,13 +74,20 @@ jobs:
             }
             await context.close()
           }
-          await capture('mobile',{width:390,height:844})
-          await capture('desktop',{width:1440,height:900})
-          await browser.close()
-          fs.writeFileSync(`${out}/report.txt`,records.join('\n\n'))
+          try{
+            await capture('mobile',{width:390,height:844})
+            await capture('desktop',{width:1440,height:900})
+          }catch(error){
+            records.push(`[fatal] ${error?.stack||error}`)
+            throw error
+          }finally{
+            await browser.close()
+            fs.writeFileSync(`${out}/report.txt`,records.join('\n\n'))
+          }
           EOF
-          node /tmp/arena-qa.mjs
+          node arena-qa.mjs
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: arena-visual-qa
           path: visual-qa/
