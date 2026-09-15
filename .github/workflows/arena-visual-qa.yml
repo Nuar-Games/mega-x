@@ -20,7 +20,7 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Capture actual preview
         env:
-          MEGAX_PREVIEW_URL: "https://mega-k3b9m9x7l-nuargita96-2452.vercel.app/?_vercel_share=HelFvNp60n4RtzXzzkvp7TTXPbzeILTq"
+          MEGAX_PREVIEW_URL: "https://mega-5gbo7ngaz-nuargita96-2452.vercel.app/?_vercel_share=wQy3i4DoQxoZncHtZdGfTNUcusNjye1B"
         run: |
           cat > arena-qa.mjs <<'EOF'
           import { chromium } from 'playwright'
@@ -51,7 +51,7 @@ jobs:
                 const text=(await b.innerText().catch(()=>''))
                 if(rx.test(text)&&await b.isVisible().catch(()=>false)&&await b.isEnabled().catch(()=>false)){
                   records.push(`[${label}] click=${text}`)
-                  await b.click()
+                  await b.click({timeout:10000})
                   await page.waitForTimeout(2500)
                   return true
                 }
