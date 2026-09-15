@@ -10,6 +10,16 @@
   display:none !important;
 }
 
+/* Decorative layers must never sit between the player and the CTA. */
+#mx-main-landing .mx-main-vignette,
+#mx-main-landing .mx-main-energy-a,
+#mx-main-landing .mx-main-energy-b,
+#mx-main-landing .mx-main-portrait,
+#mx-main-landing .mx-main-hero-left,
+#mx-main-landing .mx-main-hero-right{
+  pointer-events:none !important;
+}
+
 #mx-main-landing .mx-main-vignette{
   background:
     radial-gradient(ellipse at 50% 35%,transparent 0 47%,rgba(2,3,15,.06) 67%,rgba(1,2,10,.20) 100%),
@@ -90,6 +100,7 @@
   overflow:visible !important;
   isolation:isolate !important;
   animation:mxCtaBreathe 2.25s ease-in-out infinite !important;
+  pointer-events:auto !important;
 }
 
 /* outer energy chassis */
@@ -109,6 +120,7 @@
   opacity:.94 !important;
   mix-blend-mode:normal !important;
   animation:mxRailShift 2.8s linear infinite !important;
+  pointer-events:none !important;
 }
 
 /* dark inset face + moving power sweep */
@@ -126,6 +138,7 @@
   background-position:130% 0,0 0,0 0 !important;
   filter:none !important;
   animation:mxPowerSweep 2.4s cubic-bezier(.45,0,.25,1) infinite !important;
+  pointer-events:none !important;
 }
 
 /* crisp gold/ivory CTA typography */
@@ -143,6 +156,7 @@
     0 0 17px rgba(255,78,225,.48) !important;
   filter:none !important;
   animation:mxCtaTextCharge 2.25s ease-in-out infinite !important;
+  pointer-events:none !important;
 }
 
 /* use existing arc spans as four controlled electric rail strikes */
