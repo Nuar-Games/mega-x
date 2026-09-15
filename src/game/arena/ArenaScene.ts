@@ -44,18 +44,64 @@ export class ArenaScene extends Phaser.Scene{
   private drawArenaFrame(){
     this.rails.forEach(r=>r.destroy());this.rails=[]
     this.backdrop?.destroy()
+    const w=this.scale.width
+    const h=this.scale.height
+    const min=Math.min(w,h)
+
     if(this.textures.exists(`asset:${ARENA_ASSETS.background}`)){
-      this.backdrop=this.add.image(this.scale.width/2,this.scale.height/2,`asset:${ARENA_ASSETS.background}`).setDisplaySize(this.scale.width,this.scale.height).setAlpha(0.42).setDepth(-20)
+      this.backdrop=this.add.image(w/2,h/2,`asset:${ARENA_ASSETS.background}`).setDisplaySize(w,h).setAlpha(0.56).setDepth(-40)
     }
-    const g=this.add.graphics().setDepth(-10)
-    g.fillStyle(ARENA_THEME.colors.background,0.72).fillRect(0,0,this.scale.width,this.scale.height)
-    g.lineStyle(Math.max(1,Math.min(this.scale.width,this.scale.height)*0.002),ARENA_THEME.colors.player,0.35)
-    g.strokeRoundedRect(this.layout.combat.x,this.layout.combat.y,this.layout.combat.width,this.layout.combat.height,18)
-    g.lineStyle(Math.max(1,Math.min(this.scale.width,this.scale.height)*0.0015),ARENA_THEME.colors.opponent,0.22)
-    g.strokeLineShape(new Phaser.Geom.Line(this.layout.combat.x,this.layout.combat.y+this.layout.combat.height*0.5,this.layout.combat.x+this.layout.combat.width,this.layout.combat.y+this.layout.combat.height*0.5))
-    this.rails.push(g)
-    if(this.textures.exists(`asset:${ARENA_ASSETS.vs.player}`))this.rails.push(this.add.image(0,this.layout.combat.y+this.layout.combat.height/2,`asset:${ARENA_ASSETS.vs.player}`).setOrigin(0,0.5).setDisplaySize(Math.min(this.scale.width*0.36,520),this.layout.combat.height*0.9).setAlpha(0.10).setDepth(-15))
-    if(this.textures.exists(`asset:${ARENA_ASSETS.vs.opponent}`))this.rails.push(this.add.image(this.scale.width,this.layout.combat.y+this.layout.combat.height/2,`asset:${ARENA_ASSETS.vs.opponent}`).setOrigin(1,0.5).setDisplaySize(Math.min(this.scale.width*0.36,520),this.layout.combat.height*0.9).setAlpha(0.10).setDepth(-15))
+
+    const wash=this.add.graphics().setDepth(-35)
+    wash.fillStyle(0x01040a,0.66).fillRect(0,0,w,h)
+    wash.fillStyle(ARENA_THEME.colors.player,0.07).fillTriangle(0,h,0,h*0.26,w*0.46,h)
+    wash.fillStyle(ARENA_THEME.colors.opponent,0.07).fillTriangle(w,0,w,h*0.74,w*0.54,0)
+    this.rails.push(wash)
+
+    if(this.textures.exists(`asset:${ARENA_ASSETS.vs.player}`)){
+      this.rails.push(this.add.image(0,this.layout.combat.y+this.layout.combat.height*0.56,`asset:${ARENA_ASSETS.vs.player}`).setOrigin(0,0.5).setDisplaySize(Math.min(w*0.42,620),this.layout.combat.height*0.98).setAlpha(0.12).setDepth(-30))
+    }
+    if(this.textures.exists(`asset:${ARENA_ASSETS.vs.opponent}`)){
+      this.rails.push(this.add.image(w,this.layout.combat.y+this.layout.combat.height*0.44,`asset:${ARENA_ASSETS.vs.opponent}`).setOrigin(1,0.5).setDisplaySize(Math.min(w*0.42,620),this.layout.combat.height*0.98).setAlpha(0.12).setDepth(-30))
+    }
+
+    const stage=this.add.graphics().setDepth(-20)
+    const c=this.layout.combat
+    const bevel=Math.max(10,min*0.018)
+    stage.fillStyle(0x030710,0.72)
+    stage.fillPoints([
+      new Phaser.Geom.Point(c.x+bevel,c.y),
+      new Phaser.Geom.Point(c.x+c.width-bevel,c.y),
+      new Phaser.Geom.Point(c.x+c.width,c.y+bevel),
+      new Phaser.Geom.Point(c.x+c.width,c.y+c.height-bevel),
+      new Phaser.Geom.Point(c.x+c.width-bevel,c.y+c.height),
+      new Phaser.Geom.Point(c.x+bevel,c.y+c.height),
+      new Phaser.Geom.Point(c.x,c.y+c.height-bevel),
+      new Phaser.Geom.Point(c.x,c.y+bevel),
+    ],true)
+    stage.lineStyle(Math.max(1.5,min*0.0025),0xffffff,0.08).strokePoints([
+      new Phaser.Geom.Point(c.x+bevel,c.y),new Phaser.Geom.Point(c.x+c.width-bevel,c.y),new Phaser.Geom.Point(c.x+c.width,c.y+bevel),new Phaser.Geom.Point(c.x+c.width,c.y+c.height-bevel),new Phaser.Geom.Point(c.x+c.width-bevel,c.y+c.height),new Phaser.Geom.Point(c.x+bevel,c.y+c.height),new Phaser.Geom.Point(c.x,c.y+c.height-bevel),new Phaser.Geom.Point(c.x,c.y+bevel),new Phaser.Geom.Point(c.x+bevel,c.y)
+    ])
+    const midX=c.x+c.width/2
+    stage.lineStyle(Math.max(2,min*0.004),ARENA_THEME.colors.player,0.36).lineBetween(c.x+bevel,c.y+c.height*0.5,midX-bevel,c.y+c.height*0.5)
+    stage.lineStyle(Math.max(2,min*0.004),ARENA_THEME.colors.opponent,0.36).lineBetween(midX+bevel,c.y+c.height*0.5,c.x+c.width-bevel,c.y+c.height*0.5)
+    stage.fillStyle(0xffffff,0.06).fillCircle(midX,c.y+c.height*0.5,Math.max(22,min*0.055))
+    stage.lineStyle(Math.max(1,min*0.002),0xd7b35a,0.42).strokeCircle(midX,c.y+c.height*0.5,Math.max(22,min*0.055))
+    this.rails.push(stage)
+
+    if(this.textures.exists(`asset:${ARENA_ASSETS.vs.mark}`)){
+      const mark=Math.min(c.width*0.18,c.height*0.18,120)
+      this.rails.push(this.add.image(midX,c.y+c.height*0.5,`asset:${ARENA_ASSETS.vs.mark}`).setDisplaySize(mark,mark).setAlpha(0.78).setDepth(-5))
+    }
+
+    const edge=this.add.graphics().setDepth(-18)
+    edge.lineStyle(Math.max(1,min*0.0018),ARENA_THEME.colors.player,0.28)
+    edge.lineBetween(0,h*0.82,w*0.38,h*0.82)
+    edge.lineBetween(0,h*0.82,w*0.12,h*0.77)
+    edge.lineStyle(Math.max(1,min*0.0018),ARENA_THEME.colors.opponent,0.28)
+    edge.lineBetween(w*0.62,h*0.18,w,h*0.18)
+    edge.lineBetween(w*0.88,h*0.23,w,h*0.18)
+    this.rails.push(edge)
   }
 
   public renderArena(force=false){
