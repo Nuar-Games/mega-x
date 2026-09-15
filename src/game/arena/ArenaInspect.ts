@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 import type { ArenaCardRef } from './ArenaStateAdapter'
+import { ARENA_ASSETS } from './ArenaAssets'
 
 const inspectSource=(src:string)=>{
   const match=src.match(/\/cards\/(?:game|inspect)\/(\d{2})\.webp$/)
@@ -40,16 +41,21 @@ export class ArenaInspect{
     dim.on('pointerdown',()=>this.close())
     this.objects.push(dim)
 
-    const maxH=h*0.78
-    const maxW=w*0.78
+    const maxH=h*0.76
+    const maxW=w*0.74
     const aspect=59/86
     let cardH=maxH
     let cardW=cardH*aspect
     if(cardW>maxW){cardW=maxW;cardH=cardW/aspect}
-    const shadow=this.scene.add.rectangle(w/2+8,h/2+12,cardW+18,cardH+18,0x000000,0.62).setDepth(201)
+    const frameKey=`asset:${ARENA_ASSETS.arenaUi.inspectFrame}`
+    if(this.scene.textures.exists(frameKey)){
+      const fw=cardW*1.18,fh=cardH*1.13
+      this.objects.push(this.scene.add.image(w/2,h/2,frameKey).setDisplaySize(fw,fh).setDepth(201).setAlpha(0.96))
+    }
+    this.objects.push(this.scene.add.ellipse(w/2+8,h/2+14,cardW*0.94,cardH*0.94,0x000000,0.58).setDepth(201))
     const image=this.scene.add.image(w/2,h/2,key).setDisplaySize(cardW,cardH).setDepth(202)
-    const title=this.scene.add.text(w/2,h/2-cardH/2-24,(label||'CARD').toUpperCase(),{fontFamily:'Oxanium, sans-serif',fontSize:`${Math.max(14,Math.min(24,w*0.04))}px`,fontStyle:'bold',color:'#ffffff',stroke:'#02040a',strokeThickness:3,letterSpacing:1.2}).setOrigin(0.5).setDepth(203)
-    const close=this.scene.add.text(w/2,h/2+cardH/2+28,'TAP ANYWHERE TO CLOSE',{fontFamily:'Barlow Condensed, sans-serif',fontSize:`${Math.max(12,Math.min(20,w*0.032))}px`,fontStyle:'bold',color:'#c9d1dc',letterSpacing:1.4}).setOrigin(0.5).setDepth(203)
-    this.objects.push(shadow,image,title,close)
+    const title=this.scene.add.text(w/2,h/2-cardH/2-30,(label||'CARD').toUpperCase(),{fontFamily:'Oxanium, sans-serif',fontSize:`${Math.max(14,Math.min(24,w*0.04))}px`,fontStyle:'bold',color:'#ffffff',stroke:'#02040a',strokeThickness:3,letterSpacing:1.2}).setOrigin(0.5).setDepth(203)
+    const close=this.scene.add.text(w/2,h/2+cardH/2+32,'TAP ANYWHERE TO CLOSE',{fontFamily:'Barlow Condensed, sans-serif',fontSize:`${Math.max(12,Math.min(20,w*0.032))}px`,fontStyle:'bold',color:'#c9d1dc',letterSpacing:1.4}).setOrigin(0.5).setDepth(203)
+    this.objects.push(image,title,close)
   }
 }
