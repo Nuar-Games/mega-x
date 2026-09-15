@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 const main=fs.readFileSync('src/main.tsx','utf8')
+const loader=fs.readFileSync('src/phaser-arena-loader.ts','utf8')
 const stage=fs.readFileSync('src/arena-stage.css','utf8')
 const premium=fs.existsSync('src/arena-premium.css')?fs.readFileSync('src/arena-premium.css','utf8'):''
 const mobilePriority=fs.existsSync('src/arena-mobile-priority.css')?fs.readFileSync('src/arena-mobile-priority.css','utf8'):''
@@ -7,9 +8,12 @@ const fragment=fs.readFileSync('src/arena-blueprint.fragment','utf8')
 const runtime=fs.readFileSync('src/arena-stage.ts','utf8')
 const pkg=JSON.parse(fs.readFileSync('package.json','utf8'))
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg)}
-assert(main.includes("import './arena-stage.css'"),'Arena MX3 coordinate stage is not loaded')
-assert(main.includes("import './arena-premium.css'"),'Arena premium treatment layer is not loaded')
-assert(main.includes("import './arena-mobile-priority.css'"),'Arena mobile priority layer is not loaded')
+assert(main.includes("import './phaser-arena-loader.ts'"),'Arena lazy loader is not loaded')
+assert(loader.includes("import('./arena-stage.css')"),'Arena MX3 coordinate stage is not lazy loaded')
+assert(loader.includes("import('./arena-premium.css')"),'Arena premium treatment layer is not lazy loaded')
+assert(loader.includes("import('./arena-mobile-priority.css')"),'Arena mobile priority layer is not lazy loaded')
+assert(loader.includes("import('./arena-stage.ts')"),'Arena MX3 runtime is not lazy loaded')
+assert(!main.includes("import './arena-stage.css'")&&!main.includes("import './arena-premium.css'")&&!main.includes("import './arena-mobile-priority.css'")&&!main.includes("import './arena-stage.ts'"),'Arena runtime/styles leaked back into startup path')
 assert(!main.includes('arena-action.css')&&!main.includes('arena-overlay.css'),'Arena MX3 has obsolete Arena stylesheets')
 assert(stage.includes('width:780px')&&stage.includes('height:1110px'),'Arena MX3 fixed canvas missing')
 assert(runtime.includes('viewportWidth / WIDTH')&&runtime.includes('viewportHeight / HEIGHT')&&runtime.includes('Math.min('),'Arena MX3 is not uniformly scaled')
@@ -36,4 +40,4 @@ assert(stage.includes('contain:paint')&&stage.includes('mx3PurplePhaseContained'
 assert(runtime.includes("button.classList.add('mx3-result-return')")&&stage.includes('button.mx3-result-return'),'Return to Lobby button styling contract missing')
 assert(stage.includes('width:90px')&&stage.includes('height:90px'),'Timer 90x90 contract missing')
 assert(!pkg.scripts.build.includes('patch-single-fight.mjs'),'obsolete FIGHT patch remains')
-console.log('PASS Arena MX3 premium responsive viewport, mobile priority hand/overlay, visual hierarchy, compact top bar, VS hierarchy, glow containment and particles')
+console.log('PASS Arena MX3 lazy-loaded premium responsive viewport, mobile priority hand/overlay, visual hierarchy, compact top bar, VS hierarchy, glow containment and particles')
