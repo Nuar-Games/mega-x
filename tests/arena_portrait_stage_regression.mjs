@@ -1,13 +1,15 @@
 import fs from 'node:fs'
 const main=fs.readFileSync('src/main.tsx','utf8')
+const loader=fs.readFileSync('src/phaser-arena-loader.ts','utf8')
 const fragment=fs.readFileSync('src/arena-blueprint.fragment','utf8')
 const stage=fs.readFileSync('src/arena-stage.css','utf8')
 const runtime=fs.readFileSync('src/arena-stage.ts','utf8')
 const app=fs.readFileSync('src/App.tsx','utf8')
 const must=(ok,msg)=>{if(!ok)throw new Error(msg)}
-must(main.includes("import './arena-stage.css'"),'Arena MX3 stylesheet not imported')
+must(main.includes("import './phaser-arena-loader.ts'"),'Arena lazy loader not imported')
+must(loader.includes("import('./arena-stage.css')"),'Arena MX3 stylesheet not lazy-loaded')
 must(!main.includes('arena-action.css')&&!main.includes('arena-overlay.css'),'Arena MX3 must use one authoritative stage stylesheet plus presentation layers')
-must(main.includes("import './arena-stage.ts'"),'Arena MX3 runtime missing')
+must(loader.includes("import('./arena-stage.ts')"),'Arena MX3 runtime missing from lazy loader')
 must(fragment.includes('mx3-canvas'),'Arena MX3 fixed canvas missing')
 must(fragment.includes('mx3-center-vs'),'central VS combat identity missing')
 must((fragment.match(/mx3-vs/g)||[]).length>=2,'two VS frames required')
@@ -30,4 +32,4 @@ must(runtime.includes("if (outcome.textContent !== nextOutcome) outcome.textCont
 must(app.includes('CARD_INFO[focusedCard.id]?.effect'),'selected-card overlay must use authoritative card info')
 must(app.includes('mx3-canvas'),'generated App does not contain Arena MX3')
 must(!app.includes('<div className="arena-wrap">'),'legacy board survived')
-console.log('PASS Arena MX3 proportions, responsive uniform scaling, central VS, card info, motion system, and MENANG/KALAH contract')
+console.log('PASS Arena MX3 proportions, responsive uniform scaling, central VS, card info, motion system, lazy loading, and MENANG/KALAH contract')
