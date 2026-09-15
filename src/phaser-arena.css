@@ -15,35 +15,54 @@
   height:100%!important;
 }
 
-body.mx3-arena-present{
+html:has(body.mx3-arena-present),
+body.mx3-arena-present,
+body.mx3-arena-present #root{
+  width:100%!important;
+  height:100%!important;
   min-height:100dvh!important;
-  height:100dvh!important;
-  background:#01040a!important;
+  margin:0!important;
+  padding:0!important;
   overflow:hidden!important;
+  background:#01040a!important;
 }
 
-.duel-shell.mx3-stage{
+body.mx3-arena-present .duel-shell{
   position:fixed!important;
   inset:0!important;
   width:100vw!important;
   height:100dvh!important;
+  min-width:100vw!important;
   min-height:100dvh!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
   background:transparent!important;
 }
 
-.mx3-canvas{
+body.mx3-arena-present .mx3-canvas{
+  position:absolute!important;
+  inset:0!important;
+  left:0!important;
+  top:0!important;
+  width:100vw!important;
+  height:100dvh!important;
+  transform:none!important;
+  transform-origin:0 0!important;
+  margin:0!important;
   z-index:1!important;
   background:transparent!important;
 }
 
-.mx3-canvas::before,
-.mx3-canvas::after{
+body.mx3-arena-present .mx3-canvas::before,
+body.mx3-arena-present .mx3-canvas::after{
   background:transparent!important;
   box-shadow:none!important;
+  content:none!important;
 }
 
-/* Phaser owns the arena's visible frame and zone chrome.
-   DOM remains above it only for text and interaction targets. */
+/* Phaser owns the visible arena shell. DOM is retained only as the
+   temporary live state / interaction bridge during migration. */
 .mx-phaser-rendered .mx3-zone,
 .mx-phaser-rendered .mx3-fighter,
 .mx-phaser-rendered .mx3-status,
@@ -80,17 +99,6 @@ body.mx3-arena-present{
   box-shadow:none!important;
 }
 
-.mx-phaser-rendered .mx3-canvas{
-  background:transparent!important;
-}
-
-.mx-phaser-rendered .mx3-canvas::before,
-.mx-phaser-rendered .mx3-canvas::after{
-  content:none!important;
-}
-
-/* Once a card image is successfully mirrored into Phaser, keep its DOM box
-   for layout/click behavior but stop painting the duplicate artwork. */
 .mx-phaser-rendered img.mx-phaser-card-mirrored{
   opacity:0!important;
 }
