@@ -13,9 +13,11 @@ const fit=(region:ArenaRect,aspect=CARD_ASPECT,scale=1)=>{
   return {width,height}
 }
 
+type CardMode='inspect'|'action'
+
 export class ArenaCards{
   private objects:Phaser.GameObjects.GameObject[]=[]
-  constructor(private scene:Phaser.Scene,private dispatch:ArenaDispatch){}
+  constructor(private scene:Phaser.Scene,private dispatch:ArenaDispatch,private inspect:(card:ArenaCardRef)=>void){}
   clear(){this.objects.forEach(obj=>obj.destroy());this.objects=[]}
   private keep<T extends Phaser.GameObjects.GameObject>(obj:T){this.objects.push(obj);return obj}
   private image(src:string,region:ArenaRect,scale=1,alpha=1,depth=10){
@@ -36,16 +38,18 @@ export class ArenaCards{
     g.lineStyle(Math.max(2,size.width*0.018),accent,0.78).strokeRoundedRect(x-pad,y-pad,size.width+pad*2,size.height+pad*2,Math.max(8,size.width*0.05))
     g.lineStyle(Math.max(1,size.width*0.008),0xffffff,0.12).strokeRoundedRect(x,y,size.width,size.height,Math.max(6,size.width*0.035))
   }
-  private card(card:ArenaCardRef|null,region:ArenaRect,scale=1,accent=0xffffff,depth=10){
+  private card(card:ArenaCardRef|null,region:ArenaRect,scale=1,accent=0xffffff,depth=10,mode:CardMode='inspect'){
     if(!card)return
     this.frame(region,scale,accent,depth-2)
     const image=this.image(card.src,region,scale,1,depth)
-    if(image&&card.actionId){
-      image.setInteractive({useHandCursor:true})
-      image.on('pointerover',()=>this.scene.tweens.add({targets:image,scaleX:image.scaleX*1.025,scaleY:image.scaleY*1.025,duration:90}))
-      image.on('pointerout',()=>this.scene.tweens.add({targets:image,displayWidth:image.displayWidth/1.025,displayHeight:image.displayHeight/1.025,duration:90}))
-      image.on('pointerdown',()=>this.dispatch(card.actionId!))
-    }
+    if(!image)return
+    image.setInteractive({useHandCursor:true})
+    image.on('pointerover',()=>image.setTint(0xffffff))
+    image.on('pointerout',()=>image.clearTint())
+    image.on('pointerdown',()=>{
+      if(mode==='action'&&card.actionId)this.dispatch(card.actionId)
+      else this.inspect(card)
+    })
   }
   private hand(cards:ArenaCardRef[],region:ArenaRect){
     if(!cards.length)return
@@ -67,12 +71,10 @@ export class ArenaCards{
       this.keep(this.scene.add.rectangle(start+index*step+3,restY+5,cardW+5,cardH+7,0x000000,0.42).setDepth(18+index).setAngle(angle))
       const image=this.keep(this.scene.add.image(start+index*step,restY,key).setDisplaySize(cardW,cardH).setDepth(20+index).setAngle(angle))
       image.setData('arena-card-src',card.src)
-      if(card.actionId){
-        image.setInteractive({useHandCursor:true})
-        image.on('pointerover',()=>{image.setY(restY-Math.max(14,region.height*0.08));image.setAngle(0);image.setDepth(80)})
-        image.on('pointerout',()=>{image.setY(restY);image.setAngle(angle);image.setDepth(20+index)})
-        image.on('pointerdown',()=>this.dispatch(card.actionId!))
-      }
+      image.setInteractive({useHandCursor:true})
+      image.on('pointerover',()=>{image.setY(restY-Math.max(14,region.height*0.08));image.setAngle(0);image.setDepth(80)})
+      image.on('pointerout',()=>{image.setY(restY);image.setAngle(angle);image.setDepth(20+index)})
+      image.on('pointerdown',()=>card.actionId?this.dispatch(card.actionId):this.inspect(card))
     })
   }
   private opponentHand(count:number,region:ArenaRect){
@@ -99,7 +101,7 @@ export class ArenaCards{
     const slotH=region.height/Math.max(3,visible.length)
     visible.forEach((card,index)=>{
       const slot:ArenaRect={x:region.x,y:region.y+index*slotH,width:region.width,height:slotH}
-      this.card(card,slot,0.72,accent,30+index)
+      this.card(card,slot,0.72,accent,30+index,'inspect')
     })
   }
   render(state:ArenaRenderState,layout:ArenaLayoutSnapshot){
@@ -109,12 +111,12 @@ export class ArenaCards{
     const half=layout.combat.width/2
     const localRegion={...layout.combat,x:layout.combat.x,y:layout.combat.y,width:half,height:layout.combat.height}
     const opponentRegion={...layout.combat,x:layout.combat.x+half,y:layout.combat.y,width:half,height:layout.combat.height}
-    this.card(state.localVs,localRegion,layout.mode==='portrait'?0.93:0.88,ARENA_THEME.colors.player,42)
-    this.card(state.opponentVs,opponentRegion,layout.mode==='portrait'?0.93:0.88,ARENA_THEME.colors.opponent,42)
-    this.card(state.localZonX,layout.zonXLeft,0.9,ARENA_THEME.colors.player,24)
-    this.card(state.opponentZonX,layout.zonXRight,0.9,ARENA_THEME.colors.opponent,24)
-    this.card(state.localDiscard,layout.discard,0.82,0x8b93a1,22)
-    this.card(state.opponentDiscard,layout.deck,0.82,0x8b93a1,22)
+    this.card(state.localVs,localRegion,layout.mode==='portrait'?0.93:0.88,ARENA_THEME.colors.player,42,'inspect')
+    this.card(state.opponentVs,opponentRegion,layout.mode==='portrait'?0.93:0.88,ARENA_THEME.colors.opponent,42,'inspect')
+    this.card(state.localZonX,layout.zonXLeft,0.9,ARENA_THEME.colors.player,24,'inspect')
+    this.card(state.opponentZonX,layout.zonXRight,0.9,ARENA_THEME.colors.opponent,24,'inspect')
+    this.card(state.localDiscard,layout.discard,0.82,0x8b93a1,22,'inspect')
+    this.card(state.opponentDiscard,layout.deck,0.82,0x8b93a1,22,'inspect')
     this.effects(state.localEffects,layout.effectLeft,ARENA_THEME.colors.player)
     this.effects(state.opponentEffects,layout.effectRight,ARENA_THEME.colors.opponent)
   }
