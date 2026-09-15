@@ -7,6 +7,10 @@ export function bootstrapArena(shell:HTMLElement):ArenaHandle{
   const legacy=shell.querySelector<HTMLElement>('.mx3-canvas')
   if(legacy){legacy.style.opacity='0';legacy.style.pointerEvents='none'}
 
+  const legacyAudio=document.querySelector<HTMLElement>('#mx-audio-controls')
+  const previousAudioDisplay=legacyAudio?.style.display ?? ''
+  if(legacyAudio)legacyAudio.style.display='none'
+
   let scene:ArenaScene
   const host=document.createElement('div')
   host.id='mx-clean-arena'
@@ -40,6 +44,7 @@ export function bootstrapArena(shell:HTMLElement):ArenaHandle{
       game.destroy(true)
       host.remove()
       if(legacy){legacy.style.opacity='';legacy.style.pointerEvents=''}
+      if(legacyAudio)legacyAudio.style.display=previousAudioDisplay
     },
   }
 }
