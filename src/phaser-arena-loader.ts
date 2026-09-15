@@ -5,16 +5,28 @@ function shouldLoadArena() {
   return Boolean(document.querySelector('.duel-shell'))
 }
 
-function loadArena() {
+async function loadArena() {
   if (loaded || loading || !shouldLoadArena()) return
   loading = true
-  import('./phaser-arena.ts')
-    .then(() => {
-      loaded = true
-    })
-    .finally(() => {
-      loading = false
-    })
+  try {
+    await Promise.all([
+      import('./arena-stage.css'),
+      import('./arena-premium.css'),
+      import('./arena-mobile-priority.css'),
+      import('./arena-usability.css'),
+      import('./arena-player-role.css'),
+      import('./phaser-arena.css'),
+      import('./arena-art-assets.css'),
+      import('./arena-player-facing.css'),
+      import('./arena-stage.ts'),
+      import('./arena-usability.ts'),
+      import('./arena-player-role.ts'),
+    ])
+    await import('./phaser-arena.ts')
+    loaded = true
+  } finally {
+    loading = false
+  }
 }
 
 const arenaLoadObserver = new MutationObserver(loadArena)
