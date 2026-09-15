@@ -40,48 +40,130 @@ class MegaXArenaScene extends Phaser.Scene {
   }
 
   private drawBackdrop(g: Phaser.GameObjects.Graphics, width: number, height: number) {
-    g.fillStyle(0x01040a, 1)
+    const portrait = height >= width
+    const minSide = Math.min(width, height)
+    const cx = width / 2
+    const cy = portrait ? height * 0.455 : height * 0.50
+
+    g.fillStyle(0x02050a, 1)
     g.fillRect(0, 0, width, height)
 
-    const portrait = height >= width
-    const horizon = portrait ? height * 0.46 : height * 0.52
-    g.fillStyle(0x071728, 1)
-    g.fillRect(0, 0, width, horizon)
-    g.fillStyle(0x02070d, 1)
-    g.fillRect(0, horizon, width, height - horizon)
+    g.fillStyle(0x06111d, 1)
+    g.fillRect(0, 0, width, portrait ? height * 0.18 : height * 0.16)
+    g.fillStyle(0x03080f, 1)
+    g.fillRect(0, portrait ? height * 0.82 : height * 0.84, width, height)
 
-    const glowRadius = Math.max(width, height) * 0.72
-    for (let i = 5; i >= 1; i -= 1) {
-      g.fillStyle(0x0877bb, 0.018 * i)
-      g.fillCircle(width / 2, height * 0.56, glowRadius * i / 5)
+    const glowRadius = Math.max(width, height) * 0.52
+    for (let i = 7; i >= 1; i -= 1) {
+      g.fillStyle(0x0b76ba, 0.0105 * i)
+      g.fillCircle(cx, cy, glowRadius * i / 7)
     }
 
-    g.lineStyle(1, 0x7fd8ff, 0.045)
-    const stepX = Math.max(64, Math.round(width / 12))
-    const stepY = Math.max(64, Math.round(height / 16))
-    for (let x = 0; x <= width; x += stepX) g.lineBetween(x, 0, x, height)
+    g.lineStyle(1, 0x85d9ff, 0.045)
+    const stepX = Math.max(70, Math.round(width / 14))
+    const stepY = Math.max(70, Math.round(height / 18))
+    for (let x = -height; x <= width + height; x += stepX) {
+      g.lineBetween(x, 0, x + height * 0.28, height)
+    }
     for (let y = 0; y <= height; y += stepY) g.lineBetween(0, y, width, y)
 
-    const rail = Math.max(8, Math.min(width, height) * 0.014)
-    g.lineStyle(2, 0x78ccff, 0.28)
+    const topCut = portrait ? height * 0.145 : height * 0.125
+    const bottomCut = portrait ? height * 0.855 : height * 0.875
+    g.lineStyle(2, BLUE, 0.42)
+    g.lineBetween(width * 0.04, topCut, width * 0.34, topCut)
+    g.lineBetween(width * 0.66, topCut, width * 0.96, topCut)
+    g.lineStyle(2, RED, 0.34)
+    g.lineBetween(width * 0.04, bottomCut, width * 0.34, bottomCut)
+    g.lineBetween(width * 0.66, bottomCut, width * 0.96, bottomCut)
+
+    const rail = Math.max(8, minSide * 0.014)
+    g.lineStyle(2, 0x78ccff, 0.32)
     g.strokeRoundedRect(rail, rail, width - rail * 2, height - rail * 2, 20)
+    g.lineStyle(1, GOLD, 0.18)
+    g.strokeRoundedRect(rail + 5, rail + 5, width - (rail + 5) * 2, height - (rail + 5) * 2, 16)
   }
 
   private drawCombatLane(g: Phaser.GameObjects.Graphics, width: number, height: number) {
     const portrait = height >= width
-    const laneTop = portrait ? height * 0.20 : height * 0.16
-    const laneBottom = portrait ? height * 0.77 : height * 0.80
-    const laneX = width * 0.13
-    const laneWidth = width * 0.74
+    const laneTop = portrait ? height * 0.235 : height * 0.205
+    const laneBottom = portrait ? height * 0.635 : height * 0.745
+    const laneX = portrait ? width * 0.075 : width * 0.16
+    const laneWidth = width - laneX * 2
     const laneHeight = laneBottom - laneTop
-    const seamX = width / 2
+    const cx = width / 2
+    const cy = (laneTop + laneBottom) / 2
 
-    g.fillStyle(0x071726, 0.78)
-    g.fillRoundedRect(laneX, laneTop, laneWidth, laneHeight, 26)
-    g.lineStyle(2, 0x3d9bd3, 0.28)
-    g.strokeRoundedRect(laneX, laneTop, laneWidth, laneHeight, 26)
-    g.lineStyle(2, GOLD, 0.2)
-    g.lineBetween(seamX, laneTop + 18, seamX, laneBottom - 18)
+    g.fillStyle(0x07131f, 0.93)
+    g.fillRoundedRect(laneX, laneTop, laneWidth, laneHeight, 28)
+    g.lineStyle(2, 0x4ba6dc, 0.34)
+    g.strokeRoundedRect(laneX, laneTop, laneWidth, laneHeight, 28)
+
+    const leftPanelW = portrait ? width * 0.34 : width * 0.25
+    const gap = portrait ? width * 0.08 : width * 0.10
+    const cardTop = laneTop + laneHeight * 0.12
+    const cardH = laneHeight * 0.76
+    const leftX = cx - gap / 2 - leftPanelW
+    const rightX = cx + gap / 2
+
+    g.fillStyle(0x071f34, 0.72)
+    g.fillRoundedRect(leftX, cardTop, leftPanelW, cardH, 20)
+    g.lineStyle(2, BLUE, 0.50)
+    g.strokeRoundedRect(leftX, cardTop, leftPanelW, cardH, 20)
+
+    g.fillStyle(0x301019, 0.72)
+    g.fillRoundedRect(rightX, cardTop, leftPanelW, cardH, 20)
+    g.lineStyle(2, RED, 0.50)
+    g.strokeRoundedRect(rightX, cardTop, leftPanelW, cardH, 20)
+
+    g.lineStyle(2, GOLD, 0.26)
+    g.lineBetween(cx, laneTop + 18, cx, laneBottom - 18)
+
+    for (let i = 5; i >= 1; i -= 1) {
+      g.fillStyle(GOLD, 0.016 * i)
+      g.fillCircle(cx, cy, Math.max(26, Math.min(width, height) * 0.055) * i / 5)
+    }
+    g.lineStyle(2, GOLD, 0.65)
+    g.strokeCircle(cx, cy, Math.max(24, Math.min(width, height) * 0.042))
+    g.lineStyle(1, 0xffffff, 0.26)
+    g.strokeCircle(cx, cy, Math.max(18, Math.min(width, height) * 0.033))
+
+    const bayW = portrait ? width * 0.12 : width * 0.065
+    const bayGap = portrait ? height * 0.008 : height * 0.014
+    const bayH = Math.max(28, (cardH - bayGap * 4) / 5)
+    for (let i = 0; i < 5; i += 1) {
+      const y = cardTop + i * (bayH + bayGap)
+      g.fillStyle(PURPLE, 0.075)
+      g.fillRoundedRect(laneX + 8, y, bayW, bayH, 8)
+      g.fillRoundedRect(laneX + laneWidth - bayW - 8, y, bayW, bayH, 8)
+      g.lineStyle(1, PURPLE, 0.26)
+      g.strokeRoundedRect(laneX + 8, y, bayW, bayH, 8)
+      g.strokeRoundedRect(laneX + laneWidth - bayW - 8, y, bayW, bayH, 8)
+    }
+  }
+
+  private drawPlayerFrames(g: Phaser.GameObjects.Graphics, width: number, height: number) {
+    const portrait = height >= width
+    const topY = portrait ? height * 0.07 : height * 0.075
+    const bottomY = portrait ? height * 0.735 : height * 0.79
+    const hudH = portrait ? height * 0.09 : height * 0.11
+    const margin = portrait ? width * 0.04 : width * 0.025
+
+    g.fillStyle(0x061826, 0.82)
+    g.fillRoundedRect(margin, topY, width - margin * 2, hudH, 18)
+    g.lineStyle(2, BLUE, 0.28)
+    g.strokeRoundedRect(margin, topY, width - margin * 2, hudH, 18)
+
+    g.fillStyle(0x12090d, 0.80)
+    g.fillRoundedRect(margin, bottomY, width - margin * 2, hudH, 18)
+    g.lineStyle(2, RED, 0.24)
+    g.strokeRoundedRect(margin, bottomY, width - margin * 2, hudH, 18)
+
+    const handTop = portrait ? height * 0.835 : height * 0.865
+    const handH = height - handTop - Math.max(10, height * 0.018)
+    g.fillStyle(0x06111c, 0.88)
+    g.fillRoundedRect(margin, handTop, width - margin * 2, handH, 20)
+    g.lineStyle(2, BLUE, 0.36)
+    g.strokeRoundedRect(margin, handTop, width - margin * 2, handH, 20)
   }
 
   private rectFor(selector: string): DOMRect | null {
@@ -98,7 +180,7 @@ class MegaXArenaScene extends Phaser.Scene {
     if (!g || !rect) return
     g.fillStyle(fill, fillAlpha)
     g.fillRoundedRect(rect.left, rect.top, rect.width, rect.height, Math.min(radius, rect.width / 5, rect.height / 5))
-    g.lineStyle(2, stroke, 0.7)
+    g.lineStyle(2, stroke, 0.62)
     g.strokeRoundedRect(rect.left + 1, rect.top + 1, Math.max(0, rect.width - 2), Math.max(0, rect.height - 2), Math.min(radius, rect.width / 5, rect.height / 5))
   }
 
@@ -137,26 +219,27 @@ class MegaXArenaScene extends Phaser.Scene {
     g.clear()
     this.drawBackdrop(g, width, height)
     this.drawCombatLane(g, width, height)
+    this.drawPlayerFrames(g, width, height)
 
-    this.drawZoneFrame('.mx3-fighter-left', BLUE, 0x08263d, 0.68, 12)
-    this.drawZoneFrame('.mx3-fighter-right', RED, 0x35101a, 0.68, 12)
-    this.drawZoneFrame('.mx3-status', GOLD, 0x1b1a12, 0.66, 10)
-    this.drawZoneFrame('.mx3-quit', RED, 0x351018, 0.72, 10)
-    this.drawZoneFrame('.mx3-audio', BLUE, 0x071d31, 0.72, 10)
-    this.drawZoneFrame('.mx3-p1-x', GOLD, 0x2b2208, 0.58, 10)
-    this.drawZoneFrame('.mx3-p1-discard', GOLD, 0x2b1a07, 0.58, 10)
-    this.drawZoneFrame('.mx3-master', GREEN, 0x08281a, 0.58, 10)
-    this.drawZoneFrame('.mx3-p2-discard', GOLD, 0x2b1a07, 0.58, 10)
-    this.drawZoneFrame('.mx3-p2-x', GOLD, 0x2b2208, 0.58, 10)
-    this.drawZoneFrame('.mx3-vs-left', BLUE, 0x071f34, 0.7, 14)
-    this.drawZoneFrame('.mx3-vs-right', RED, 0x32101a, 0.7, 14)
-    this.drawZoneFrame('.mx3-effects-left', PURPLE, 0x1d0c2e, 0.3, 12)
-    this.drawZoneFrame('.mx3-effects-right', PURPLE, 0x1d0c2e, 0.3, 12)
-    this.drawZoneFrame('.mx3-local-hand', BLUE, 0x071928, 0.3, 14)
-    this.drawZoneFrame('.mx3-opponent-hand', RED, 0x240c14, 0.24, 14)
-    this.drawZoneFrame('.mx3-phase-prompt', GOLD, 0x281f09, 0.68, 12)
-    this.drawZoneFrame('.mx3-timer', GOLD, 0x1b170b, 0.68, 999)
-    this.drawZoneFrame('.mx3-center-vs', GOLD, 0x18130a, 0.42, 999)
+    this.drawZoneFrame('.mx3-fighter-left', BLUE, 0x08263d, 0.54, 12)
+    this.drawZoneFrame('.mx3-fighter-right', RED, 0x35101a, 0.54, 12)
+    this.drawZoneFrame('.mx3-status', GOLD, 0x1b1a12, 0.52, 10)
+    this.drawZoneFrame('.mx3-quit', RED, 0x351018, 0.58, 10)
+    this.drawZoneFrame('.mx3-audio', BLUE, 0x071d31, 0.58, 10)
+    this.drawZoneFrame('.mx3-p1-x', GOLD, 0x2b2208, 0.42, 10)
+    this.drawZoneFrame('.mx3-p1-discard', GOLD, 0x2b1a07, 0.42, 10)
+    this.drawZoneFrame('.mx3-master', GREEN, 0x08281a, 0.42, 10)
+    this.drawZoneFrame('.mx3-p2-discard', GOLD, 0x2b1a07, 0.42, 10)
+    this.drawZoneFrame('.mx3-p2-x', GOLD, 0x2b2208, 0.42, 10)
+    this.drawZoneFrame('.mx3-vs-left', BLUE, 0x071f34, 0.34, 18)
+    this.drawZoneFrame('.mx3-vs-right', RED, 0x32101a, 0.34, 18)
+    this.drawZoneFrame('.mx3-effects-left', PURPLE, 0x1d0c2e, 0.18, 12)
+    this.drawZoneFrame('.mx3-effects-right', PURPLE, 0x1d0c2e, 0.18, 12)
+    this.drawZoneFrame('.mx3-local-hand', BLUE, 0x071928, 0.16, 16)
+    this.drawZoneFrame('.mx3-opponent-hand', RED, 0x240c14, 0.14, 14)
+    this.drawZoneFrame('.mx3-phase-prompt', GOLD, 0x281f09, 0.46, 12)
+    this.drawZoneFrame('.mx3-timer', GOLD, 0x1b170b, 0.54, 999)
+    this.drawZoneFrame('.mx3-center-vs', GOLD, 0x18130a, 0.20, 999)
 
     this.syncCardSprites()
   }
