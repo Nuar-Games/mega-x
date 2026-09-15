@@ -5,8 +5,8 @@ import {
 } from '../src/practice-match.ts'
 
 const HUMAN = 'practice-regression-human'
-const STRESS_MATCHES = 200
-const STRESS_STEPS = 180
+const STRESS_MATCHES = 1000
+const STRESS_STEPS = 220
 const SAFE_EFFECTS = new Set([1, 4, 5, 6, 8, 11, 12, 13, 14, 16, 17, 19, 20, 21, 24, 25, 27, 28, 29, 30])
 
 function seededRandom(seed) {
@@ -155,6 +155,7 @@ for (let seed = 1; seed <= STRESS_MATCHES; seed += 1) {
 
 if (humanFirst === 0 || botFirst === 0) throw new Error(`Practice stress did not cover both starting-player paths: human=${humanFirst} bot=${botFirst}`)
 if (effectCoverage.size < 10) throw new Error(`Practice stress under-covered Effect cards: ${effectCoverage.size} unique cards`)
+if (terminal < Math.floor(STRESS_MATCHES * 0.85)) throw new Error(`Practice stress left too many non-terminal samples: ${terminal}/${STRESS_MATCHES}`)
 
 console.log(`PASS real Practice aggressive lifecycle concludes via ${baseline.match.phase} after Master Deck exhaustion and Arena accepts both UUID and normalized player-index Effect ownership`)
 console.log(`PRACTICE_STRESS_PASS ${STRESS_MATCHES} seeded matches sampled; transitions=${sampledSteps} terminal=${terminal} GAME_OVER=${gameOver} TIE_BREAKER=${tieBreaker} deckExhausted=${exhausted} humanFirst=${humanFirst} botFirst=${botFirst} effects=${effectCoverage.size}`)
