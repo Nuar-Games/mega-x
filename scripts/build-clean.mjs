@@ -5,6 +5,8 @@ const run=(command,args=[])=>{
   if(result.status!==0)process.exit(result.status??1)
 }
 
+run('node',['scripts/recover-app.mjs'])
+
 const tests=[
   'security_permissions_regression.mjs',
   'password_recovery_regression.mjs',
