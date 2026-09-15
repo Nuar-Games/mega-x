@@ -1,0 +1,75 @@
+/* Mega X arena art pass: use existing project artwork instead of generic boxes. */
+body.mx3-arena-present #mx-phaser-arena{
+  isolation:isolate;
+}
+
+body.mx3-arena-present #mx-phaser-arena::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-2;
+  background:
+    linear-gradient(180deg,rgba(1,4,10,.28),rgba(1,4,10,.58)),
+    url('/ui/landing/main-background.webp') center/cover no-repeat;
+  opacity:.72;
+  filter:saturate(1.08) contrast(1.06) brightness(.7);
+}
+
+body.mx3-arena-present #mx-phaser-arena::after{
+  content:"";
+  position:absolute;
+  inset:18dvh 0 18dvh;
+  z-index:-1;
+  pointer-events:none;
+  background-image:url('/ui/vs-blue.webp'),url('/ui/vs-red.webp');
+  background-repeat:no-repeat,no-repeat;
+  background-position:left center,right center;
+  background-size:min(46vw,720px) auto,min(46vw,720px) auto;
+  opacity:.22;
+  mix-blend-mode:screen;
+  filter:saturate(1.14) contrast(1.08);
+}
+
+body.mx3-arena-present .mx-phaser-rendered .mx3-vs-left,
+body.mx3-arena-present .mx-phaser-rendered .mx3-vs-right{
+  position:absolute!important;
+  isolation:isolate;
+}
+
+body.mx3-arena-present .mx-phaser-rendered .mx3-vs-left::before,
+body.mx3-arena-present .mx-phaser-rendered .mx3-vs-right::before{
+  content:"";
+  position:absolute;
+  inset:-8%;
+  z-index:-1;
+  border-radius:18px;
+  background:center/cover no-repeat;
+  opacity:.3;
+  filter:saturate(1.2) contrast(1.08);
+  pointer-events:none;
+}
+
+body.mx3-arena-present .mx-phaser-rendered .mx3-vs-left::before{
+  background-image:url('/ui/vs-blue.webp');
+}
+
+body.mx3-arena-present .mx-phaser-rendered .mx3-vs-right::before{
+  background-image:url('/ui/vs-red.webp');
+}
+
+body.mx3-arena-present .mx-phaser-rendered .mx3-center-vs{
+  background:
+    radial-gradient(circle,rgba(255,210,70,.18),rgba(0,0,0,.72) 68%),
+    url('/ui/vs.webp') center/82% no-repeat!important;
+  color:transparent!important;
+  box-shadow:0 0 18px rgba(244,192,75,.65),0 0 42px rgba(244,192,75,.24)!important;
+}
+
+@media (orientation:portrait){
+  body.mx3-arena-present #mx-phaser-arena::after{
+    inset:22dvh 0 30dvh;
+    background-size:58vw auto,58vw auto;
+    background-position:-17vw center,59vw center;
+    opacity:.16;
+  }
+}
