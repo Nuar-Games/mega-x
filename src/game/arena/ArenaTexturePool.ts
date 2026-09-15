@@ -8,6 +8,7 @@ const cardSources=(state:ArenaRenderState)=>{
     state.localDiscard,state.opponentDiscard,
     state.localZonX,state.opponentZonX,
     ...state.localEffects,...state.opponentEffects,
+    ...state.tieBreakerCards,...state.tieBreakerReveal,
   ]
   return Array.from(new Set(values.filter(Boolean).map(card=>card!.src)))
 }
