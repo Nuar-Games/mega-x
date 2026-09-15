@@ -33,10 +33,11 @@ export class ArenaScene extends Phaser.Scene{
   }
 
   create(){
-    this.cards=new ArenaCards(this)
+    const dispatch=createDomArenaDispatch(this.shell)
+    this.cards=new ArenaCards(this,dispatch)
     this.hud=new ArenaHud(this)
     this.effects=new ArenaEffects(this)
-    this.inputLayer=new ArenaInput(this,createDomArenaDispatch(this.shell))
+    this.inputLayer=new ArenaInput(this,dispatch)
     this.scale.on('resize',()=>this.renderArena(true))
     this.renderArena(true)
   }
