@@ -3,11 +3,35 @@ import fs from 'node:fs'
 const path='src/App.tsx'
 let app=fs.readFileSync(path,'utf8')
 
-const from=`    const startPractice = () => {\n      if (!onlineSession) return\n      const match = startPracticeMatch(onlineSession.userId, fighterProfile?.fighter_handle || 'X FIGHTER')\n      applyOnlineMatchView(match as any)\n    }`
+const startMarker='    const startPractice = () => {'
+const listenerMarker="    window.addEventListener('mega-x:start-practice-match', startPractice)"
+const start=app.indexOf(startMarker)
+const listener=app.indexOf(listenerMarker,start)
+if(start<0||listener<0) throw new Error('Practice guest-entry structural anchors missing')
 
-const to=`    const startPractice = () => {\n      const guestKey = 'mega-x-practice-guest-id-v1'\n      let guestId = window.localStorage.getItem(guestKey)\n      if (!guestId) {\n        guestId = 'practice-guest:' + crypto.randomUUID()\n        window.localStorage.setItem(guestKey, guestId)\n      }\n      const practiceSession = onlineSession ?? {\n        accessToken: 'practice-local',\n        refreshToken: 'practice-local',\n        expiresAt: Number.MAX_SAFE_INTEGER,\n        userId: guestId,\n      }\n      if (!onlineSession) setOnlineSession(practiceSession)\n      const match = startPracticeMatch(practiceSession.userId, fighterProfile?.fighter_handle || 'GUEST X FIGHTER')\n      applyOnlineMatchView(match as any)\n    }`
+const replacement=`    const startPractice = () => {
+      if (!onlineSession) {
+        const guestKey = 'mega-x-practice-guest-id-v1'
+        let guestId = window.localStorage.getItem(guestKey)
+        if (!guestId) {
+          guestId = 'practice-guest:' + crypto.randomUUID()
+          window.localStorage.setItem(guestKey, guestId)
+        }
+        const practiceSession = {
+          accessToken: 'practice-local',
+          refreshToken: 'practice-local',
+          expiresAt: Number.MAX_SAFE_INTEGER,
+          userId: guestId,
+        }
+        setOnlineSession(practiceSession)
+        window.setTimeout(() => window.dispatchEvent(new CustomEvent('mega-x:start-practice-match')), 0)
+        return
+      }
+      const match = startPracticeMatch(onlineSession.userId, fighterProfile?.fighter_handle || 'GUEST X FIGHTER')
+      applyOnlineMatchView(match as any)
+    }
+`
 
-if(!app.includes(from)) throw new Error('Practice guest-entry anchor missing')
-app=app.replace(from,to)
+app=app.slice(0,start)+replacement+app.slice(listener)
 fs.writeFileSync(path,app)
-console.log('Patched Practice entry to allow local guest play before authentication')
+console.log('Patched Practice entry to bootstrap a local guest session before starting the real arena')
