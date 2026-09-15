@@ -1,5 +1,8 @@
 html,body,#root{min-height:100%;}
 
+/* Decorative landing overlays must never block the player controls. */
+.mx-main-vignette{pointer-events:none!important}
+
 /* Audio controller: collapsed by default and never allowed to ignore hidden. */
 #mx-audio-controls [data-audio-panel][hidden]{display:none!important}
 #mx-audio-controls [data-audio-panel]{max-width:min(82vw,260px)!important}
