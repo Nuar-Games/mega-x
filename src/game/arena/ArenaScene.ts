@@ -34,6 +34,7 @@ export class ArenaScene extends Phaser.Scene{
     this.load.image(`asset:${ARENA_ASSETS.vs.player}`,ARENA_ASSETS.vs.player)
     this.load.image(`asset:${ARENA_ASSETS.vs.opponent}`,ARENA_ASSETS.vs.opponent)
     this.load.image(`asset:${ARENA_ASSETS.cards.backGame}`,ARENA_ASSETS.cards.backGame)
+    Object.values(ARENA_ASSETS.arenaUi).forEach(src=>this.load.image(`asset:${src}`,src))
     this.texturePool.preloadState(readArenaRenderState(this.shell))
   }
   create(){
@@ -46,6 +47,13 @@ export class ArenaScene extends Phaser.Scene{
     this.tieBreaker=new ArenaTieBreaker(this,dispatch)
     this.scale.on('resize',()=>{this.inspectLayer.close();this.renderArena(true)})
     this.renderArena(true)
+  }
+  private fixture(region:{x:number;y:number;width:number;height:number},flip=false){
+    const key=`asset:${ARENA_ASSETS.arenaUi.zoneFixture}`
+    if(!this.textures.exists(key))return
+    const img=this.add.image(region.x+region.width/2,region.y+region.height/2,key).setDisplaySize(region.width,region.height).setAlpha(0.58).setDepth(-12)
+    if(flip)img.setFlipX(true)
+    this.rails.push(img)
   }
   private drawArenaFrame(){
     this.rails.forEach(r=>r.destroy());this.rails=[];this.backdrop?.destroy()
@@ -65,6 +73,8 @@ export class ArenaScene extends Phaser.Scene{
     stage.lineStyle(Math.max(2,min*0.004),ARENA_THEME.colors.player,0.36).lineBetween(c.x+bevel,c.y+c.height*0.5,midX-bevel,c.y+c.height*0.5)
     stage.lineStyle(Math.max(2,min*0.004),ARENA_THEME.colors.opponent,0.36).lineBetween(midX+bevel,c.y+c.height*0.5,c.x+c.width-bevel,c.y+c.height*0.5)
     stage.fillStyle(0xffffff,0.06).fillCircle(midX,c.y+c.height*0.5,Math.max(22,min*0.055));stage.lineStyle(Math.max(1,min*0.002),0xd7b35a,0.42).strokeCircle(midX,c.y+c.height*0.5,Math.max(22,min*0.055));this.rails.push(stage)
+    this.fixture({x:this.layout.effectLeft.x,y:this.layout.effectLeft.y,width:this.layout.effectLeft.width,height:this.layout.deck.y+this.layout.deck.height-this.layout.effectLeft.y},false)
+    this.fixture({x:this.layout.effectRight.x,y:this.layout.effectRight.y,width:this.layout.effectRight.width,height:this.layout.deck.y+this.layout.deck.height-this.layout.effectRight.y},true)
     if(this.textures.exists(`asset:${ARENA_ASSETS.vs.mark}`)){const mark=Math.min(c.width*0.18,c.height*0.18,120);this.rails.push(this.add.image(midX,c.y+c.height*0.5,`asset:${ARENA_ASSETS.vs.mark}`).setDisplaySize(mark,mark).setAlpha(0.78).setDepth(-5))}
   }
   public renderArena(force=false){
