@@ -1,6 +1,5 @@
 import Phaser from 'phaser'
 import type { ArenaCardRef } from './ArenaStateAdapter'
-import { ARENA_ASSETS } from './ArenaAssets'
 
 const inspectSource=(src:string)=>{
   const match=src.match(/\/cards\/(?:game|inspect)\/(\d{2})\.webp$/)
@@ -25,7 +24,11 @@ export class ArenaInspect{
       this.loading=null
       if(this.scene.textures.exists(key))this.render(key,card.alt)
     })
-    this.scene.load.once(Phaser.Loader.Events.LOAD_ERROR,()=>{this.loading=null;this.render(`asset:${card.src}`,card.alt)})
+    this.scene.load.once('loaderror',()=>{
+      this.loading=null
+      const fallback=`asset:${card.src}`
+      if(this.scene.textures.exists(fallback))this.render(fallback,card.alt)
+    })
     this.scene.load.start()
   }
 
@@ -50,5 +53,3 @@ export class ArenaInspect{
     this.objects.push(shadow,image,title,close)
   }
 }
-
-void ARENA_ASSETS
