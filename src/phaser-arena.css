@@ -1,0 +1,43 @@
+#mx-phaser-arena{
+  position:fixed;
+  inset:0;
+  width:100vw;
+  height:100dvh;
+  z-index:0;
+  overflow:hidden;
+  pointer-events:none;
+  background:#01040a;
+}
+
+#mx-phaser-arena canvas{
+  display:block;
+  width:100%!important;
+  height:100%!important;
+}
+
+body.mx3-arena-present{
+  min-height:100dvh!important;
+  height:100dvh!important;
+  background:#01040a!important;
+  overflow:hidden!important;
+}
+
+.duel-shell.mx3-stage{
+  position:fixed!important;
+  inset:0!important;
+  width:100vw!important;
+  height:100dvh!important;
+  min-height:100dvh!important;
+  background:transparent!important;
+}
+
+.mx3-canvas{
+  z-index:1!important;
+  background:transparent!important;
+}
+
+.mx3-canvas::before,
+.mx3-canvas::after{
+  background:transparent!important;
+  box-shadow:none!important;
+}
