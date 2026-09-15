@@ -39,27 +39,28 @@ export class ArenaHud{
     const plateW=compact?layout.hud.width*0.43:Math.min(layout.hud.width*0.36,420)
     const plateH=layout.hud.height*0.76
     const plateY=layout.hud.y+(layout.hud.height-plateH)/2
+    const utilityClearance=compact?Math.min(62,layout.width*0.16):92
 
     this.plate(layout.hud.x,plateY,plateW,plateH,'player')
     this.plate(layout.hud.x+layout.hud.width-plateW,plateY,plateW,plateH,'opponent')
-    this.text(layout.hud.x+plateH*0.22,plateY+plateH*0.48,state.playerName.toUpperCase(),base*0.82,'#d9ecff',0,0.5,'Barlow Condensed')
-    this.text(layout.hud.x+layout.hud.width-plateH*0.22,plateY+plateH*0.48,state.opponentName.toUpperCase(),base*0.82,'#ffe1e6',1,0.5,'Barlow Condensed')
+    this.text(layout.hud.x+utilityClearance,plateY+plateH*0.50,state.playerName.toUpperCase(),base*0.82,'#d9ecff',0,0.5,'Barlow Condensed')
+    this.text(layout.hud.x+layout.hud.width-utilityClearance,plateY+plateH*0.50,state.opponentName.toUpperCase(),base*0.82,'#ffe1e6',1,0.5,'Barlow Condensed')
 
     const centerX=layout.combat.x+layout.combat.width/2
     const combatTop=layout.combat.y
-    this.text(centerX,combatTop+layout.combat.height*0.045,state.phase.replaceAll('_',' '),base*0.60,'#d7b35a',0.5,0.5,'Oxanium')
-    this.text(centerX,combatTop+layout.combat.height*0.115,state.timer,base*1.45,state.timer!=='—'&&Number(state.timer)<=10?'#ff5d72':'#ffffff',0.5,0.5,'Oxanium')
-    const statY=layout.combat.y+layout.combat.height*0.89
+    this.text(centerX,combatTop+layout.combat.height*0.035,state.phase.replaceAll('_',' '),base*0.60,'#d7b35a',0.5,0.5,'Oxanium')
+    this.text(centerX,combatTop+layout.combat.height*0.095,state.timer,base*1.38,state.timer!=='—'&&Number(state.timer)<=10?'#ff5d72':'#ffffff',0.5,0.5,'Oxanium')
+    const statY=layout.combat.y+layout.combat.height*0.90
     this.combatStats(layout.combat.x+layout.combat.width*0.035,statY,state.localStats,state.localPosition,'left',ARENA_THEME.colors.player,base)
     this.combatStats(layout.combat.x+layout.combat.width*0.965,statY,state.opponentStats,state.opponentPosition,'right',ARENA_THEME.colors.opponent,base)
 
     const promptText=(state.prompt||state.status||state.phase).toUpperCase()
-    const promptW=Math.min(layout.prompt.width,compact?layout.width*0.88:620)
-    const promptH=Math.min(layout.prompt.height*0.82,64)
+    const promptW=Math.min(layout.prompt.width,compact?layout.width*0.90:640)
+    const promptH=Math.min(layout.prompt.height*0.42,38)
     const promptX=layout.width/2-promptW/2
-    const promptY=layout.prompt.y+(layout.prompt.height-promptH)/2
+    const promptY=layout.prompt.y+Math.max(2,layout.prompt.height*0.05)
     this.plate(promptX,promptY,promptW,promptH,'neutral')
-    this.text(layout.width/2,promptY+promptH/2,promptText,base*0.72,'#ffffff',0.5,0.5,'Barlow Condensed')
+    this.text(layout.width/2,promptY+promptH/2,promptText,base*0.62,'#ffffff',0.5,0.5,'Barlow Condensed')
 
     this.text(layout.deck.x+layout.deck.width/2,layout.deck.y+layout.deck.height*0.86,`${state.deckCount}`,base*0.72,'#f4f7fb',0.5,0.5,'Oxanium')
     this.text(layout.deck.x+layout.deck.width/2,layout.deck.y+layout.deck.height*0.12,'MASTER',base*0.40,'#94a0b2',0.5,0.5,'Barlow Condensed')
