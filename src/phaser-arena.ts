@@ -167,12 +167,15 @@ let currentShell: HTMLElement | null = null
 let redrawQueued = false
 let shellObserver: MutationObserver | null = null
 let resizeObserver: ResizeObserver | null = null
+let syncTimer: number | null = null
 
 function destroyArena() {
   shellObserver?.disconnect()
   resizeObserver?.disconnect()
   shellObserver = null
   resizeObserver = null
+  if (syncTimer !== null) window.clearTimeout(syncTimer)
+  syncTimer = null
   currentShell?.querySelectorAll<HTMLImageElement>('img.mx-phaser-card-mirrored').forEach((image) => image.classList.remove('mx-phaser-card-mirrored'))
   currentShell?.classList.remove('mx-phaser-rendered')
   document.body.classList.remove('mx3-arena-present')
@@ -190,6 +193,14 @@ function requestChromeRedraw() {
     const scene = game?.scene.getScene('mega-x-arena') as MegaXArenaScene | undefined
     scene?.redrawArena()
   })
+}
+
+function requestArenaSync() {
+  if (syncTimer !== null) return
+  syncTimer = window.setTimeout(() => {
+    syncTimer = null
+    requestChromeRedraw()
+  }, 32)
 }
 
 function mountArena() {
@@ -220,14 +231,14 @@ function mountArena() {
     banner: false,
   })
 
-  shellObserver = new MutationObserver(() => requestChromeRedraw())
-  shellObserver.observe(shell, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'src'] })
-  resizeObserver = new ResizeObserver(() => requestChromeRedraw())
+  shellObserver = new MutationObserver(() => requestArenaSync())
+  shellObserver.observe(shell, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] })
+  resizeObserver = new ResizeObserver(() => requestArenaSync())
   resizeObserver.observe(shell)
 }
 
 const rootObserver = new MutationObserver(() => mountArena())
 rootObserver.observe(document.getElementById('root') ?? document.body, { childList: true, subtree: true })
-window.addEventListener('resize', requestChromeRedraw, { passive: true })
-window.addEventListener('orientationchange', requestChromeRedraw)
+window.addEventListener('resize', requestArenaSync, { passive: true })
+window.addEventListener('orientationchange', requestArenaSync)
 mountArena()
