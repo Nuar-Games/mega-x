@@ -17,8 +17,8 @@ function loadArena() {
     })
 }
 
-const observer = new MutationObserver(loadArena)
-observer.observe(document.getElementById('root') ?? document.body, { childList: true, subtree: true })
+const arenaLoadObserver = new MutationObserver(loadArena)
+arenaLoadObserver.observe(document.getElementById('root') ?? document.body, { childList: true, subtree: true })
 window.addEventListener('popstate', loadArena)
 window.addEventListener('hashchange', loadArena)
 loadArena()
