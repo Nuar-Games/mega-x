@@ -1,5 +1,7 @@
 import ReactDOM from 'react-dom/client'
 import './index.css'
+import './low-spec.ts'
+import './low-spec.css'
 import './audio.ts'
 import './landing-ui.ts'
 import './landing-activation-fix.ts'
