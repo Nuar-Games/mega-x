@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 150" fill="none">
+  <path d="M40 18H940L972 75L940 132H40L8 75L40 18Z" fill="#02060D" fill-opacity=".72"/>
+  <path d="M72 28H908L936 75L908 122H72L44 75L72 28Z" stroke="#D7B35A" stroke-opacity=".58" stroke-width="3"/>
+  <path d="M0 75H162M818 75H980" stroke="#D7B35A" stroke-opacity=".75" stroke-width="4"/>
+  <path d="M180 75H800" stroke="#FFFFFF" stroke-opacity=".08" stroke-width="2"/>
+</svg>
