@@ -221,15 +221,10 @@ class MegaXArenaScene extends Phaser.Scene {
 let game: Phaser.Game | null = null
 let currentShell: HTMLElement | null = null
 let redrawQueued = false
-
-function destroyArena() {
-  currentShell?.querySelectorAll<HTMLImageElement>('img.mx-phaser-card-mirrored').forEach((image) => image.classList.remove('mx-phaser-card-mirrored'))
-  currentShell?.classList.remove('mx-phaser-rendered')
-  game?.destroy(true)
-  game = null
-  currentShell = null
-  document.getElementById(HOST_ID)?.remove()
-}
+let syncTimer = 0
+let shellObserver: MutationObserver | null = null
+let resizeObserver: ResizeObserver | null = null
+let assetLoadHandler: ((event: Event) => void) | null = null
 
 function requestChromeRedraw() {
   if (!game || redrawQueued) return
@@ -241,6 +236,53 @@ function requestChromeRedraw() {
   })
 }
 
+function requestArenaSync() {
+  if (!game || syncTimer) return
+  syncTimer = window.setTimeout(() => {
+    syncTimer = 0
+    requestChromeRedraw()
+  }, 48)
+}
+
+function detachShellObservers() {
+  shellObserver?.disconnect()
+  shellObserver = null
+  resizeObserver?.disconnect()
+  resizeObserver = null
+  if (currentShell && assetLoadHandler) currentShell.removeEventListener('load', assetLoadHandler, true)
+  assetLoadHandler = null
+}
+
+function attachShellObservers(shell: HTMLElement) {
+  detachShellObservers()
+
+  shellObserver = new MutationObserver(requestArenaSync)
+  shellObserver.observe(shell, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['src'],
+  })
+
+  resizeObserver = new ResizeObserver(requestArenaSync)
+  resizeObserver.observe(shell)
+
+  assetLoadHandler = () => requestArenaSync()
+  shell.addEventListener('load', assetLoadHandler, true)
+}
+
+function destroyArena() {
+  detachShellObservers()
+  if (syncTimer) window.clearTimeout(syncTimer)
+  syncTimer = 0
+  currentShell?.querySelectorAll<HTMLImageElement>('img.mx-phaser-card-mirrored').forEach((image) => image.classList.remove('mx-phaser-card-mirrored'))
+  currentShell?.classList.remove('mx-phaser-rendered')
+  game?.destroy(true)
+  game = null
+  currentShell = null
+  document.getElementById(HOST_ID)?.remove()
+}
+
 function mountArena() {
   const shell = document.querySelector<HTMLElement>(SHELL_SELECTOR)
   if (!shell) {
@@ -248,10 +290,7 @@ function mountArena() {
     return
   }
 
-  if (game && currentShell === shell) {
-    requestChromeRedraw()
-    return
-  }
+  if (game && currentShell === shell) return
   if (game) destroyArena()
 
   const host = document.createElement('div')
@@ -277,19 +316,21 @@ function mountArena() {
     scene: MegaXArenaScene,
     banner: false,
   })
+
+  attachShellObservers(shell)
 }
 
-let queued = false
-const observer = new MutationObserver(() => {
-  if (queued) return
-  queued = true
-  requestAnimationFrame(() => {
-    queued = false
-    mountArena()
-  })
+const rootObserver = new MutationObserver(() => {
+  const nextShell = document.querySelector<HTMLElement>(SHELL_SELECTOR)
+  if (nextShell === currentShell) return
+  mountArena()
 })
-
-observer.observe(document.documentElement, { childList: true, subtree: true, characterData: true })
-window.addEventListener('resize', requestChromeRedraw, { passive: true })
-window.addEventListener('orientationchange', requestChromeRedraw)
+rootObserver.observe(document.documentElement, { childList: true, subtree: true })
+window.addEventListener('resize', requestArenaSync, { passive: true })
+window.addEventListener('orientationchange', requestArenaSync)
+window.addEventListener('pagehide', () => {
+  if (syncTimer) window.clearTimeout(syncTimer)
+  rootObserver.disconnect()
+  detachShellObservers()
+})
 mountArena()
