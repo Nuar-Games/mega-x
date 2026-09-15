@@ -23,7 +23,7 @@ export function bootstrapArena(shell:HTMLElement):ArenaHandle{
 
   const fullscreen=document.createElement('button')
   fullscreen.type='button'
-  fullscreen.dataset.mxFullscreen='true'
+  fullscreen.setAttribute('data-mx-fullscreen','true')
   fullscreen.setAttribute('aria-label','Toggle fullscreen')
   fullscreen.textContent='⛶'
   Object.assign(fullscreen.style,{position:'absolute',right:'10px',top:'10px',zIndex:'120',width:'42px',height:'42px',border:'1px solid rgba(255,255,255,.2)',borderRadius:'10px',background:'rgba(3,6,11,.72)',color:'#fff',fontSize:'24px',lineHeight:'1',cursor:'pointer',backdropFilter:'blur(8px)'})
@@ -33,10 +33,11 @@ export function bootstrapArena(shell:HTMLElement):ArenaHandle{
       else if(host.requestFullscreen)await host.requestFullscreen()
     }catch{}
   })
-  document.addEventListener('fullscreenchange',()=>{
+  const onFullscreenChange=()=>{
     fullscreen.textContent=document.fullscreenElement?'×':'⛶'
     fullscreen.setAttribute('aria-label',document.fullscreenElement?'Exit fullscreen':'Enter fullscreen')
-  })
+  }
+  document.addEventListener('fullscreenchange',onFullscreenChange)
 
   const boot=document.createElement('div')
   Object.assign(boot.style,{position:'absolute',inset:'0',display:'grid',placeItems:'center',background:'#03060b',zIndex:'2',transition:'opacity 220ms ease'})
@@ -50,6 +51,9 @@ export function bootstrapArena(shell:HTMLElement):ArenaHandle{
   shell.appendChild(host)
   mark.animate([{transform:'rotate(0deg)'},{transform:'rotate(360deg)'}],{duration:1100,iterations:Infinity})
 
+  const renderWidth=()=>Math.max(320,Math.round(window.innerWidth*profile.resolution))
+  const renderHeight=()=>Math.max(480,Math.round(window.innerHeight*profile.resolution))
+
   scene=new ArenaScene(shell)
   scene.events.once(Phaser.Scenes.Events.CREATE,()=>{
     boot.style.opacity='0'
@@ -58,15 +62,23 @@ export function bootstrapArena(shell:HTMLElement):ArenaHandle{
   const game=new Phaser.Game({
     type:Phaser.AUTO,
     parent:host,
+    width:renderWidth(),
+    height:renderHeight(),
     backgroundColor:'#05070b',
     transparent:false,
-    resolution:profile.resolution,
-    scale:{mode:Phaser.Scale.RESIZE,autoCenter:Phaser.Scale.CENTER_BOTH,width:window.innerWidth,height:window.innerHeight},
+    scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},
     render:{antialias:profile.antialias,pixelArt:false,roundPixels:profile.quality==='low'},
     fps:{target:profile.targetFps,forceSetTimeOut:profile.quality==='low'},
     scene:[scene],
     audio:{disableWebAudio:false},
   })
+
+  let resizeFrame=0
+  const onResize=()=>{
+    cancelAnimationFrame(resizeFrame)
+    resizeFrame=requestAnimationFrame(()=>game.scale.resize(renderWidth(),renderHeight()))
+  }
+  window.addEventListener('resize',onResize,{passive:true})
 
   let frame=0
   const observer=new MutationObserver(()=>{
@@ -80,6 +92,9 @@ export function bootstrapArena(shell:HTMLElement):ArenaHandle{
     destroy:()=>{
       observer.disconnect()
       cancelAnimationFrame(frame)
+      cancelAnimationFrame(resizeFrame)
+      window.removeEventListener('resize',onResize)
+      document.removeEventListener('fullscreenchange',onFullscreenChange)
       if(document.fullscreenElement===host)void document.exitFullscreen().catch(()=>undefined)
       game.destroy(true)
       host.remove()
