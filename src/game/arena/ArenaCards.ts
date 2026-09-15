@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
 import type { ArenaLayoutSnapshot, ArenaRect } from './ArenaLayout'
 import type { ArenaCardRef, ArenaRenderState } from './ArenaStateAdapter'
+import type { ArenaDispatch } from './ArenaInput'
 import { ARENA_ASSETS } from './ArenaAssets'
 import { ARENA_THEME } from './arena-theme'
 
@@ -13,9 +14,8 @@ const fit=(region:ArenaRect,aspect=CARD_ASPECT,scale=1)=>{
 }
 
 export class ArenaCards{
-  private scene:Phaser.Scene
   private objects:Phaser.GameObjects.GameObject[]=[]
-  constructor(scene:Phaser.Scene){this.scene=scene}
+  constructor(private scene:Phaser.Scene,private dispatch:ArenaDispatch){}
   clear(){this.objects.forEach(obj=>obj.destroy());this.objects=[]}
   private keep<T extends Phaser.GameObjects.GameObject>(obj:T){this.objects.push(obj);return obj}
   private image(src:string,region:ArenaRect,scale=1,alpha=1,depth=10){
@@ -39,7 +39,13 @@ export class ArenaCards{
   private card(card:ArenaCardRef|null,region:ArenaRect,scale=1,accent=0xffffff,depth=10){
     if(!card)return
     this.frame(region,scale,accent,depth-2)
-    this.image(card.src,region,scale,1,depth)
+    const image=this.image(card.src,region,scale,1,depth)
+    if(image&&card.actionId){
+      image.setInteractive({useHandCursor:true})
+      image.on('pointerover',()=>this.scene.tweens.add({targets:image,scaleX:image.scaleX*1.025,scaleY:image.scaleY*1.025,duration:90}))
+      image.on('pointerout',()=>this.scene.tweens.add({targets:image,displayWidth:image.displayWidth/1.025,displayHeight:image.displayHeight/1.025,duration:90}))
+      image.on('pointerdown',()=>this.dispatch(card.actionId!))
+    }
   }
   private hand(cards:ArenaCardRef[],region:ArenaRect){
     if(!cards.length)return
@@ -56,12 +62,17 @@ export class ArenaCards{
       const key=`asset:${card.src}`
       if(!this.scene.textures.exists(key))return
       const offset=index-center
-      const y=region.y+region.height*0.57+Math.abs(offset)*Math.min(3,region.height*0.012)
+      const restY=region.y+region.height*0.57+Math.abs(offset)*Math.min(3,region.height*0.012)
       const angle=Phaser.Math.Clamp(offset*2.1,-7,7)
-      const shadow=this.keep(this.scene.add.rectangle(start+index*step+3,y+5,cardW+5,cardH+7,0x000000,0.42).setDepth(18+index).setAngle(angle))
-      void shadow
-      const image=this.keep(this.scene.add.image(start+index*step,y,key).setDisplaySize(cardW,cardH).setDepth(20+index).setAngle(angle))
+      this.keep(this.scene.add.rectangle(start+index*step+3,restY+5,cardW+5,cardH+7,0x000000,0.42).setDepth(18+index).setAngle(angle))
+      const image=this.keep(this.scene.add.image(start+index*step,restY,key).setDisplaySize(cardW,cardH).setDepth(20+index).setAngle(angle))
       image.setData('arena-card-src',card.src)
+      if(card.actionId){
+        image.setInteractive({useHandCursor:true})
+        image.on('pointerover',()=>{image.setY(restY-Math.max(14,region.height*0.08));image.setAngle(0);image.setDepth(80)})
+        image.on('pointerout',()=>{image.setY(restY);image.setAngle(angle);image.setDepth(20+index)})
+        image.on('pointerdown',()=>this.dispatch(card.actionId!))
+      }
     })
   }
   private opponentHand(count:number,region:ArenaRect){
@@ -95,13 +106,11 @@ export class ArenaCards{
     this.clear()
     this.hand(state.localHand,layout.localHand)
     this.opponentHand(state.opponentHandCount,layout.opponentHand)
-
     const half=layout.combat.width/2
     const localRegion={...layout.combat,x:layout.combat.x,y:layout.combat.y,width:half,height:layout.combat.height}
     const opponentRegion={...layout.combat,x:layout.combat.x+half,y:layout.combat.y,width:half,height:layout.combat.height}
     this.card(state.localVs,localRegion,layout.mode==='portrait'?0.93:0.88,ARENA_THEME.colors.player,42)
     this.card(state.opponentVs,opponentRegion,layout.mode==='portrait'?0.93:0.88,ARENA_THEME.colors.opponent,42)
-
     this.card(state.localZonX,layout.zonXLeft,0.9,ARENA_THEME.colors.player,24)
     this.card(state.opponentZonX,layout.zonXRight,0.9,ARENA_THEME.colors.opponent,24)
     this.card(state.localDiscard,layout.discard,0.82,0x8b93a1,22)
