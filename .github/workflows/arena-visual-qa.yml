@@ -31,8 +31,8 @@ jobs:
           const browser=await chromium.launch({headless:true})
           const records=[]
 
-          async function clickMatching(page,rx){
-            const buttons=page.locator('button:visible')
+          async function clickMatching(page,rx,{visible=true}={}){
+            const buttons=page.locator(visible?'button:visible':'button')
             const count=await buttons.count()
             for(let i=0;i<count;i++){
               const button=buttons.nth(i)
@@ -51,6 +51,10 @@ jobs:
             if(!landing)landing=await clickMatching(page,/PLAY NOW/i)
             records.push(`[${label}] landingClick=${landing||'none'}`)
             await page.waitForTimeout(1400)
+            const allButtons=await page.locator('button').allInnerTexts().catch(()=>[])
+            records.push(`[${label}] allButtons=${allButtons.join(' | ')}`)
+            const practice=await clickMatching(page,/PRACTICE/i,{visible:false})
+            if(practice){records.push(`[${label}] practiceClick=${practice}`);return}
             await page.evaluate(()=>{
               document.documentElement.classList.add('mx-practice-active')
               window.dispatchEvent(new CustomEvent('mega-x:start-practice-match'))
@@ -66,8 +70,8 @@ jobs:
             const response=await page.goto(url,{waitUntil:'domcontentloaded',timeout:90000})
             records.push(`[${label}] status=${response?.status()} viewport=${viewport.width}x${viewport.height}`)
             await enterPractice(page,label)
-            await page.waitForSelector('.duel-shell',{timeout:30000})
-            await page.waitForSelector('#mx-clean-arena canvas',{timeout:30000})
+            await page.waitForSelector('.duel-shell',{timeout:30000,state:'attached'})
+            await page.waitForSelector('#mx-clean-arena canvas',{timeout:30000,state:'attached'})
             await page.waitForTimeout(3500)
             records.push(`[${label}] cleanCanvas=${await page.locator('#mx-clean-arena canvas').count()} duelShell=${await page.locator('.duel-shell').count()}`)
             await page.screenshot({path:`${out}/${label}-practice-arena.png`,fullPage:false})
