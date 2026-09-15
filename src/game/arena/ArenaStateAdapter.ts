@@ -1,5 +1,6 @@
 export type ArenaCardRef={src:string;alt:string;actionId?:string}
 export type ArenaLegalAction={id:string;label:string;selector:string}
+export type ArenaStats={atk:string;def:string;sta:string}
 export type ArenaRenderState={
   playerName:string
   opponentName:string
@@ -8,7 +9,13 @@ export type ArenaRenderState={
   opponentHandCount:number
   localVs:ArenaCardRef|null
   opponentVs:ArenaCardRef|null
+  localStats:ArenaStats
+  opponentStats:ArenaStats
+  localPosition:string
+  opponentPosition:string
   deckCount:number
+  localZonXCount:number
+  opponentZonXCount:number
   localDiscard:ArenaCardRef|null
   opponentDiscard:ArenaCardRef|null
   localZonX:ArenaCardRef|null
@@ -44,6 +51,12 @@ const cardFrom=(root:ParentNode,selector:string):ArenaCardRef|null=>{
   return img?.src?mapCard(img):null
 }
 const cardsFrom=(root:ParentNode,selector:string):ArenaCardRef[]=>Array.from(root.querySelectorAll<HTMLImageElement>(selector)).filter(img=>img.src).map(mapCard)
+const statsFrom=(root:ParentNode,side:LeftOrRight):ArenaStats=>({
+  atk:firstText(root,`.mx3-stats-${side} .mx3-atk strong`)||'—',
+  def:firstText(root,`.mx3-stats-${side} .mx3-def strong`)||'—',
+  sta:firstText(root,`.mx3-stats-${side} .mx3-sta strong`)||'—',
+})
+const positionFrom=(root:ParentNode,side:LeftOrRight)=>firstText(root,`.mx3-position-${side}`).replace(/^POSISI\s*/i,'').trim()||'—'
 
 export function readArenaRenderState(shell:HTMLElement):ArenaRenderState{
   const allControls=Array.from(shell.querySelectorAll<HTMLButtonElement>('.mx3-phase-prompt button,.mx3-local-hand button,.mx3-position,.mx3-quit,.mx3-audio')).filter(btn=>!btn.disabled&&btn.offsetParent!==null)
@@ -52,6 +65,7 @@ export function readArenaRenderState(shell:HTMLElement):ArenaRenderState{
   const leftFighter=shell.querySelector<HTMLElement>('.mx3-fighter-left')
   const rightFighter=shell.querySelector<HTMLElement>('.mx3-fighter-right')
   const localSide:LeftOrRight=leftFighter?.classList.contains('is-local')?'left':rightFighter?.classList.contains('is-local')?'right':'left'
+  const opponentSide:LeftOrRight=localSide==='left'?'right':'left'
   const playerName=(localSide==='left'?leftFighter:rightFighter)?.querySelector('strong')?.textContent?.trim()||'X FIGHTER'
   const opponentName=(localSide==='left'?rightFighter:leftFighter)?.querySelector('strong')?.textContent?.trim()||'OPPONENT'
   const localHand=cardsFrom(shell,'.mx3-local-hand img').filter(card=>!card.src.includes('/back-game.webp'))
@@ -60,6 +74,8 @@ export function readArenaRenderState(shell:HTMLElement):ArenaRenderState{
   const opponentVsSelector=localSide==='left'?'.mx3-vs-right img':'.mx3-vs-left img'
   const localXSelector=localSide==='left'?'.mx3-p1-x img':'.mx3-p2-x img'
   const opponentXSelector=localSide==='left'?'.mx3-p2-x img':'.mx3-p1-x img'
+  const localXCountSelector=localSide==='left'?'.mx3-p1-counter':'.mx3-p2-counter'
+  const opponentXCountSelector=localSide==='left'?'.mx3-p2-counter':'.mx3-p1-counter'
   const localDiscardSelector=localSide==='left'?'.mx3-p1-discard img':'.mx3-p2-discard img'
   const opponentDiscardSelector=localSide==='left'?'.mx3-p2-discard img':'.mx3-p1-discard img'
   const localEffectsSelector=localSide==='left'?'.mx3-effects-left img':'.mx3-effects-right img'
@@ -85,7 +101,13 @@ export function readArenaRenderState(shell:HTMLElement):ArenaRenderState{
     opponentHandCount,
     localVs:cardFrom(shell,localVsSelector),
     opponentVs:cardFrom(shell,opponentVsSelector),
+    localStats:statsFrom(shell,localSide),
+    opponentStats:statsFrom(shell,opponentSide),
+    localPosition:positionFrom(shell,localSide),
+    opponentPosition:positionFrom(shell,opponentSide),
     deckCount:numberFromText(firstText(shell,'.mx3-master-counter')),
+    localZonXCount:numberFromText(firstText(shell,localXCountSelector)),
+    opponentZonXCount:numberFromText(firstText(shell,opponentXCountSelector)),
     localDiscard:cardFrom(shell,localDiscardSelector),
     opponentDiscard:cardFrom(shell,opponentDiscardSelector),
     localZonX:cardFrom(shell,localXSelector),
