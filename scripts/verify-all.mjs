@@ -5,6 +5,7 @@ const steps = testsOnly
   ? [
       ['node', ['tests/card_logic_audit_regression.mjs']],
       ['node', ['tests/engine_behavior_regression.mjs']],
+      ['node', ['tests/arena_clean_asset_manifest_regression.mjs']],
     ]
   : [
       ['npm', ['run', 'build']],
