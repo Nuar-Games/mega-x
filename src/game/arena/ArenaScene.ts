@@ -19,7 +19,7 @@ export class ArenaScene extends Phaser.Scene{
   private previous:ArenaRenderState|null=null
   private layout!:ArenaLayoutSnapshot
   private backdrop?:Phaser.GameObjects.Image
-  private rails:Phaser.GameObjects.Graphics[]=[]
+  private rails:Phaser.GameObjects.GameObject[]=[]
 
   constructor(shell:HTMLElement){super('MegaXCleanArena');this.shell=shell}
 
@@ -54,11 +54,11 @@ export class ArenaScene extends Phaser.Scene{
     g.lineStyle(Math.max(1,Math.min(this.scale.width,this.scale.height)*0.0015),ARENA_THEME.colors.opponent,0.22)
     g.strokeLineShape(new Phaser.Geom.Line(this.layout.combat.x,this.layout.combat.y+this.layout.combat.height*0.5,this.layout.combat.x+this.layout.combat.width,this.layout.combat.y+this.layout.combat.height*0.5))
     this.rails.push(g)
-    if(this.textures.exists(`asset:${ARENA_ASSETS.vs.player}`))this.add.image(0,this.layout.combat.y+this.layout.combat.height/2,`asset:${ARENA_ASSETS.vs.player}`).setOrigin(0,0.5).setDisplaySize(Math.min(this.scale.width*0.36,520),this.layout.combat.height*0.9).setAlpha(0.10).setDepth(-15)
-    if(this.textures.exists(`asset:${ARENA_ASSETS.vs.opponent}`))this.add.image(this.scale.width,this.layout.combat.y+this.layout.combat.height/2,`asset:${ARENA_ASSETS.vs.opponent}`).setOrigin(1,0.5).setDisplaySize(Math.min(this.scale.width*0.36,520),this.layout.combat.height*0.9).setAlpha(0.10).setDepth(-15)
+    if(this.textures.exists(`asset:${ARENA_ASSETS.vs.player}`))this.rails.push(this.add.image(0,this.layout.combat.y+this.layout.combat.height/2,`asset:${ARENA_ASSETS.vs.player}`).setOrigin(0,0.5).setDisplaySize(Math.min(this.scale.width*0.36,520),this.layout.combat.height*0.9).setAlpha(0.10).setDepth(-15))
+    if(this.textures.exists(`asset:${ARENA_ASSETS.vs.opponent}`))this.rails.push(this.add.image(this.scale.width,this.layout.combat.y+this.layout.combat.height/2,`asset:${ARENA_ASSETS.vs.opponent}`).setOrigin(1,0.5).setDisplaySize(Math.min(this.scale.width*0.36,520),this.layout.combat.height*0.9).setAlpha(0.10).setDepth(-15))
   }
 
-  renderArena(force=false){
+  public renderArena(force=false){
     if(!this.cards)return
     this.layout=computeArenaLayout(this.scale.width,this.scale.height)
     const next=readArenaRenderState(this.shell)
