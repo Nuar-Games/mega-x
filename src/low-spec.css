@@ -1,0 +1,54 @@
+/* Low-spec rendering path: preserve gameplay/layout, remove expensive paint effects. */
+html.mx-low-spec,
+html.mx-low-spec body,
+html.mx-low-spec #root{
+  background-color:#02060c;
+}
+
+html.mx-low-spec #root *,
+html.mx-low-spec #root *::before,
+html.mx-low-spec #root *::after{
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+  filter:none!important;
+  box-shadow:none!important;
+  text-shadow:none!important;
+}
+
+/* Keep interaction feedback cheap: transforms/opacity are compositor-friendly. */
+html.mx-low-spec #root button,
+html.mx-low-spec #root [role="button"],
+html.mx-low-spec #root .mx3-hand-card{
+  transition-property:transform,opacity!important;
+  transition-duration:.08s!important;
+}
+
+/* Large layered arena surfaces are particularly expensive on old integrated GPUs. */
+html.mx-low-spec body.mx3-arena-present,
+html.mx-low-spec .duel-shell.mx3-stage,
+html.mx-low-spec .mx3-canvas,
+html.mx-low-spec .mx3-canvas::before,
+html.mx-low-spec .mx3-canvas::after{
+  background-image:none!important;
+}
+
+html.mx-low-spec .duel-shell.mx3-stage,
+html.mx-low-spec .mx3-canvas{
+  background-color:#020711!important;
+}
+
+/* Do not spend cycles painting decorative pseudo-elements on constrained devices. */
+html.mx-low-spec .duel-shell.mx3-stage::before{
+  display:none!important;
+}
+
+/* Heavy intro/lobby glow layers are decorative only. */
+html.mx-low-spec .fight-splash span,
+html.mx-low-spec .mx3-center-vs,
+html.mx-low-spec .mx3-timer,
+html.mx-low-spec .mx3-effects,
+html.mx-low-spec .mx3-local-hand,
+html.mx-low-spec .mx3-opponent-hand .mx3-hand-row,
+html.mx-low-spec .mx3-card-back{
+  filter:none!important;
+}
