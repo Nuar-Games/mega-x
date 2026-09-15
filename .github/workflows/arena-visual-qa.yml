@@ -60,11 +60,18 @@ jobs:
 
           async function enterPractice(page,label){
             await page.waitForTimeout(1800)
+            let practice=await clickMatching(page,/PRACTICE.*GUEST/i)
+            if(practice){
+              records.push(`[${label}] practiceClick=${practice}`)
+              return
+            }
+            const visibleButtons=await page.locator('button:visible').allInnerTexts().catch(()=>[])
+            records.push(`[${label}] visibleButtons=${visibleButtons.join(' | ')}`)
             let landing=await clickMatching(page,/MAIN SEKARANG/i)
             if(!landing)landing=await clickMatching(page,/PLAY NOW/i)
             records.push(`[${label}] landingClick=${landing||'none'}`)
             await page.waitForTimeout(1000)
-            const practice=await clickMatching(page,/PRACTICE/i,{visible:false})
+            practice=await clickMatching(page,/PRACTICE/i)
             if(!practice) throw new Error('PRACTICE_BUTTON_NOT_FOUND')
             records.push(`[${label}] practiceClick=${practice}`)
           }
