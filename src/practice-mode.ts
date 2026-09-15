@@ -3,6 +3,7 @@ export function startPractice() {
   window.dispatchEvent(new CustomEvent('mega-x:start-practice-match'))
 
   let arenaSeen = false
+  let arenaNode: Element | null = null
   const hiddenSiblings = new Map<HTMLElement, string | null>()
 
   const isolateArenaBranch = (arena: Element) => {
@@ -45,19 +46,22 @@ export function startPractice() {
   }
 
   const syncPracticeViewport = () => {
-    const arena = document.querySelector('.duel-shell')
-    if (arena) {
-      arenaSeen = true
-      isolateArenaBranch(arena)
-      return
-    }
-
     if (arenaSeen) {
+      if (arenaNode?.isConnected) return
+
       restoreHiddenSiblings()
       document.documentElement.classList.remove('mx-practice-active')
       document.removeEventListener('click', quitPractice, true)
       observer.disconnect()
+      return
     }
+
+    const arena = document.querySelector('.duel-shell')
+    if (!arena) return
+
+    arenaSeen = true
+    arenaNode = arena
+    isolateArenaBranch(arena)
   }
 
   const observer = new MutationObserver(syncPracticeViewport)
