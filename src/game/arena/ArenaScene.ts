@@ -8,6 +8,7 @@ import { ArenaEffects } from './ArenaEffects'
 import { ArenaInput, createDomArenaDispatch } from './ArenaInput'
 import { ArenaAudio } from './ArenaAudio'
 import { ArenaInspect } from './ArenaInspect'
+import { ArenaTexturePool } from './ArenaTexturePool'
 import { ARENA_THEME } from './arena-theme'
 
 export class ArenaScene extends Phaser.Scene{
@@ -17,6 +18,7 @@ export class ArenaScene extends Phaser.Scene{
   private effects!:ArenaEffects
   private inputLayer!:ArenaInput
   private inspectLayer!:ArenaInspect
+  private texturePool!:ArenaTexturePool
   private audioLayer=new ArenaAudio()
   private previous:ArenaRenderState|null=null
   private layout!:ArenaLayoutSnapshot
@@ -26,12 +28,13 @@ export class ArenaScene extends Phaser.Scene{
   constructor(shell:HTMLElement){super('MegaXCleanArena');this.shell=shell}
 
   preload(){
+    this.texturePool=new ArenaTexturePool(this,()=>this.renderArena())
     this.load.image(`asset:${ARENA_ASSETS.background}`,ARENA_ASSETS.background)
     this.load.image(`asset:${ARENA_ASSETS.vs.mark}`,ARENA_ASSETS.vs.mark)
     this.load.image(`asset:${ARENA_ASSETS.vs.player}`,ARENA_ASSETS.vs.player)
     this.load.image(`asset:${ARENA_ASSETS.vs.opponent}`,ARENA_ASSETS.vs.opponent)
     this.load.image(`asset:${ARENA_ASSETS.cards.backGame}`,ARENA_ASSETS.cards.backGame)
-    ARENA_ASSETS.cards.game.forEach(src=>this.load.image(`asset:${src}`,src))
+    this.texturePool.preloadState(readArenaRenderState(this.shell))
   }
 
   create(){
@@ -59,7 +62,7 @@ export class ArenaScene extends Phaser.Scene{
     const wash=this.add.graphics().setDepth(-35)
     wash.fillStyle(0x01040a,0.66).fillRect(0,0,w,h)
     wash.fillStyle(ARENA_THEME.colors.player,0.07).fillTriangle(0,h,0,h*0.26,w*0.46,h)
-    wash.fillStyle(ARENA_THEME.colors.opponent,0.07).fillTriangle(w,0,w,h*0.74,w*0.54,0)
+    wash.fillStyle(ARENA_THEME.colors.opponent,0.07).fillTriangle(w,0,w*h*0+0.74*h,w*0+0.54*w,0)
     this.rails.push(wash)
 
     if(this.textures.exists(`asset:${ARENA_ASSETS.vs.player}`)){
@@ -112,6 +115,7 @@ export class ArenaScene extends Phaser.Scene{
     if(!this.cards)return
     this.layout=computeArenaLayout(this.scale.width,this.scale.height)
     const next=readArenaRenderState(this.shell)
+    this.texturePool.ensureState(next)
     if(force)this.drawArenaFrame()
     this.cards.render(next,this.layout)
     this.hud.render(next,this.layout)
