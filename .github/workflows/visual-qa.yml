@@ -40,22 +40,41 @@ jobs:
             ['laptop-1366x768', 1366, 768],
             ['desktop-1920x1080', 1920, 1080],
           ]
+
+          async function clickCandidate(page, pattern) {
+            const button = page.getByRole('button', { name: pattern }).first()
+            if (!(await button.count())) return false
+            if (!(await button.isVisible().catch(() => false))) return false
+            await button.click({ timeout: 3000 })
+            await page.waitForTimeout(700)
+            return true
+          }
+
+          async function reachArena(page, name) {
+            if (await page.locator('.duel-shell').count()) return true
+            await clickCandidate(page, /main sekarang|play now|mula sekarang|play/i)
+            if (await page.locator('.duel-shell').count()) return true
+            await clickCandidate(page, /guest|tetamu|continue as guest|main tanpa akaun/i)
+            if (await page.locator('.duel-shell').count()) return true
+            await clickCandidate(page, /practice|latihan/i)
+            if (await page.locator('.duel-shell').count()) return true
+            await clickCandidate(page, /beginner bot|bot/i)
+            if (await page.locator('.duel-shell').count()) return true
+            await page.screenshot({ path: `visual-qa/${name}-QA-BLOCKER.png`, fullPage: true })
+            fs.writeFileSync(`visual-qa/${name}-blocker.txt`, await page.locator('body').innerText())
+            return false
+          }
+
           for (const [name, width, height] of cases) {
             const page = await browser.newPage({ viewport: { width, height } })
             await page.goto('http://127.0.0.1:4173', { waitUntil: 'networkidle' })
-
-            const practice = page.getByRole('button', { name: /practice|latihan/i }).first()
-            if (await practice.count()) {
-              await practice.click({ timeout: 3000 })
-              await page.waitForTimeout(1500)
+            const reached = await reachArena(page, name)
+            if (!reached) {
+              throw new Error(`VISUAL QA FAILED: ${name} could not reach the match arena through the player entry flow.`)
             }
 
+            await page.waitForTimeout(1000)
             const arena = page.locator('.duel-shell').first()
-            if (!(await arena.count())) {
-              await page.screenshot({ path: `visual-qa/${name}-QA-FAILED-no-arena.png`, fullPage: true })
-              throw new Error(`VISUAL QA FAILED: ${name} never reached the match arena. A landing-page screenshot is not arena QA.`)
-            }
-
             const box = await arena.boundingBox()
             const canvas = page.locator('.mx3-canvas').first()
             const canvasBox = await canvas.count() ? await canvas.boundingBox() : null
