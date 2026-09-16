@@ -29,6 +29,19 @@ const replacement=`    const startPractice = () => {
 
 app=app.slice(0,start)+replacement+app.slice(listener)
 
+const signInListener=`    const openGuestSignIn = () => {
+      setOnlineScreen('AUTH')
+    }
+    window.addEventListener('mega-x:open-sign-in', openGuestSignIn)
+    window.addEventListener('mega-x:start-practice-match', startPractice)`
+if(!app.includes(listenerMarker)) throw new Error('Practice start listener missing after entry patch')
+app=app.replace(listenerMarker,signInListener)
+
+const cleanupMarker="window.removeEventListener('mega-x:start-practice-match', startPractice)"
+if(app.includes(cleanupMarker)){
+  app=app.replace(cleanupMarker,`window.removeEventListener('mega-x:open-sign-in', openGuestSignIn)\n      ${cleanupMarker}`)
+}
+
 const viewSignature='  function applyOnlineMatchView(match: ActiveOnlineMatch) {'
 if(!app.includes(viewSignature)) throw new Error('applyOnlineMatchView signature missing')
 app=app.replace(viewSignature,`  function applyOnlineMatchView(match: ActiveOnlineMatch, sessionOverride?: OnlineSession) {
@@ -46,4 +59,4 @@ app=app.replaceAll('onlineGameFromState(match.state, match, onlineSession.userId
 app=app.replaceAll('getMatchResultSummary(onlineSession, match.id)','getMatchResultSummary(activeSession, match.id)')
 
 fs.writeFileSync(path,app)
-console.log('Patched Practice guest entry to open the local match with an explicit session in the same click')
+console.log('Patched guest-first Practice entry and exposed a non-blocking sign-in event')
