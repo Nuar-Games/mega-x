@@ -43,7 +43,7 @@ export class ArenaScene extends Phaser.Scene{
   create(){
     const dispatch=createDomArenaDispatch(this.shell)
     this.inspectLayer=new ArenaInspect(this)
-    this.cards=new ArenaCards(this,dispatch,card=>this.inspectLayer.show(card))
+    this.cards=new ArenaCards(this,dispatch,card=>this.inspectLayer.show(card,action=>dispatch(action.id)))
     this.hud=new ArenaHud(this)
     this.effects=new ArenaEffects(this)
     this.inputLayer=new ArenaInput(this,dispatch)
