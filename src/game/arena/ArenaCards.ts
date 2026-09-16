@@ -32,26 +32,33 @@ export class ArenaCards{
     const size=fit(region,CARD_ASPECT,scale)
     return this.keep(this.scene.add.ellipse(region.x+region.width/2+size.width*0.035,region.y+region.height/2+size.height*0.035,size.width*0.92,size.height*0.92,0x000000,alpha).setDepth(depth))
   }
-  private focus(region:ArenaRect,scale:number,accent:number,depth:number){
+  private focus(region:ArenaRect,scale:number,accent:number,depth:number,strong=false){
     const size=fit(region,CARD_ASPECT,scale)
     const x=region.x+region.width/2,y=region.y+region.height/2
     const g=this.keep(this.scene.add.graphics().setDepth(depth))
-    g.lineStyle(Math.max(2,size.width*0.026),accent,0.68).strokeEllipse(x,y,size.width*1.13,size.height*1.06)
-    g.lineStyle(Math.max(1,size.width*0.012),0xffffff,0.16).strokeEllipse(x,y,size.width*1.03,size.height*0.98)
+    g.lineStyle(Math.max(strong?4:2,size.width*(strong?0.038:0.026)),strong?0xffdc61:accent,strong?0.96:0.68).strokeEllipse(x,y,size.width*(strong?1.19:1.13),size.height*(strong?1.10:1.06))
+    g.lineStyle(Math.max(1,size.width*0.012),0xffffff,strong?0.34:0.16).strokeEllipse(x,y,size.width*1.03,size.height*0.98)
   }
   private card(card:ArenaCardRef|null,region:ArenaRect,scale=1,accent=0xffffff,depth=10,mode:CardMode='inspect',featured=false,alpha=1){
     if(!card)return
-    this.shadow(region,scale,depth-3,featured?0.52:0.30)
-    if(featured)this.focus(region,scale,accent,depth-2)
+    const actionable=mode==='action'&&Boolean(card.actionId)
+    this.shadow(region,scale,depth-3,featured||actionable?0.52:0.30)
+    if(featured||actionable)this.focus(region,scale,accent,depth-2,actionable)
     const image=this.image(card.src,region,scale,alpha,depth)
     if(!image)return
     image.setInteractive({useHandCursor:true})
-    image.on('pointerover',()=>{image.setScale(1.035);image.setDepth(depth+30)})
+    image.on('pointerover',()=>{image.setScale(actionable?1.065:1.035);image.setDepth(depth+30)})
     image.on('pointerout',()=>{image.setScale(1);image.setDepth(depth)})
     image.on('pointerdown',()=>{
-      if(mode==='action'&&card.actionId)this.dispatch(card.actionId)
+      if(actionable&&card.actionId)this.dispatch(card.actionId)
       else this.inspect(card)
     })
+    if(actionable){
+      const size=fit(region,CARD_ASPECT,scale)
+      const x=region.x+region.width/2,y=region.y+region.height/2
+      const tag=this.keep(this.scene.add.text(x,y-size.height*0.43,'TARGET',{fontFamily:'Oxanium, sans-serif',fontSize:`${Math.max(11,Math.min(16,size.width*0.13))}px`,fontStyle:'bold',color:'#fff3a4',backgroundColor:'#49130fcc',padding:{x:8,y:4},stroke:'#120503',strokeThickness:2,letterSpacing:1.1}).setOrigin(0.5).setDepth(depth+2).setInteractive({useHandCursor:true}))
+      tag.on('pointerdown',()=>card.actionId&&this.dispatch(card.actionId))
+    }
   }
   private hand(cards:ArenaCardRef[],region:ArenaRect){
     if(!cards.length)return
@@ -107,7 +114,7 @@ export class ArenaCards{
     const slotH=region.height/Math.max(3,visible.length)
     visible.forEach((card,index)=>{
       const slot:ArenaRect={x:region.x,y:region.y+index*slotH,width:region.width,height:slotH}
-      this.card(card,slot,0.74,accent,30+index,'inspect',false,0.82)
+      this.card(card,slot,0.74,accent,30+index,card.actionId?'action':'inspect',false,card.actionId?1:0.82)
     })
   }
   render(state:ArenaRenderState,layout:ArenaLayoutSnapshot){
@@ -122,8 +129,8 @@ export class ArenaCards{
     const centerX=layout.combat.x+layout.combat.width/2
     const localRegion:ArenaRect={x:centerX-vsGap-vsCardW,y:vsY,width:vsCardW,height:vsCardH}
     const opponentRegion:ArenaRect={x:centerX+vsGap,y:vsY,width:vsCardW,height:vsCardH}
-    this.card(state.localVs,localRegion,0.96,ARENA_THEME.colors.player,42,'inspect',true,1)
-    this.card(state.opponentVs,opponentRegion,0.96,ARENA_THEME.colors.opponent,42,'inspect',true,1)
+    this.card(state.localVs,localRegion,0.96,ARENA_THEME.colors.player,42,state.localVs?.actionId?'action':'inspect',true,1)
+    this.card(state.opponentVs,opponentRegion,0.96,ARENA_THEME.colors.opponent,42,state.opponentVs?.actionId?'action':'inspect',true,1)
 
     this.card(state.localZonX,layout.zonXLeft,0.88,ARENA_THEME.colors.player,24,'inspect',false,0.84)
     this.card(state.opponentZonX,layout.zonXRight,0.88,ARENA_THEME.colors.opponent,24,'inspect',false,0.84)
