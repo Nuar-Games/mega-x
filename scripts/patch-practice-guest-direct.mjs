@@ -43,6 +43,7 @@ app=app.replace(sessionBlock,`    setActiveOnlineMatch(match)
     const me: PlayerIndex = match.player1_id === activeSession.userId ? 0 : 1`)
 
 app=app.replaceAll('onlineGameFromState(match.state, match, onlineSession.userId)','onlineGameFromState(match.state, match, activeSession.userId)')
+app=app.replaceAll('getMatchResultSummary(onlineSession, match.id)','getMatchResultSummary(activeSession, match.id)')
 
 fs.writeFileSync(path,app)
 console.log('Patched Practice guest entry to open the local match with an explicit session in the same click')
