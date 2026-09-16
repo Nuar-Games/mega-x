@@ -7,7 +7,9 @@ if(app.includes("if (!onlineSession) return\n      const match = startPracticeMa
 if(!app.includes('practice-guest:')) throw new Error('Guest Practice identity missing')
 if(!app.includes('setOnlineSession(practiceSession)')) throw new Error('Guest Practice session is not promoted into renderer session state')
 if(!app.includes("startPracticeMatch(practiceSession.userId")) throw new Error('Guest Practice does not create the match directly from the active guest-or-authenticated session')
-if(!app.includes('applyOnlineMatchView(match as any)')) throw new Error('Guest Practice does not open the created match immediately')
+if(!app.includes('applyOnlineMatchView(match as any, practiceSession)')) throw new Error('Guest Practice does not open the created match with the explicit guest session in the same click')
+if(!app.includes('function applyOnlineMatchView(match: ActiveOnlineMatch, sessionOverride?: OnlineSession)')) throw new Error('Arena match view does not accept an explicit session override')
+if(!app.includes('const activeSession = sessionOverride ?? onlineSession')) throw new Error('Arena match view does not resolve the explicit session override')
 if(app.includes("window.setTimeout(() => window.dispatchEvent(new CustomEvent('mega-x:start-practice-match')), 0)")) throw new Error('Guest Practice still relies on fragile redispatch handoff')
 
 console.log('PRACTICE_GUEST_ENTRY_PASS')
