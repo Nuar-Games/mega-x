@@ -1,12 +1,9 @@
-import { createRoot, type Root } from 'react-dom/client'
 import { StrictMode } from 'react'
+import { createRoot, type Root } from 'react-dom/client'
+import { Arena3DRoot } from './Arena3DRoot'
 
 export function shouldUseArena3D(search:string){
   return new URLSearchParams(search).get('arena')==='3d'
-}
-
-function BootSurface(){
-  return <div data-arena-3d-boot="true" style={{position:'absolute',inset:0,display:'grid',placeItems:'center',background:'#03060b',color:'#f4f7fb',fontFamily:'Oxanium, sans-serif',letterSpacing:'0.08em',fontWeight:800,zIndex:1}}>LOADING 3D ARENA</div>
 }
 
 export async function mountArena3D(shell:HTMLElement):Promise<()=>void>{
@@ -25,7 +22,7 @@ export async function mountArena3D(shell:HTMLElement):Promise<()=>void>{
   let root:Root|null=null
   try{
     root=createRoot(host)
-    root.render(<StrictMode><BootSurface/></StrictMode>)
+    root.render(<StrictMode><Arena3DRoot shell={shell}/></StrictMode>)
     if(legacy){
       legacy.style.opacity='0'
       legacy.style.pointerEvents='none'
