@@ -84,14 +84,21 @@ export function readArenaRenderState(shell:HTMLElement):ArenaRenderState{
   const localEffectsSelector=localSide==='left'?'.mx3-effects-left img':'.mx3-effects-right img'
   const opponentEffectsSelector=localSide==='left'?'.mx3-effects-right img':'.mx3-effects-left img'
 
-  const phaseControls=allControls.filter(button=>!button.closest('.mx3-local-hand')&&!button.closest('.tie-breaker-choice-hand'))
+  const phaseClass=Array.from(shell.querySelector('.mx3-canvas')?.classList||[]).find(v=>v.startsWith('phase-'))
+  const phase=(phaseClass?.slice(6)||firstText(shell,'.mx3-phase-prompt strong')||'WAIT').toUpperCase()
+  const phaseControls=allControls.filter(button=>{
+    if(button.closest('.mx3-local-hand')||button.closest('.tie-breaker-choice-hand'))return false
+    if(button.matches('.mx3-position')){
+      const label=(button.textContent||'').replace(/\s+/g,' ').trim()
+      if(phase==='SET_VS'||/^POSISI\s*[—-]?$/i.test(label))return false
+    }
+    return true
+  })
   const legalActions=phaseControls.map((button,index)=>{
     const id=button.dataset.arenaActionId||actionIdFor(button,index)
     return {id,label:button.textContent?.trim()||'ACTION',selector:`[data-arena-action-id="${id}"]`}
   })
 
-  const phaseClass=Array.from(shell.querySelector('.mx3-canvas')?.classList||[]).find(v=>v.startsWith('phase-'))
-  const phase=(phaseClass?.slice(6)||firstText(shell,'.mx3-phase-prompt strong')||'WAIT').toUpperCase()
   const resultEl=shell.querySelector<HTMLElement>('.mx3-result,.result-screen,[data-match-result]')
   const status=firstText(shell,'.mx3-status')
   const degraded=/connection|reconnect|offline|network/i.test(status)
