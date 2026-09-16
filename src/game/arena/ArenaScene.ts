@@ -68,30 +68,33 @@ export class ArenaScene extends Phaser.Scene{
     if(this.textures.exists(`asset:${ARENA_ASSETS.background}`))this.backdrop=this.add.image(w/2,h/2,`asset:${ARENA_ASSETS.background}`).setDisplaySize(w,h).setAlpha(0.64).setDepth(-40)
 
     const wash=this.keep(this.add.graphics().setDepth(-35))
-    wash.fillStyle(0x01040a,0.40).fillRect(0,0,w,h)
-    wash.fillStyle(ARENA_THEME.colors.player,0.095).fillCircle(w*0.18,h*0.73,Math.max(w,h)*0.42)
-    wash.fillStyle(ARENA_THEME.colors.opponent,0.09).fillCircle(w*0.82,h*0.24,Math.max(w,h)*0.42)
+    wash.fillStyle(0x01040a,0.38).fillRect(0,0,w,h)
+    wash.fillStyle(ARENA_THEME.colors.player,0.09).fillCircle(w*0.18,h*0.73,Math.max(w,h)*0.42)
+    wash.fillStyle(ARENA_THEME.colors.opponent,0.085).fillCircle(w*0.82,h*0.24,Math.max(w,h)*0.42)
 
     const combat=this.layout.combat
     const cx=combat.x+combat.width/2,cy=combat.y+combat.height/2
-    const zoneGap=Math.max(12,combat.width*0.025)
-    const zoneW=Math.max(120,(combat.width-zoneGap*3)/2)
-    const zoneH=Math.max(180,combat.height*0.78)
-    const zoneY=cy-zoneH/2
-    this.asset(ARENA_ASSETS.arenaUi.fieldBlue,{x:combat.x+zoneGap,y:zoneY,width:zoneW,height:zoneH},0.78,-18)
-    this.asset(ARENA_ASSETS.arenaUi.fieldRed,{x:combat.x+combat.width-zoneGap-zoneW,y:zoneY,width:zoneW,height:zoneH},0.78,-18)
+    const stage=this.keep(this.add.graphics().setDepth(-20))
+    stage.fillStyle(0x000000,0.18).fillEllipse(cx,cy,combat.width*0.94,combat.height*0.82)
+    stage.lineStyle(Math.max(2,min*0.003),0xffffff,0.10).strokeEllipse(cx,cy,combat.width*0.91,combat.height*0.78)
+    stage.lineStyle(Math.max(3,min*0.0035),ARENA_THEME.colors.player,0.56).lineBetween(combat.x+combat.width*0.06,cy,combat.x+combat.width*0.39,cy)
+    stage.lineStyle(Math.max(3,min*0.0035),ARENA_THEME.colors.opponent,0.56).lineBetween(combat.x+combat.width*0.61,cy,combat.x+combat.width*0.94,cy)
 
-    const stage=this.keep(this.add.graphics().setDepth(-16))
-    stage.fillStyle(0x000000,0.22).fillEllipse(cx,cy,combat.width*0.93,combat.height*0.86)
-    stage.lineStyle(Math.max(2,min*0.0035),0xffffff,0.12).strokeEllipse(cx,cy,combat.width*0.90,combat.height*0.80)
-    stage.lineStyle(Math.max(3,min*0.004),ARENA_THEME.colors.player,0.62).lineBetween(combat.x+combat.width*0.08,cy,combat.x+combat.width*0.41,cy)
-    stage.lineStyle(Math.max(3,min*0.004),ARENA_THEME.colors.opponent,0.62).lineBetween(combat.x+combat.width*0.59,cy,combat.x+combat.width*0.92,cy)
+    const fieldSlots=5
+    const slotGap=Math.max(8,Math.min(18,combat.width*0.012))
+    const slotH=Math.min(combat.height*0.49,250)
+    const slotW=slotH*(59/86)
+    const totalSlots=fieldSlots*slotW+(fieldSlots-1)*slotGap
+    const slotStart=cx-totalSlots/2
+    const slotY=cy-slotH*0.44
+    for(let i=0;i<fieldSlots;i++){
+      const src=i===0?ARENA_ASSETS.arenaUi.fieldBlue:i===fieldSlots-1?ARENA_ASSETS.arenaUi.fieldRed:ARENA_ASSETS.arenaUi.fieldNeutral
+      this.asset(src,{x:slotStart+i*(slotW+slotGap),y:slotY,width:slotW,height:slotH},i===0||i===fieldSlots-1?0.70:0.48,-18)
+    }
 
-    if(this.textures.exists(`asset:${ARENA_ASSETS.vs.player}`))this.keep(this.add.image(combat.x,cy,`asset:${ARENA_ASSETS.vs.player}`).setOrigin(0,0.5).setDisplaySize(Math.min(w*0.28,430),combat.height*0.83).setAlpha(0.14).setDepth(-25))
-    if(this.textures.exists(`asset:${ARENA_ASSETS.vs.opponent}`))this.keep(this.add.image(combat.x+combat.width,cy,`asset:${ARENA_ASSETS.vs.opponent}`).setOrigin(1,0.5).setDisplaySize(Math.min(w*0.28,430),combat.height*0.83).setAlpha(0.14).setDepth(-25))
     if(this.textures.exists(`asset:${ARENA_ASSETS.vs.mark}`)){
-      const mark=Math.min(combat.width*0.12,combat.height*0.16,108)
-      this.keep(this.add.image(cx,cy,`asset:${ARENA_ASSETS.vs.mark}`).setDisplaySize(mark,mark).setAlpha(0.92).setDepth(-4))
+      const mark=Math.min(combat.width*0.12,combat.height*0.18,118)
+      this.keep(this.add.image(cx,cy-slotH*0.56,`asset:${ARENA_ASSETS.vs.mark}`).setDisplaySize(mark,mark).setAlpha(0.90).setDepth(-4))
     }
 
     this.asset(ARENA_ASSETS.arenaUi.fieldNeutral,this.layout.effectLeft,state.localEffects.length?0.72:0.40,-7)
