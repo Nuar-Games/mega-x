@@ -14,12 +14,23 @@ const fit=(region:ArenaRect,aspect=CARD_ASPECT,scale=1)=>{
 }
 
 type CardMode='inspect'|'action'
+type TargetHit={id:string;x:number;y:number}
 
 export class ArenaCards{
   private objects:Phaser.GameObjects.GameObject[]=[]
+  private targetHits:TargetHit[]=[]
   constructor(private scene:Phaser.Scene,private dispatch:ArenaDispatch,private inspect:(card:ArenaCardRef)=>void){}
-  clear(){this.objects.forEach(obj=>obj.destroy());this.objects=[]}
+  clear(){
+    this.objects.forEach(obj=>obj.destroy())
+    this.objects=[]
+    this.targetHits=[]
+    this.scene.game.canvas.removeAttribute('data-arena-board-targets')
+  }
   private keep<T extends Phaser.GameObjects.GameObject>(obj:T){this.objects.push(obj);return obj}
+  private registerTarget(id:string,x:number,y:number){
+    this.targetHits.push({id,x,y})
+    this.scene.game.canvas.dataset.arenaBoardTargets=JSON.stringify(this.targetHits)
+  }
   private image(src:string,region:ArenaRect,scale=1,alpha=1,depth=10){
     const key=`asset:${src}`
     if(!this.scene.textures.exists(key)) return
@@ -46,6 +57,8 @@ export class ArenaCards{
     if(featured||actionable)this.focus(region,scale,accent,depth-2,actionable)
     const image=this.image(card.src,region,scale,alpha,depth)
     if(!image)return
+    const x=region.x+region.width/2,y=region.y+region.height/2
+    if(actionable&&card.actionId)this.registerTarget(card.actionId,x,y)
     image.setInteractive({useHandCursor:true})
     image.on('pointerover',()=>{image.setScale(actionable?1.065:1.035);image.setDepth(depth+30)})
     image.on('pointerout',()=>{image.setScale(1);image.setDepth(depth)})
@@ -55,7 +68,6 @@ export class ArenaCards{
     })
     if(actionable){
       const size=fit(region,CARD_ASPECT,scale)
-      const x=region.x+region.width/2,y=region.y+region.height/2
       const tag=this.keep(this.scene.add.text(x,y-size.height*0.43,'TARGET',{fontFamily:'Oxanium, sans-serif',fontSize:`${Math.max(11,Math.min(16,size.width*0.13))}px`,fontStyle:'bold',color:'#fff3a4',backgroundColor:'#49130fcc',padding:{x:8,y:4},stroke:'#120503',strokeThickness:2,letterSpacing:1.1}).setOrigin(0.5).setDepth(depth+2).setInteractive({useHandCursor:true}))
       tag.on('pointerdown',()=>card.actionId&&this.dispatch(card.actionId))
     }
