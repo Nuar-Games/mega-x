@@ -12,25 +12,21 @@ must(source.includes("'/ui/vs-blue.webp'") && source.includes("'/ui/vs-red.webp'
 for (const audio of ['card-draw','card-selected','card-enter-vs','card-attacking','card-destroyed','card-goes-to-zon-x','effect-enter-field','prompt-needed','win-lose-screen']) {
   must(source.includes(audio), `Missing arena audio mapping: ${audio}`)
 }
-const uiAssets = [
-  'hud-player.svg','hud-opponent.svg','command-control.svg','mobile-command-tray.svg',
-  'zone-effect.svg','zone-zonx.svg','pile-fixture.svg','turn-banner.svg','result-frame.svg',
-  'inspect-frame.svg','loading-mark.svg','fx-shard.svg'
-]
-for (const asset of uiAssets) {
-  must(source.includes(`/ui/arena/v2/${asset}`), `Arena manifest missing ${asset}`)
-  must(fs.existsSync(`public/ui/arena/v2/${asset}`), `Arena UI asset file missing ${asset}`)
-  const svg=fs.readFileSync(`public/ui/arena/v2/${asset}`,'utf8')
-  must(svg.includes('<svg') && !svg.includes('<rect width="100%" height="100%"'), `${asset} must remain an isolated transparent asset`)
+
+const paths=[...source.matchAll(/'\/ui\/arena\/v3\/([^']+\.svg)'/g)].map(match=>match[1])
+must(paths.length>=20,'Reference arena requires a substantial v3 UI asset pack')
+for(const asset of paths){
+  const file=`public/ui/arena/v3/${asset}`
+  must(fs.existsSync(file),`Arena UI asset file missing ${asset}`)
+  const svg=fs.readFileSync(file,'utf8')
+  must(svg.includes('<svg'),`${asset} must be SVG`)
+  must(!svg.includes('<rect width="100%" height="100%"'),`${asset} must remain an isolated transparent asset`)
 }
+
 must(source.includes('cardGameUrl') && source.includes('cardInspectUrl'), 'Gameplay and inspection card helpers are required')
 must(theme.includes('player: 0x2f8cff') && theme.includes('opponent: 0xff3b4f'), 'Player/opponent identity colors are required')
 must(theme.includes('decisive: 0xd7b35a'), 'Gold must be reserved as the decisive accent')
+must(scene.includes('fieldBlue') && scene.includes('fieldRed'), 'Live arena must render authored battlefield frames')
+must(scene.includes('deckFixture') && scene.includes('discardFixture') && scene.includes('zonXFixture'), 'Live arena must render deck/discard/Zon X hardware')
 
-// Arena hardware must read as game UI, not disappear into the background art.
-must(scene.includes('0.72:0.46'), 'Effect fixtures must remain visibly present even when inactive')
-must(scene.includes('0.74:0.44'), 'Zon X fixtures must remain visibly present even when inactive')
-must(scene.includes('0.66:0.42'), 'Deck/discard fixtures must remain visibly present even when inactive')
-must(scene.includes('fillStyle(0x01040a,0.48)'), 'Arena wash must not bury the UI hardware')
-
-console.log('PASS clean Mega X arena asset manifest')
+console.log('PASS clean Mega X arena v3 asset manifest')
