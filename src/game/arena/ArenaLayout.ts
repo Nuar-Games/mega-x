@@ -51,27 +51,29 @@ export function computeArenaLayout(width:number,height:number):ArenaLayoutSnapsh
     }
   }
 
-  const hudH=h*0.09
-  const opponentHandH=h*0.14
-  const handH=h*0.23
+  const hudH=h*0.11
+  const opponentHandH=h*0.10
+  const handH=h*0.21
   const promptH=h*0.10
+  const commandRail=Math.max(260,w*0.18)
+  const playableW=w-pad*2-commandRail
   const arenaY=pad+hudH
   const combatY=arenaY+opponentHandH
   const arenaH=h-hudH-opponentHandH-handH-promptH-pad*2
-  const side=Math.max(78,w*0.085)
+  const side=Math.max(86,w*0.07)
   return {
     width:w,height:h,mode:'wide',
     hud:rect(pad,pad,w-pad*2,hudH),
-    opponent:rect(pad,arenaY,w-pad*2,opponentHandH*0.28),
-    opponentHand:rect(pad+side,arenaY,w-pad*2-side*2,opponentHandH),
-    combat:rect(pad+side,combatY,w-pad*2-side*2,arenaH),
+    opponent:rect(pad,arenaY,playableW,opponentHandH*0.24),
+    opponentHand:rect(pad+side,arenaY,playableW-side*2,opponentHandH),
+    combat:rect(pad+side,combatY,playableW-side*2,arenaH),
     effectLeft:rect(pad,combatY,side-pad*0.35,arenaH*0.42),
     zonXLeft:rect(pad,combatY+arenaH*0.48,side-pad*0.35,arenaH*0.28),
     discard:rect(pad,combatY+arenaH*0.80,side-pad*0.35,arenaH*0.18),
-    effectRight:rect(w-pad-side+pad*0.35,combatY,side-pad*0.35,arenaH*0.42),
-    zonXRight:rect(w-pad-side+pad*0.35,combatY+arenaH*0.48,side-pad*0.35,arenaH*0.28),
-    deck:rect(w-pad-side+pad*0.35,combatY+arenaH*0.80,side-pad*0.35,arenaH*0.18),
-    prompt:rect(pad,h-handH-promptH-pad,w-pad*2,promptH),
-    localHand:rect(pad,h-handH-pad,w-pad*2,handH),
+    effectRight:rect(pad+playableW-side+pad*0.35,combatY,side-pad*0.35,arenaH*0.42),
+    zonXRight:rect(pad+playableW-side+pad*0.35,combatY+arenaH*0.48,side-pad*0.35,arenaH*0.28),
+    deck:rect(pad+playableW-side+pad*0.35,combatY+arenaH*0.80,side-pad*0.35,arenaH*0.18),
+    prompt:rect(pad,h-handH-promptH-pad,playableW,promptH),
+    localHand:rect(pad,h-handH-pad,playableW,handH),
   }
 }
