@@ -51,14 +51,16 @@ export function bootstrapArena(shell:HTMLElement):ArenaHandle{
   shell.appendChild(host)
   mark.animate([{transform:'rotate(0deg)'},{transform:'rotate(360deg)'}],{duration:1100,iterations:Infinity})
 
+  const onArenaReady=()=>{
+    boot.style.opacity='0'
+    window.setTimeout(()=>boot.remove(),240)
+  }
+  shell.addEventListener('mega-x:arena-ready',onArenaReady,{once:true})
+
   const renderWidth=()=>Math.max(320,Math.round(window.innerWidth*profile.resolution))
   const renderHeight=()=>Math.max(480,Math.round(window.innerHeight*profile.resolution))
 
   scene=new ArenaScene(shell)
-  scene.events.once(Phaser.Scenes.Events.CREATE,()=>{
-    boot.style.opacity='0'
-    window.setTimeout(()=>boot.remove(),240)
-  })
   const game=new Phaser.Game({
     type:Phaser.AUTO,
     parent:host,
@@ -95,6 +97,7 @@ export function bootstrapArena(shell:HTMLElement):ArenaHandle{
       cancelAnimationFrame(resizeFrame)
       window.removeEventListener('resize',onResize)
       document.removeEventListener('fullscreenchange',onFullscreenChange)
+      shell.removeEventListener('mega-x:arena-ready',onArenaReady)
       if(document.fullscreenElement===host)void document.exitFullscreen().catch(()=>undefined)
       game.destroy(true)
       host.remove()
