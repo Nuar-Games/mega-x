@@ -62,7 +62,10 @@ const statsFrom=(root:ParentNode,side:LeftOrRight):ArenaStats=>({
 const positionFrom=(root:ParentNode,side:LeftOrRight)=>firstText(root,`.mx3-position-${side}`).replace(/^POSISI\s*/i,'').trim()||'—'
 
 export function readArenaRenderState(shell:HTMLElement):ArenaRenderState{
-  const allControls=Array.from(shell.querySelectorAll<HTMLButtonElement>('.mx3-phase-prompt button,.mx3-local-hand button,.mx3-position,.mx3-quit,.mx3-audio,.tie-breaker-choice-hand button')).filter(btn=>!btn.disabled&&btn.offsetParent!==null)
+  // The legacy duel DOM is intentionally visually hidden while Phaser owns presentation.
+  // Keep enabled duel controls discoverable even when offsetParent is null, otherwise
+  // the canvas renders correctly but cards and command buttons lose their real actions.
+  const allControls=Array.from(shell.querySelectorAll<HTMLButtonElement>('.mx3-phase-prompt button,.mx3-local-hand button,.mx3-position,.mx3-quit,.mx3-audio,.tie-breaker-choice-hand button')).filter(btn=>!btn.disabled)
   allControls.forEach((button,index)=>actionIdFor(button,index))
 
   const leftFighter=shell.querySelector<HTMLElement>('.mx3-fighter-left')
