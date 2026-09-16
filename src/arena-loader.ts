@@ -5,11 +5,22 @@ let shell:HTMLElement|null=null
 let loading=false
 
 async function syncArena(){
+  const cleanArenaOptIn=new URLSearchParams(window.location.search).get('arena')==='clean'
+  if(!cleanArenaOptIn){
+    handle?.destroy()
+    handle=null
+    shell=null
+    document.body.classList.remove('mx-clean-arena-enabled')
+    return
+  }
+
+  document.body.classList.add('mx-clean-arena-enabled')
   const next=document.querySelector<HTMLElement>('.duel-shell')
   if(!next){
     handle?.destroy()
     handle=null
     shell=null
+    document.body.classList.remove('mx-clean-arena-enabled')
     return
   }
   if(next===shell&&handle)return
