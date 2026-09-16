@@ -56,6 +56,28 @@ jobs:
             await button.click()
           }
 
+          async function phaseState(page){
+            const prompt=((await page.locator('.mx3-phase-prompt strong').textContent().catch(()=>''))||'').trim()
+            const engine=await page.locator('.mx3-canvas').evaluate(el=>{
+              const cls=[...el.classList].find(v=>v.startsWith('phase-'))
+              return cls?cls.slice(6).toUpperCase():''
+            }).catch(()=>'')
+            return {prompt,engine}
+          }
+
+          async function snapshot(page){
+            const phase=await phaseState(page)
+            return {
+              hand:await page.locator('.mx3-local-hand img').count(),
+              prompt:phase.prompt,
+              engine:phase.engine,
+              deck:((await page.locator('.mx3-master-counter').textContent().catch(()=>''))||'').trim(),
+              vs:await page.locator('.mx3-vs-left img,.mx3-vs-right img').count(),
+              effects:await page.locator('.mx3-effects-left img,.mx3-effects-right img').count(),
+              status:((await page.locator('.mx3-status').textContent().catch(()=>''))||'').trim(),
+            }
+          }
+
           function wideHandCenters(width,height,count){
             const w=Math.max(320,width),h=Math.max(480,height)
             const pad=Math.max(8,Math.min(w,h)*0.014)
@@ -69,14 +91,12 @@ jobs:
             const maxCardW=maxCardH*aspect
             const step=Math.min(maxCardW*0.66,region.width/Math.max(4,visible+0.5))
             const cardW=Math.min(maxCardW,Math.max(region.width*0.17,step/0.66))
-            const cardH=cardW/aspect
             const total=cardW+(visible-1)*step
             const start=region.x+(region.width-total)/2+cardW/2
             const center=(visible-1)/2
             return Array.from({length:visible},(_,index)=>({
               x:start+index*step,
               y:region.y+region.height*0.55+Math.abs(index-center)*Math.min(3,region.height*0.012),
-              cardW,cardH,
             }))
           }
 
@@ -84,11 +104,7 @@ jobs:
             const canvas=page.locator('#mx-clean-arena canvas')
             const box=await canvas.boundingBox()
             if(!box) throw new Error('PHASER_CANVAS_NOT_CLICKABLE')
-            const before={
-              hand:await page.locator('.mx3-local-hand img').count(),
-              phase:((await page.locator('.mx3-phase-prompt strong').textContent().catch(()=>''))||'').trim(),
-              vs:await page.locator('.mx3-vs-left img,.mx3-vs-right img').count(),
-            }
+            const before=await snapshot(page)
             const centers=wideHandCenters(viewport.width,viewport.height,before.hand)
             let choice=null
             for(const center of centers){
@@ -99,66 +115,82 @@ jobs:
               if(choice==='open') break
             }
             if(choice!=='open') throw new Error('PHASER_CARD_CHOOSER_DID_NOT_OPEN')
-            await page.mouse.click(box.x+viewport.width*0.71,box.y+viewport.height*0.43)
-            await page.waitForTimeout(1200)
-            const after={
-              hand:await page.locator('.mx3-local-hand img').count(),
-              phase:((await page.locator('.mx3-phase-prompt strong').textContent().catch(()=>''))||'').trim(),
-              vs:await page.locator('.mx3-vs-left img,.mx3-vs-right img').count(),
-            }
-            const changed=before.hand!==after.hand||before.phase!==after.phase||before.vs!==after.vs
+            const centersRaw=await canvas.getAttribute('data-arena-choice-actions')
+            const actionCenters=centersRaw?JSON.parse(centersRaw):[]
+            const chosen=actionCenters[0]
+            if(!chosen) throw new Error('PHASER_CHOOSER_ACTIONS_MISSING')
+            await page.mouse.click(box.x+Number(chosen.x),box.y+Number(chosen.y))
+            await page.waitForTimeout(1300)
+            const after=await snapshot(page)
+            const changed=JSON.stringify(before)!==JSON.stringify(after)
             records.push(`[${label}] canvasSetupAction before=${JSON.stringify(before)} after=${JSON.stringify(after)} changed=${changed}`)
             if(!changed) throw new Error('PHASER_CARD_ACTION_DID_NOT_REACH_GAME_ENGINE')
           }
 
           async function advanceSetup(page,label){
-            for(let step=0;step<12;step++){
-              const phase=((await page.locator('.mx3-phase-prompt strong').textContent().catch(()=>''))||'').trim()
-              records.push(`[${label}] phase=${phase}`)
-              if(/MAIN|ATTACK|EFFECT|DRAW/i.test(phase)) return
+            for(let step=0;step<24;step++){
+              const before=await snapshot(page)
+              records.push(`[${label}] setupStep=${step} state=${JSON.stringify(before)}`)
+              const setupPrompt=/PILIH KAD (VS|EFFECT)|VS SEDIA|SET VS/i.test(before.prompt)
+              const liveEngine=['EFFECT','ATTACK','DRAW','GAME_OVER','TIE_BREAKER'].includes(before.engine)
+              if(liveEngine&&!setupPrompt) return before
+
               const semantic=page.locator('.mx3-local-hand button[data-arena-card-action]:not([disabled])').first()
               if(await semantic.count()){
                 const text=((await semantic.textContent())||'').replace(/\s+/g,' ').trim()
                 records.push(`[${label}] setupCardAction=${text}`)
                 await semantic.evaluate(el=>el.click())
-                await page.waitForTimeout(650)
-                continue
+                await page.waitForTimeout(900)
+                const after=await snapshot(page)
+                if(JSON.stringify(after)!==JSON.stringify(before)) continue
               }
-              const next=page.locator('.mx3-phase-prompt button:not([disabled]),.mx3-position:not([disabled])').filter({hasNotText:/QUIT|AUDIO|SURRENDER/i}).first()
+
+              const next=page.locator('.mx3-phase-prompt button:not([disabled])').filter({hasNotText:/QUIT|AUDIO|SURRENDER|POSISI/i}).first()
               if(await next.count()){
                 const text=((await next.textContent())||'').replace(/\s+/g,' ').trim()
                 records.push(`[${label}] setupAction=${text}`)
                 await next.evaluate(el=>el.click())
-                await page.waitForTimeout(650)
-                continue
+                await page.waitForTimeout(1200)
+                const after=await snapshot(page)
+                if(JSON.stringify(after)!==JSON.stringify(before)) continue
               }
-              break
+
+              await page.waitForTimeout(1200)
+              const afterWait=await snapshot(page)
+              if(JSON.stringify(afterWait)!==JSON.stringify(before)) continue
             }
+            throw new Error('SETUP_DID_NOT_REACH_LIVE_PHASE')
           }
 
           async function proveLiveAction(page,label){
-            const before={
-              hand:await page.locator('.mx3-local-hand img').count(),
-              phase:((await page.locator('.mx3-phase-prompt strong').textContent().catch(()=>''))||'').trim(),
-              deck:((await page.locator('.mx3-master-counter').textContent().catch(()=>''))||'').trim(),
-              status:((await page.locator('.mx3-status').textContent().catch(()=>''))||'').trim(),
+            for(let attempt=0;attempt<8;attempt++){
+              const before=await snapshot(page)
+              records.push(`[${label}] liveAttempt=${attempt} before=${JSON.stringify(before)}`)
+              const setupPrompt=/PILIH KAD (VS|EFFECT)|VS SEDIA|SET VS/i.test(before.prompt)
+              if(setupPrompt){
+                await advanceSetup(page,label)
+                continue
+              }
+
+              const cardAction=page.locator('.mx3-local-hand button[data-arena-card-action]:not([disabled])').first()
+              const phaseAction=page.locator('.mx3-phase-prompt button:not([disabled])').filter({hasNotText:/QUIT|AUDIO|SURRENDER|POSISI/i}).first()
+              const target=await cardAction.count()?cardAction:phaseAction
+              if(await target.count()){
+                const text=((await target.textContent())||'').replace(/\s+/g,' ').trim()
+                records.push(`[${label}] liveAction=${text}`)
+                await target.evaluate(el=>el.click())
+                await page.waitForTimeout(1800)
+                const after=await snapshot(page)
+                const changed=JSON.stringify(before)!==JSON.stringify(after)
+                records.push(`[${label}] liveAfter=${JSON.stringify(after)} changed=${changed}`)
+                if(changed)return
+              }else{
+                await page.waitForTimeout(1800)
+                const after=await snapshot(page)
+                if(JSON.stringify(before)!==JSON.stringify(after))return
+              }
             }
-            const action=page.locator('.mx3-phase-prompt button:not([disabled])').filter({hasNotText:/QUIT|AUDIO|SURRENDER/i}).first()
-            const cardAction=page.locator('.mx3-local-hand button[data-arena-card-action]:not([disabled])').first()
-            const target=await action.count()?action:cardAction
-            if(!await target.count()) throw new Error('NO_LIVE_GAMEPLAY_ACTION_AVAILABLE')
-            const text=((await target.textContent())||'').replace(/\s+/g,' ').trim()
-            await target.evaluate(el=>el.click())
-            await page.waitForTimeout(900)
-            const after={
-              hand:await page.locator('.mx3-local-hand img').count(),
-              phase:((await page.locator('.mx3-phase-prompt strong').textContent().catch(()=>''))||'').trim(),
-              deck:((await page.locator('.mx3-master-counter').textContent().catch(()=>''))||'').trim(),
-              status:((await page.locator('.mx3-status').textContent().catch(()=>''))||'').trim(),
-            }
-            const changed=JSON.stringify(before)!==JSON.stringify(after)
-            records.push(`[${label}] liveAction=${text} before=${JSON.stringify(before)} after=${JSON.stringify(after)} changed=${changed}`)
-            if(!changed) throw new Error('LIVE_GAMEPLAY_ACTION_DID_NOT_CHANGE_STATE')
+            throw new Error('LIVE_GAMEPLAY_ACTION_DID_NOT_CHANGE_STATE')
           }
 
           async function capture(label,viewport,proveCanvas=false){
@@ -176,11 +208,8 @@ jobs:
             await page.waitForTimeout(1800)
             if(await page.locator('#mx-clean-arena canvas').count()!==1) throw new Error('PRACTICE_ARENA_NOT_MOUNTED')
             if(proveCanvas) await proveCanvasSetupAction(page,label,viewport)
-            await advanceSetup(page,label)
-            await page.waitForTimeout(1000)
-            const phase=((await page.locator('.mx3-phase-prompt strong').textContent().catch(()=>''))||'').trim()
-            records.push(`[${label}] finalPhase=${phase}`)
-            if(!phase) throw new Error('PRACTICE_GAME_STATE_MISSING')
+            const finalState=await advanceSetup(page,label)
+            records.push(`[${label}] reachedLiveState=${JSON.stringify(finalState)}`)
             if(proveCanvas) await proveLiveAction(page,label)
             await page.screenshot({path:`${out}/${label}-practice-arena.png`,fullPage:false})
             await context.close()
