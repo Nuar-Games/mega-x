@@ -51,7 +51,10 @@ jobs:
               const button=buttons.nth(i)
               const text=(await button.innerText().catch(()=>'' )).replace(/\s+/g,' ').trim()
               if(rx.test(text)&&await button.isEnabled().catch(()=>false)){
-                await button.click({force:true})
+                const pointerEvents=await button.evaluate(el=>getComputedStyle(el).pointerEvents).catch(()=>'unknown')
+                records.push(`[clickable] ${text} pointerEvents=${pointerEvents}`)
+                if(pointerEvents==='none') throw new Error(`BUTTON_NOT_CLICKABLE: ${text}`)
+                await button.click()
                 return text
               }
             }
