@@ -56,26 +56,46 @@ jobs:
             await button.click()
           }
 
+          async function proveCanvasSetupAction(page,label){
+            const hand=page.locator('.mx3-local-hand button:not([disabled])')
+            if(!(await hand.count())) return false
+            const canvas=page.locator('#mx-clean-arena canvas')
+            const box=await canvas.boundingBox()
+            if(!box) throw new Error('PHASER_CANVAS_NOT_CLICKABLE')
+            const before={
+              hand:await hand.count(),
+              phase:((await page.locator('.mx3-phase-prompt strong').textContent().catch(()=>''))||'').trim(),
+              vs:await page.locator('.mx3-vs-left img,.mx3-vs-right img').count(),
+            }
+            await page.mouse.click(box.x+box.width*0.50,box.y+box.height*0.86)
+            await page.waitForTimeout(900)
+            const after={
+              hand:await page.locator('.mx3-local-hand button:not([disabled])').count(),
+              phase:((await page.locator('.mx3-phase-prompt strong').textContent().catch(()=>''))||'').trim(),
+              vs:await page.locator('.mx3-vs-left img,.mx3-vs-right img').count(),
+            }
+            const changed=before.hand!==after.hand||before.phase!==after.phase||before.vs!==after.vs
+            records.push(`[${label}] canvasSetupAction before=${JSON.stringify(before)} after=${JSON.stringify(after)} changed=${changed}`)
+            if(!changed) throw new Error('PHASER_CARD_ACTION_DID_NOT_REACH_GAME_ENGINE')
+            return true
+          }
+
           async function advanceSetup(page,label){
             for(let step=0;step<12;step++){
               const phase=((await page.locator('.mx3-phase-prompt strong').textContent().catch(()=>''))||'').trim()
               records.push(`[${label}] phase=${phase}`)
               if(/MAIN|ATTACK|EFFECT|DRAW/i.test(phase)) return
-
               const hand=page.locator('.mx3-local-hand button:not([disabled])')
               if(await hand.count()){
                 const first=hand.first()
-                if(await first.isVisible().catch(()=>false)){
-                  const text=((await first.textContent())||'').replace(/\s+/g,' ').trim()
-                  records.push(`[${label}] setupHand=${text.slice(0,80)}`)
-                  await first.evaluate(el=>el.click())
-                  await page.waitForTimeout(600)
-                  continue
-                }
+                const text=((await first.textContent())||'').replace(/\s+/g,' ').trim()
+                records.push(`[${label}] setupHand=${text.slice(0,80)}`)
+                await first.evaluate(el=>el.click())
+                await page.waitForTimeout(600)
+                continue
               }
-
               const next=page.locator('.mx3-phase-prompt button:not([disabled]),.mx3-position:not([disabled])').filter({hasNotText:/QUIT|AUDIO|SURRENDER/i}).first()
-              if(await next.count() && await next.isVisible().catch(()=>false)){
+              if(await next.count()){
                 const text=((await next.textContent())||'').replace(/\s+/g,' ').trim()
                 records.push(`[${label}] setupAction=${text}`)
                 await next.evaluate(el=>el.click())
@@ -86,7 +106,7 @@ jobs:
             }
           }
 
-          async function capture(label,viewport){
+          async function capture(label,viewport,proveCanvas=false){
             const context=await browser.newContext({viewport,isMobile:viewport.width<600,deviceScaleFactor:1})
             const page=await context.newPage()
             page.on('console',msg=>records.push(`[${label} console ${msg.type()}] ${msg.text()}`))
@@ -99,11 +119,13 @@ jobs:
             await page.waitForSelector('.duel-shell',{timeout:30000,state:'attached'})
             await page.waitForSelector('#mx-clean-arena canvas',{timeout:30000,state:'attached'})
             await page.waitForTimeout(1800)
-            const cleanCanvas=await page.locator('#mx-clean-arena canvas').count()
-            const duelShell=await page.locator('.duel-shell').count()
-            if(cleanCanvas!==1||duelShell<1) throw new Error('PRACTICE_ARENA_NOT_MOUNTED')
+            if(await page.locator('#mx-clean-arena canvas').count()!==1) throw new Error('PRACTICE_ARENA_NOT_MOUNTED')
+            if(proveCanvas) await proveCanvasSetupAction(page,label)
             await advanceSetup(page,label)
             await page.waitForTimeout(1400)
+            const phase=((await page.locator('.mx3-phase-prompt strong').textContent().catch(()=>''))||'').trim()
+            records.push(`[${label}] finalPhase=${phase}`)
+            if(!phase) throw new Error('PRACTICE_GAME_STATE_MISSING')
             await page.screenshot({path:`${out}/${label}-practice-arena.png`,fullPage:false})
             await context.close()
           }
@@ -112,7 +134,7 @@ jobs:
           try{
             await capture('portrait-412x915',{width:412,height:915})
             await capture('landscape-915x412',{width:915,height:412})
-            await capture('desktop-1366x768',{width:1366,height:768})
+            await capture('desktop-1366x768',{width:1366,height:768},true)
             await capture('desktop-1920x1080',{width:1920,height:1080})
           }catch(error){
             fatal=error
