@@ -102,7 +102,8 @@ export function readArenaRenderState(shell:HTMLElement):ArenaRenderState{
     if(button.closest('.mx3-local-hand')||button.closest('.tie-breaker-choice-hand'))return false
     if(button.matches('.mx3-position')){
       const label=(button.textContent||'').replace(/\s+/g,' ').trim()
-      if(phase==='SET_VS'||/^POSISI\s*[—-]?$/i.test(label))return false
+      const isLocalPosition=button.classList.contains(`mx3-position-${localSide}`)
+      if(!isLocalPosition||phase==='SET_VS'||/^POSISI\s*[—-]?$/i.test(label))return false
     }
     return true
   })
