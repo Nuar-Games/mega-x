@@ -1,42 +1,57 @@
-export {}
+import { getSavedSession } from './onlineAuth'
 
-const BUTTON_ID='mx-main-practice-cta'
+const SIGN_IN_ID='mx-main-sign-in'
 
-function mountGuestPracticeButton(){
-  const landing=document.querySelector<HTMLElement>('#mx-main-landing .mx-main-portrait')
-  if(!landing||document.getElementById(BUTTON_ID))return
-
-  const button=document.createElement('button')
-  button.id=BUTTON_ID
-  button.type='button'
-  button.textContent='PRACTICE — PLAY AS GUEST'
-  button.setAttribute('aria-label','Play Practice as guest')
-  Object.assign(button.style,{
-    position:'absolute',
-    zIndex:'12',
-    left:'14%',
-    top:'69.2%',
-    width:'72%',
-    minHeight:'42px',
-    padding:'10px 14px',
-    border:'1px solid rgba(255,255,255,.28)',
-    borderRadius:'12px',
-    background:'rgba(5,8,20,.88)',
-    color:'#fff',
-    font:'900 clamp(.72rem,2.1vw,.92rem)/1.1 Inter,system-ui,sans-serif',
-    letterSpacing:'.08em',
-    boxShadow:'0 0 16px rgba(87,157,255,.35), inset 0 0 14px rgba(128,72,255,.18)',
-    cursor:'pointer',
-    pointerEvents:'auto',
-    touchAction:'manipulation',
-    WebkitTapHighlightColor:'transparent',
-  })
-  button.addEventListener('click',()=>{
-    window.dispatchEvent(new CustomEvent('mega-x:start-practice-match'))
-  })
-  landing.appendChild(button)
+function isSignedIn(){
+  const session=getSavedSession()
+  return Boolean(session?.accessToken&&session.accessToken!=='practice-local')
 }
 
-mountGuestPracticeButton()
-const observer=new MutationObserver(mountGuestPracticeButton)
+function mountGuestFirstLanding(){
+  const landing=document.querySelector<HTMLElement>('#mx-main-landing .mx-main-portrait')
+  if(!landing)return
+
+  const mainCta=landing.querySelector<HTMLButtonElement>('.mx-main-cta')
+  if(mainCta&&!mainCta.dataset.guestFirstBound){
+    mainCta.dataset.guestFirstBound='1'
+    mainCta.addEventListener('click',(event)=>{
+      if(isSignedIn())return
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      window.dispatchEvent(new CustomEvent('mega-x:start-practice-match'))
+    },true)
+  }
+
+  if(isSignedIn()){
+    document.getElementById(SIGN_IN_ID)?.remove()
+    return
+  }
+  if(document.getElementById(SIGN_IN_ID))return
+
+  const signIn=document.createElement('button')
+  signIn.id=SIGN_IN_ID
+  signIn.type='button'
+  signIn.textContent='SIGN IN'
+  signIn.setAttribute('aria-label','Sign in to earn leaderboard points')
+  Object.assign(signIn.style,{
+    position:'absolute',
+    zIndex:'13',
+    right:'5%',
+    top:'2.5%',
+    padding:'8px 12px',
+    border:'1px solid rgba(255,255,255,.28)',
+    borderRadius:'999px',
+    background:'rgba(4,7,18,.72)',
+    color:'#fff',
+    font:'800 12px/1 Inter,system-ui,sans-serif',
+    letterSpacing:'.08em',
+    cursor:'pointer',
+    pointerEvents:'auto',
+  })
+  signIn.addEventListener('click',()=>window.dispatchEvent(new CustomEvent('mega-x:open-sign-in')))
+  landing.appendChild(signIn)
+}
+
+mountGuestFirstLanding()
+const observer=new MutationObserver(mountGuestFirstLanding)
 observer.observe(document.documentElement,{subtree:true,childList:true})
