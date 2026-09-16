@@ -39,7 +39,7 @@ export function Arena3DRoot({shell}:Props){
   }
   const changeQuality=(next:Arena3DQualityName)=>{saveArena3DQuality(next);setQuality(next)}
 
-  return <div className="mx3d-root">
+  return <div className="mx3d-root" data-arena-3d-root="true">
     <div className="mx3d-canvas">
       <Canvas shadows={profile.shadows} dpr={profile.dpr} gl={{antialias:quality!=='low',powerPreference:quality==='low'?'low-power':'high-performance'}}>
         <Suspense fallback={null}>
