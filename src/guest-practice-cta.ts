@@ -27,6 +27,7 @@ function mountGuestPracticeButton(){
     letterSpacing:'.08em',
     boxShadow:'0 0 16px rgba(87,157,255,.35), inset 0 0 14px rgba(128,72,255,.18)',
     cursor:'pointer',
+    pointerEvents:'auto',
     touchAction:'manipulation',
     WebkitTapHighlightColor:'transparent',
   })
