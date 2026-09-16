@@ -96,8 +96,8 @@ export class ArenaCards{
       image.on('pointerover',()=>{image.setY(restY-Math.max(16,region.height*0.09));image.setAngle(0);image.setDepth(80);image.setScale(1.04)})
       image.on('pointerout',()=>{image.setY(restY);image.setAngle(angle);image.setDepth(20+index);image.setScale(1)})
       image.on('pointerdown',()=>{
-        if(card.actions?.length){this.inspect(card);return}
         if(card.actionId){this.dispatch(card.actionId);return}
+        if(card.actions?.length){this.inspect(card);return}
         this.inspect(card)
       })
     })
