@@ -17,6 +17,13 @@ export class ArenaHud{
     if(!this.scene.textures.exists(key))return
     return this.keep(this.scene.add.image(x,y,key).setOrigin(0,0).setDisplaySize(w,h).setDepth(depth).setAlpha(alpha))
   }
+  private portrait(src:string,x:number,y:number,w:number,h:number,flip=false){
+    const key=`asset:${src}`
+    if(!this.scene.textures.exists(key))return
+    const img=this.keep(this.scene.add.image(x,y,key).setOrigin(0.5,1).setDisplaySize(w,h).setDepth(3).setAlpha(0.82))
+    if(flip)img.setFlipX(true)
+    return img
+  }
   private combatStats(x:number,y:number,stats:ArenaStats,position:string,align:'left'|'right',accent:number,base:number){
     const dir=align==='left'?1:-1
     const span=base*7.4
@@ -38,14 +45,26 @@ export class ArenaHud{
 
     this.image(ARENA_ASSETS.arenaUi.hudPlayer,layout.hud.x,plateY,plateW,plateH,2,1)
     this.image(ARENA_ASSETS.arenaUi.hudOpponent,rightX,plateY,plateW,plateH,2,1)
-    this.text(layout.hud.x+plateW*0.11,plateY+plateH*0.52,state.playerName.toUpperCase(),base*0.82,'#e6f7ff',0,0.5,'Barlow Condensed').setDepth(4)
-    this.text(rightX+plateW*0.89,plateY+plateH*0.52,state.opponentName.toUpperCase(),base*0.82,'#ffe7ea',1,0.5,'Barlow Condensed').setDepth(4)
+
+    if(!compact){
+      const portraitH=plateH*1.18,portraitW=Math.min(plateW*0.28,portraitH*0.78)
+      this.portrait(ARENA_ASSETS.vs.player,layout.hud.x+portraitW*0.52,plateY+plateH*1.03,portraitW,portraitH)
+      this.portrait(ARENA_ASSETS.vs.opponent,rightX+plateW-portraitW*0.52,plateY+plateH*1.03,portraitW,portraitH,true)
+    }
+
+    this.text(layout.hud.x+plateW*(compact?0.11:0.24),plateY+plateH*0.50,state.playerName.toUpperCase(),base*0.82,'#e6f7ff',0,0.5,'Barlow Condensed').setDepth(6)
+    this.text(rightX+plateW*(compact?0.89:0.76),plateY+plateH*0.50,state.opponentName.toUpperCase(),base*0.82,'#ffe7ea',1,0.5,'Barlow Condensed').setDepth(6)
 
     const centerX=layout.combat.x+layout.combat.width/2
+    if(!compact){
+      const logoW=Math.min(190,layout.width*0.10),logoH=Math.min(62,layout.hud.height*0.55)
+      this.image(ARENA_ASSETS.logo,centerX-logoW/2,layout.hud.y+2,logoW,logoH,7,0.96)
+    }
     const badgeW=compact?Math.min(layout.width*0.52,250):Math.min(layout.width*0.18,270)
-    const badgeH=Math.min(64,layout.hud.height*0.54)
-    this.image(ARENA_ASSETS.arenaUi.phaseBadge,centerX-badgeW/2,layout.hud.y+layout.hud.height*0.16,badgeW,badgeH,5,0.98)
-    this.text(centerX,layout.hud.y+layout.hud.height*0.16+badgeH/2,state.phase.replaceAll('_',' '),base*0.48,'#e9c55a',0.5,0.5,'Oxanium').setDepth(8)
+    const badgeH=Math.min(64,layout.hud.height*0.50)
+    const badgeY=compact?layout.hud.y+layout.hud.height*0.16:layout.hud.y+layout.hud.height*0.51
+    this.image(ARENA_ASSETS.arenaUi.phaseBadge,centerX-badgeW/2,badgeY,badgeW,badgeH,5,0.98)
+    this.text(centerX,badgeY+badgeH/2,state.phase.replaceAll('_',' '),base*0.48,'#e9c55a',0.5,0.5,'Oxanium').setDepth(8)
     this.text(centerX,layout.combat.y+layout.combat.height*0.08,state.timer,base*1.28,state.timer!=='—'&&Number(state.timer)<=10?'#ff5d72':'#ffffff',0.5,0.5,'Oxanium').setDepth(8)
 
     const statY=layout.combat.y+layout.combat.height*0.91
@@ -55,10 +74,10 @@ export class ArenaHud{
     const promptText=(state.prompt||state.status||state.phase).toUpperCase()
     const promptW=Math.min(layout.prompt.width,compact?layout.width*0.90:760)
     const promptH=Math.min(layout.prompt.height*0.42,52)
-    const promptX=layout.width/2-promptW/2
+    const promptX=layout.prompt.x+(layout.prompt.width-promptW)/2
     const promptY=layout.prompt.y+Math.max(1,layout.prompt.height*0.02)
     this.image(ARENA_ASSETS.arenaUi.turnBanner,promptX,promptY,promptW,promptH,3,0.98)
-    this.text(layout.width/2,promptY+promptH/2,promptText,base*0.58,'#ffffff',0.5,0.5,'Barlow Condensed').setDepth(5)
+    this.text(promptX+promptW/2,promptY+promptH/2,promptText,base*0.58,'#ffffff',0.5,0.5,'Barlow Condensed').setDepth(5)
 
     this.text(layout.discard.x+layout.discard.width/2,layout.discard.y+layout.discard.height*0.94,'DISCARD',base*0.34,'#d2dae2',0.5,0.5,'Barlow Condensed').setDepth(6)
     this.text(layout.deck.x+layout.deck.width/2,layout.deck.y+layout.deck.height*0.94,`${state.deckCount} DECK`,base*0.36,'#dff7ff',0.5,0.5,'Barlow Condensed').setDepth(6)
@@ -68,7 +87,7 @@ export class ArenaHud{
     if(!compact){
       const logW=Math.min(360,layout.width*0.19),logH=Math.min(170,layout.height*0.18)
       const logX=Math.max(18,layout.discard.x),logY=Math.min(layout.height-logH-18,layout.combat.y+layout.combat.height*0.56)
-      this.image(ARENA_ASSETS.arenaUi.gameLog,logX,logY,logW,logH,12,0.92)
+      this.image(ARENA_ASSETS.arenaUi.gameLog,logX,logY,logW,logH,12,0.96)
       this.text(logX+logW*0.08,logY+logH*0.18,'GAME LOG',base*0.43,'#8ce5ff',0,0.5,'Oxanium').setDepth(14)
       this.text(logX+logW*0.08,logY+logH*0.42,state.phase.replaceAll('_',' '),base*0.36,'#ffffff',0,0.5,'Barlow Condensed').setDepth(14)
       this.text(logX+logW*0.08,logY+logH*0.64,(state.status||state.prompt||'BATTLE ACTIVE').slice(0,42).toUpperCase(),base*0.31,'#c9d7df',0,0.5,'Barlow Condensed').setDepth(14)
