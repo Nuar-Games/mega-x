@@ -82,8 +82,8 @@ export class ArenaInspect{
         const assetKey=`asset:${src}`
         const width=Math.min(wide?250:w*0.72,300)
         const height=Math.max(48,Math.min(66,h*0.075))
-        const hitHeight=Math.max(height,wide?64:52)
-        const hit=this.scene.add.rectangle(x,y,width,hitHeight,0x000000,0.001).setDepth(203.5).setInteractive({useHandCursor:true})
+        const hitHeight=Math.max(height,wide?76:58)
+        const hit=this.scene.add.rectangle(x,y,width,hitHeight,0x000000,0.001).setDepth(203.5+index*0.001).setInteractive({useHandCursor:true})
         hit.on('pointerdown',()=>{this.close();onAction(action)})
         this.objects.push(hit)
         let control:Phaser.GameObjects.GameObject
