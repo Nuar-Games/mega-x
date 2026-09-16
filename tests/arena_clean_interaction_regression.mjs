@@ -11,6 +11,8 @@ const must=(ok,msg)=>{if(!ok)throw new Error(msg)}
 
 must(adapter.includes('actionId?:string'),'card refs must carry authoritative action ids')
 must(adapter.includes("button.dataset.arenaActionId=id"),'authoritative DOM actions must receive stable ids')
+must(adapter.includes(".filter(btn=>!btn.disabled)"),'clean arena must retain enabled authoritative controls even when legacy DOM is visually hidden')
+must(!adapter.includes('btn.offsetParent!==null'),'clean arena must not discard hidden authoritative controls')
 must(adapter.includes('localStats:statsFrom(shell,localSide)'),'clean arena must map actual local ATK/DEF/STA')
 must(adapter.includes('localPosition:positionFrom(shell,localSide)'),'clean arena must map actual local battle position')
 must(adapter.includes('localZonXCount:numberFromText'),'clean arena must map Zon X score counts')
