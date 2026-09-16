@@ -1,38 +1,74 @@
 import type { ArenaHandle } from './game/arena/bootstrapArena'
 
-let handle:ArenaHandle|null=null
-let shell:HTMLElement|null=null
-let loading=false
+let cleanHandle:ArenaHandle|null=null
+let cleanShell:HTMLElement|null=null
+let cleanLoading=false
+let destroy3D:(()=>void)|null=null
+let arena3DShell:HTMLElement|null=null
+let arena3DLoading=false
+
+async function stopCleanArena(){
+  cleanHandle?.destroy()
+  cleanHandle=null
+  cleanShell=null
+  document.body.classList.remove('mx-clean-arena-enabled')
+}
+
+function stop3DArena(){
+  destroy3D?.()
+  destroy3D=null
+  arena3DShell=null
+  document.body.classList.remove('mx-arena-3d-enabled')
+}
 
 async function syncArena(){
-  const cleanArenaOptIn=new URLSearchParams(window.location.search).get('arena')==='clean'
-  if(!cleanArenaOptIn){
-    handle?.destroy()
-    handle=null
-    shell=null
-    document.body.classList.remove('mx-clean-arena-enabled')
+  const mode=new URLSearchParams(window.location.search).get('arena')
+  const next=document.querySelector<HTMLElement>('.duel-shell')
+
+  if(mode==='3d'){
+    await stopCleanArena()
+    if(!next){stop3DArena();return}
+    if(next===arena3DShell&&destroy3D)return
+    if(arena3DLoading)return
+    stop3DArena()
+    arena3DShell=next
+    arena3DLoading=true
+    try{
+      const { mountArena3D }=await import('./game/arena3d/Arena3DBoot')
+      if(document.contains(next))destroy3D=await mountArena3D(next)
+    }catch(error){
+      console.error('[Mega X] 3D arena boot failed; using fallback arena.',error)
+      stop3DArena()
+    }finally{
+      arena3DLoading=false
+    }
+    return
+  }
+
+  stop3DArena()
+
+  if(mode!=='clean'){
+    await stopCleanArena()
     return
   }
 
   document.body.classList.add('mx-clean-arena-enabled')
-  const next=document.querySelector<HTMLElement>('.duel-shell')
   if(!next){
-    handle?.destroy()
-    handle=null
-    shell=null
-    document.body.classList.remove('mx-clean-arena-enabled')
+    await stopCleanArena()
     return
   }
-  if(next===shell&&handle)return
-  if(loading)return
-  handle?.destroy()
-  handle=null
-  shell=next
-  loading=true
+  if(next===cleanShell&&cleanHandle)return
+  if(cleanLoading)return
+  cleanHandle?.destroy()
+  cleanHandle=null
+  cleanShell=next
+  cleanLoading=true
   try{
     const { bootstrapArena }=await import('./game/arena/bootstrapArena')
-    if(document.contains(next))handle=bootstrapArena(next)
-  }finally{loading=false}
+    if(document.contains(next))cleanHandle=bootstrapArena(next)
+  }finally{
+    cleanLoading=false
+  }
 }
 
 const root=document.getElementById('root')??document.body
