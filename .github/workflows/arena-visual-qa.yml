@@ -100,6 +100,29 @@ jobs:
             }))
           }
 
+          async function clickPhaserBoardTarget(page,label,before){
+            const canvas=page.locator('#mx-clean-arena canvas')
+            const box=await canvas.boundingBox()
+            if(!box)throw new Error('PHASER_CANVAS_NOT_CLICKABLE')
+            for(let wait=0;wait<8;wait++){
+              const raw=await canvas.getAttribute('data-arena-board-targets')
+              const targets=raw?JSON.parse(raw):[]
+              if(targets.length){
+                const target=targets[0]
+                records.push(`[${label}] phaserBoardTarget=${JSON.stringify(target)}`)
+                await page.mouse.click(box.x+Number(target.x),box.y+Number(target.y))
+                await page.waitForTimeout(1200)
+                const after=await snapshot(page)
+                const changed=JSON.stringify(before)!==JSON.stringify(after)
+                records.push(`[${label}] boardTargetAfter=${JSON.stringify(after)} changed=${changed}`)
+                if(!changed)throw new Error('PHASER_BOARD_TARGET_DID_NOT_CHANGE_STATE')
+                return after
+              }
+              await page.waitForTimeout(250)
+            }
+            throw new Error('PHASER_BOARD_TARGET_NOT_EXPOSED')
+          }
+
           async function proveCanvasSetupAction(page,label,viewport){
             const canvas=page.locator('#mx-clean-arena canvas')
             const box=await canvas.boundingBox()
@@ -128,9 +151,13 @@ jobs:
           }
 
           async function advanceSetup(page,label){
-            for(let step=0;step<24;step++){
+            for(let step=0;step<32;step++){
               const before=await snapshot(page)
               records.push(`[${label}] setupStep=${step} state=${JSON.stringify(before)}`)
+              if(/BOARD CHOICE REQUIRED/i.test(before.status)){
+                await clickPhaserBoardTarget(page,label,before)
+                continue
+              }
               const setupPrompt=/PILIH KAD (VS|EFFECT)|VS SEDIA|SET VS/i.test(before.prompt)
               const liveEngine=['EFFECT','ATTACK','DRAW','GAME_OVER','TIE_BREAKER'].includes(before.engine)
               if(liveEngine&&!setupPrompt) return before
@@ -166,6 +193,10 @@ jobs:
             for(let attempt=0;attempt<8;attempt++){
               const before=await snapshot(page)
               records.push(`[${label}] liveAttempt=${attempt} before=${JSON.stringify(before)}`)
+              if(/BOARD CHOICE REQUIRED/i.test(before.status)){
+                await clickPhaserBoardTarget(page,label,before)
+                return
+              }
               const setupPrompt=/PILIH KAD (VS|EFFECT)|VS SEDIA|SET VS/i.test(before.prompt)
               if(setupPrompt){
                 await advanceSetup(page,label)
