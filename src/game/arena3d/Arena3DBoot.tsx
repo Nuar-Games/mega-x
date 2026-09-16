@@ -7,15 +7,15 @@ export function shouldUseArena3D(search:string){
 }
 
 export async function mountArena3D(shell:HTMLElement):Promise<()=>void>{
-  const existing=shell.querySelector<HTMLElement>('[data-arena-3d-root]')
-  if(existing)existing.remove()
+  const existingHost=shell.querySelector<HTMLElement>('[data-arena-3d-host]')
+  if(existingHost)existingHost.remove()
 
   const legacy=shell.querySelector<HTMLElement>('.mx3-canvas')
   const previousOpacity=legacy?.style.opacity ?? ''
   const previousPointerEvents=legacy?.style.pointerEvents ?? ''
 
   const host=document.createElement('div')
-  host.dataset.arena3dRoot='true'
+  host.dataset.arena3dHost='true'
   Object.assign(host.style,{position:'fixed',inset:'0',width:'100vw',height:'100dvh',zIndex:'40',overflow:'hidden',background:'#03060b'})
   shell.appendChild(host)
 
