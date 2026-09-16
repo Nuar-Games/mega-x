@@ -56,28 +56,33 @@ jobs:
             await button.click()
           }
 
-          async function bestEffortAdvance(page,label){
-            try{
-              for(let step=0;step<8;step++){
-                const shellText=((await page.locator('.duel-shell').innerText().catch(()=>''))||'').replace(/\s+/g,' ')
-                if(/MAIN PHASE|MAIN_PHASE|SERANG|ATTACK|END TURN/i.test(shellText)){
-                  records.push(`[${label}] playablePhase=${shellText.slice(0,180)}`)
-                  return
+          async function advanceSetup(page,label){
+            for(let step=0;step<12;step++){
+              const phase=((await page.locator('.mx3-phase-prompt strong').textContent().catch(()=>''))||'').trim()
+              records.push(`[${label}] phase=${phase}`)
+              if(/MAIN|ATTACK|EFFECT|DRAW/i.test(phase)) return
+
+              const hand=page.locator('.mx3-local-hand button:not([disabled])')
+              if(await hand.count()){
+                const first=hand.first()
+                if(await first.isVisible().catch(()=>false)){
+                  const text=((await first.textContent())||'').replace(/\s+/g,' ').trim()
+                  records.push(`[${label}] setupHand=${text.slice(0,80)}`)
+                  await first.evaluate(el=>el.click())
+                  await page.waitForTimeout(600)
+                  continue
                 }
-                const action=await page.locator('button[data-arena-action-id]').evaluateAll(nodes=>{
-                  const candidates=nodes.filter(node=>!node.disabled&&!/quit|audio|surrender|keluar/i.test((node.textContent||'').replace(/\s+/g,' ')))
-                  const node=candidates[0]
-                  if(!node)return null
-                  const item={id:node.getAttribute('data-arena-action-id')||'',text:(node.textContent||'').replace(/\s+/g,' ').trim()}
-                  node.click()
-                  return item
-                })
-                records.push(`[${label}] setupStep=${step} action=${JSON.stringify(action)}`)
-                if(!action)break
-                await page.waitForTimeout(700)
               }
-            }catch(error){
-              records.push(`[${label}] advanceSkipped=${error?.message||error}`)
+
+              const next=page.locator('.mx3-phase-prompt button:not([disabled]),.mx3-position:not([disabled])').filter({hasNotText:/QUIT|AUDIO|SURRENDER/i}).first()
+              if(await next.count() && await next.isVisible().catch(()=>false)){
+                const text=((await next.textContent())||'').replace(/\s+/g,' ').trim()
+                records.push(`[${label}] setupAction=${text}`)
+                await next.evaluate(el=>el.click())
+                await page.waitForTimeout(650)
+                continue
+              }
+              break
             }
           }
 
@@ -86,6 +91,8 @@ jobs:
             const page=await context.newPage()
             page.on('console',msg=>records.push(`[${label} console ${msg.type()}] ${msg.text()}`))
             page.on('pageerror',err=>records.push(`[${label} pageerror] ${err.message}`))
+            page.on('response',res=>{if(res.status()>=400)records.push(`[${label} http ${res.status()}] ${res.url()}`)})
+            page.on('requestfailed',req=>records.push(`[${label} requestfailed] ${req.url()} :: ${req.failure()?.errorText||'unknown'}`))
             const response=await page.goto(url,{waitUntil:'domcontentloaded',timeout:90000})
             records.push(`[${label}] status=${response?.status()} viewport=${viewport.width}x${viewport.height}`)
             await enterPractice(page,label)
@@ -95,9 +102,8 @@ jobs:
             const cleanCanvas=await page.locator('#mx-clean-arena canvas').count()
             const duelShell=await page.locator('.duel-shell').count()
             if(cleanCanvas!==1||duelShell<1) throw new Error('PRACTICE_ARENA_NOT_MOUNTED')
-            await page.screenshot({path:`${out}/${label}-mounted.png`,fullPage:false})
-            await bestEffortAdvance(page,label)
-            await page.waitForTimeout(1200)
+            await advanceSetup(page,label)
+            await page.waitForTimeout(1400)
             await page.screenshot({path:`${out}/${label}-practice-arena.png`,fullPage:false})
             await context.close()
           }
