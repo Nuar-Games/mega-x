@@ -44,39 +44,17 @@ jobs:
           const browser=await chromium.launch({headless:true})
           const records=[]
 
-          async function clickMatching(page,rx,{visible=true}={}){
-            const buttons=page.locator(visible?'button:visible':'button')
-            const count=await buttons.count()
-            for(let i=0;i<count;i++){
-              const button=buttons.nth(i)
-              const text=(await button.innerText().catch(()=>'' )).replace(/\s+/g,' ').trim()
-              if(rx.test(text)&&await button.isEnabled().catch(()=>false)){
-                const pointerEvents=await button.evaluate(el=>getComputedStyle(el).pointerEvents).catch(()=>'unknown')
-                records.push(`[clickable] ${text} pointerEvents=${pointerEvents}`)
-                if(pointerEvents==='none') throw new Error(`BUTTON_NOT_CLICKABLE: ${text}`)
-                await button.click()
-                return text
-              }
-            }
-            return null
-          }
-
           async function enterPractice(page,label){
             await page.waitForTimeout(1800)
-            let practice=await clickMatching(page,/PRACTICE.*GUEST/i)
-            if(practice){
-              records.push(`[${label}] practiceClick=${practice}`)
-              return
-            }
-            const visibleButtons=await page.locator('button:visible').allInnerTexts().catch(()=>[])
-            records.push(`[${label}] visibleButtons=${visibleButtons.join(' | ')}`)
-            let landing=await clickMatching(page,/MAIN SEKARANG/i)
-            if(!landing)landing=await clickMatching(page,/PLAY NOW/i)
-            records.push(`[${label}] landingClick=${landing||'none'}`)
-            await page.waitForTimeout(1000)
-            practice=await clickMatching(page,/PRACTICE/i)
-            if(!practice) throw new Error('PRACTICE_BUTTON_NOT_FOUND')
-            records.push(`[${label}] practiceClick=${practice}`)
+            const button=page.locator('#mx-main-practice-cta')
+            await button.waitFor({state:'visible',timeout:15000})
+            const text=(await button.innerText()).replace(/\s+/g,' ').trim()
+            const pointerEvents=await button.evaluate(el=>getComputedStyle(el).pointerEvents)
+            const box=await button.boundingBox()
+            records.push(`[${label}] guestPractice=${text} pointerEvents=${pointerEvents} box=${JSON.stringify(box)}`)
+            if(pointerEvents==='none'||!box) throw new Error('GUEST_PRACTICE_NOT_CLICKABLE')
+            await button.click()
+            records.push(`[${label}] practiceClick=${text}`)
           }
 
           async function capture(label,viewport){
