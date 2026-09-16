@@ -1,7 +1,6 @@
 import Phaser from 'phaser'
 import type { ArenaRenderState, ArenaLegalAction } from './ArenaStateAdapter'
 import type { ArenaLayoutSnapshot } from './ArenaLayout'
-import { ARENA_THEME } from './arena-theme'
 import { ARENA_ASSETS } from './ArenaAssets'
 
 export type ArenaDispatch=(actionId:string)=>void
