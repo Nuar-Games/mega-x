@@ -44,7 +44,7 @@ export function Arena3DRoot({shell}:Props){
       <Canvas shadows={profile.shadows} dpr={profile.dpr} gl={{antialias:quality!=='low',powerPreference:quality==='low'?'low-power':'high-performance'}}>
         <Suspense fallback={null}>
           <Arena3DScene state={state} onPrimary={dispatch} onSecondary={handleSecondary} inspectOpen={Boolean(chooser)} transitions={transitions} impactToken={impactToken} quality={quality}/>
-          {profile.bloom?<EffectComposer multisampling={quality==='high'?4:0}><Bloom luminanceThreshold={1.05} luminanceSmoothing={.78} intensity={quality==='high'?.72:.42}/></EffectComposer>:null}
+          {profile.bloom?<EffectComposer multisampling={quality==='high'?4:0}><Bloom luminanceThreshold={1.05} luminanceSmoothing={.78} intensity={quality==='high'?0.72:0.42}/></EffectComposer>:null}
         </Suspense>
       </Canvas>
     </div>
