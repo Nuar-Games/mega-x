@@ -65,60 +65,52 @@ export class ArenaScene extends Phaser.Scene{
   private drawArenaFrame(state:ArenaRenderState){
     this.ambience.forEach(obj=>obj.destroy());this.ambience=[];this.backdrop?.destroy()
     const w=this.scale.width,h=this.scale.height,min=Math.min(w,h)
-    if(this.textures.exists(`asset:${ARENA_ASSETS.background}`))this.backdrop=this.add.image(w/2,h/2,`asset:${ARENA_ASSETS.background}`).setDisplaySize(w,h).setAlpha(0.72).setDepth(-40)
-
-    const wash=this.keep(this.add.graphics().setDepth(-35))
-    wash.fillStyle(0x01040a,0.28).fillRect(0,0,w,h)
-    wash.fillStyle(ARENA_THEME.colors.player,0.11).fillCircle(w*0.12,h*0.70,Math.max(w,h)*0.42)
-    wash.fillStyle(ARENA_THEME.colors.opponent,0.10).fillCircle(w*0.88,h*0.24,Math.max(w,h)*0.42)
-    if(this.layout.mode==='wide'){
-      wash.fillStyle(0x02101a,0.28).fillRect(0,0,w*0.48,h)
-      wash.fillStyle(0x1a0308,0.20).fillRect(w*0.52,0,w*0.48,h)
-    }
+    if(this.textures.exists(`asset:${ARENA_ASSETS.background}`))this.backdrop=this.add.image(w/2,h/2,`asset:${ARENA_ASSETS.background}`).setDisplaySize(w,h).setAlpha(0.90).setDepth(-40)
 
     const combat=this.layout.combat
     const cx=combat.x+combat.width/2,cy=combat.y+combat.height/2
-    const stage=this.keep(this.add.graphics().setDepth(-20))
-    stage.fillStyle(0x000000,0.20).fillEllipse(cx,cy,combat.width*0.98,combat.height*0.90)
-    stage.lineStyle(Math.max(2,min*0.003),0xb7eaff,0.14).strokeEllipse(cx,cy,combat.width*0.95,combat.height*0.86)
-    stage.lineStyle(Math.max(5,min*0.004),ARENA_THEME.colors.player,0.62).lineBetween(combat.x+combat.width*0.02,cy,combat.x+combat.width*0.40,cy)
-    stage.lineStyle(Math.max(5,min*0.004),ARENA_THEME.colors.opponent,0.62).lineBetween(combat.x+combat.width*0.60,cy,combat.x+combat.width*0.98,cy)
-    stage.lineStyle(Math.max(2,min*0.002),0xd6b452,0.22).strokeRoundedRect(combat.x+combat.width*0.08,combat.y+combat.height*0.11,combat.width*0.84,combat.height*0.73,18)
 
-    const fieldSlots=5
-    const slotGap=Math.max(10,Math.min(20,combat.width*0.014))
-    const slotH=Math.min(combat.height*0.53,270)
-    const slotW=slotH*(59/86)
-    const totalSlots=fieldSlots*slotW+(fieldSlots-1)*slotGap
-    const slotStart=cx-totalSlots/2
-    const slotY=cy-slotH*0.42
-    for(let i=0;i<fieldSlots;i++){
-      const src=i===0?ARENA_ASSETS.arenaUi.fieldBlue:i===fieldSlots-1?ARENA_ASSETS.arenaUi.fieldRed:ARENA_ASSETS.arenaUi.fieldNeutral
-      const alpha=i===0||i===fieldSlots-1?0.82:0.58
-      this.asset(src,{x:slotStart+i*(slotW+slotGap),y:slotY,width:slotW,height:slotH},alpha,-18)
-    }
+    const wash=this.keep(this.add.graphics().setDepth(-34))
+    wash.fillStyle(0x01030a,0.18).fillRect(0,0,w,h)
+    wash.fillStyle(ARENA_THEME.colors.player,0.08).fillCircle(combat.x+combat.width*0.17,cy,Math.max(w,h)*0.42)
+    wash.fillStyle(ARENA_THEME.colors.opponent,0.08).fillCircle(combat.x+combat.width*0.83,cy,Math.max(w,h)*0.42)
+
+    const field=this.keep(this.add.graphics().setDepth(-19))
+    const beamW=Math.max(3,min*0.004)
+    const glowW=Math.max(12,min*0.015)
+
+    field.lineStyle(glowW,ARENA_THEME.colors.player,0.055)
+    field.lineBetween(combat.x+combat.width*0.06,cy,combat.x+combat.width*0.43,cy)
+    field.lineStyle(glowW,ARENA_THEME.colors.opponent,0.055)
+    field.lineBetween(combat.x+combat.width*0.57,cy,combat.x+combat.width*0.94,cy)
+    field.lineStyle(beamW,ARENA_THEME.colors.player,0.72)
+    field.lineBetween(combat.x+combat.width*0.07,cy,combat.x+combat.width*0.43,cy)
+    field.lineStyle(beamW,ARENA_THEME.colors.opponent,0.72)
+    field.lineBetween(combat.x+combat.width*0.57,cy,combat.x+combat.width*0.93,cy)
+
+    field.lineStyle(Math.max(2,min*0.0025),0xe0c26c,0.46)
+    field.strokeEllipse(cx,cy,combat.width*0.29,combat.height*0.44)
+    field.lineStyle(Math.max(1,min*0.0014),0xe0c26c,0.18)
+    field.strokeEllipse(cx,cy,combat.width*0.43,combat.height*0.64)
+
+    const wingY=cy-combat.height*0.22
+    field.lineStyle(Math.max(2,min*0.002),ARENA_THEME.colors.player,0.26)
+    field.beginPath();field.moveTo(combat.x+combat.width*0.12,wingY);field.lineTo(combat.x+combat.width*0.28,wingY-combat.height*0.08);field.lineTo(combat.x+combat.width*0.39,wingY);field.strokePath()
+    field.lineStyle(Math.max(2,min*0.002),ARENA_THEME.colors.opponent,0.26)
+    field.beginPath();field.moveTo(combat.x+combat.width*0.61,wingY);field.lineTo(combat.x+combat.width*0.72,wingY-combat.height*0.08);field.lineTo(combat.x+combat.width*0.88,wingY);field.strokePath()
 
     if(this.textures.exists(`asset:${ARENA_ASSETS.vs.mark}`)){
-      const mark=Math.min(combat.width*0.14,combat.height*0.22,132)
-      this.keep(this.add.image(cx,cy-slotH*0.60,`asset:${ARENA_ASSETS.vs.mark}`).setDisplaySize(mark,mark).setAlpha(0.96).setDepth(-4))
+      const mark=Math.min(combat.width*0.12,combat.height*0.20,124)
+      this.keep(this.add.image(cx,cy,`asset:${ARENA_ASSETS.vs.mark}`).setDisplaySize(mark,mark).setAlpha(0.98).setDepth(-4))
     }
 
-    if(this.layout.mode==='wide'){
-      const rail=this.keep(this.add.graphics().setDepth(-13))
-      const leftX=this.layout.effectLeft.x-6,rightX=this.layout.effectRight.x-6
-      const railW=this.layout.effectLeft.width+12,railY=this.layout.effectLeft.y-12
-      const railH=(this.layout.discard.y+this.layout.discard.height)-railY+10
-      rail.fillStyle(0x02070b,0.66).fillRoundedRect(leftX,railY,railW,railH,12)
-      rail.lineStyle(2,ARENA_THEME.colors.player,0.38).strokeRoundedRect(leftX,railY,railW,railH,12)
-      rail.fillStyle(0x0b0204,0.66).fillRoundedRect(rightX,railY,railW,railH,12)
-      rail.lineStyle(2,ARENA_THEME.colors.opponent,0.38).strokeRoundedRect(rightX,railY,railW,railH,12)
-    }
-
-    this.asset(ARENA_ASSETS.arenaUi.fieldNeutral,this.layout.effectLeft,state.localEffects.length?0.82:0.48,-7)
-    this.asset(ARENA_ASSETS.arenaUi.fieldNeutral,this.layout.effectRight,state.opponentEffects.length?0.82:0.48,-7,true)
-    this.asset(ARENA_ASSETS.arenaUi.zonXFixture,this.layout.zonXLeft,state.localZonX?0.96:0.72,-7)
-    this.asset(ARENA_ASSETS.arenaUi.zonXFixture,this.layout.zonXRight,state.opponentZonX?0.96:0.72,-7,true)
-    this.asset(ARENA_ASSETS.arenaUi.discardFixture,this.layout.discard,state.localDiscard?0.94:0.76,-8)
+    const localFixtureAlpha=0.82
+    const opponentFixtureAlpha=0.82
+    this.asset(ARENA_ASSETS.arenaUi.fieldNeutral,this.layout.effectLeft,state.localEffects.length?0.76:0.26,-7)
+    this.asset(ARENA_ASSETS.arenaUi.fieldNeutral,this.layout.effectRight,state.opponentEffects.length?0.76:0.26,-7,true)
+    this.asset(ARENA_ASSETS.arenaUi.zonXFixture,this.layout.zonXLeft,state.localZonX?0.98:localFixtureAlpha,-7)
+    this.asset(ARENA_ASSETS.arenaUi.zonXFixture,this.layout.zonXRight,state.opponentZonX?0.98:opponentFixtureAlpha,-7,true)
+    this.asset(ARENA_ASSETS.arenaUi.discardFixture,this.layout.discard,state.localDiscard?0.96:0.72,-8)
     this.asset(ARENA_ASSETS.arenaUi.deckFixture,this.layout.deck,0.98,-8,true)
   }
 
