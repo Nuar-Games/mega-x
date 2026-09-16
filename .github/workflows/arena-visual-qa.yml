@@ -57,6 +57,32 @@ jobs:
             records.push(`[${label}] practiceClick=${text}`)
           }
 
+          async function advanceToPlayablePhase(page,label){
+            const canvas=page.locator('#mx-clean-arena canvas')
+            const box=await canvas.boundingBox()
+            if(box){
+              // Choose a hand card through the actual Phaser hit area first.
+              await page.mouse.click(box.x+box.width*0.38,box.y+box.height*0.84)
+              await page.waitForTimeout(500)
+            }
+            for(let step=0;step<8;step++){
+              const shellText=((await page.locator('.duel-shell').innerText().catch(()=>''))||'').replace(/\s+/g,' ')
+              if(/MAIN PHASE|MAIN_PHASE|SERANG|ATTACK|END TURN/i.test(shellText)){
+                records.push(`[${label}] playablePhase=${shellText.slice(0,180)}`)
+                return
+              }
+              const actions=await page.locator('button[data-arena-action-id]').evaluateAll(nodes=>nodes.map(node=>({
+                id:node.getAttribute('data-arena-action-id')||'',
+                text:(node.textContent||'').replace(/\s+/g,' ').trim(),
+                disabled=node.disabled
+              })).filter(item=>!item.disabled&&!/quit|audio|surrender|keluar/i.test(item.text)))
+              records.push(`[${label}] setupStep=${step} actions=${JSON.stringify(actions.slice(0,8))}`)
+              if(!actions.length)break
+              await page.locator(`button[data-arena-action-id="${actions[0].id.replaceAll('"','\\"')}"]`).evaluate(el=>el.click())
+              await page.waitForTimeout(650)
+            }
+          }
+
           async function capture(label,viewport){
             const context=await browser.newContext({viewport,isMobile:viewport.width<600,deviceScaleFactor:1})
             const page=await context.newPage()
@@ -67,11 +93,13 @@ jobs:
             await enterPractice(page,label)
             await page.waitForSelector('.duel-shell',{timeout:30000,state:'attached'})
             await page.waitForSelector('#mx-clean-arena canvas',{timeout:30000,state:'attached'})
-            await page.waitForTimeout(2500)
+            await page.waitForTimeout(1800)
             const cleanCanvas=await page.locator('#mx-clean-arena canvas').count()
             const duelShell=await page.locator('.duel-shell').count()
             records.push(`[${label}] cleanCanvas=${cleanCanvas} duelShell=${duelShell}`)
             if(cleanCanvas!==1||duelShell<1) throw new Error('PRACTICE_ARENA_NOT_MOUNTED')
+            await advanceToPlayablePhase(page,label)
+            await page.waitForTimeout(1400)
             await page.screenshot({path:`${out}/${label}-practice-arena.png`,fullPage:false})
             await context.close()
           }
