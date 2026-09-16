@@ -26,6 +26,8 @@ export class ArenaScene extends Phaser.Scene{
   private layout!:ArenaLayoutSnapshot
   private backdrop?:Phaser.GameObjects.Image
   private ambience:Phaser.GameObjects.GameObject[]=[]
+  private observer?:MutationObserver
+  private renderQueued=false
   constructor(shell:HTMLElement){super('MegaXCleanArena');this.shell=shell}
 
   preload(){
@@ -49,8 +51,21 @@ export class ArenaScene extends Phaser.Scene{
     this.inputLayer=new ArenaInput(this,dispatch)
     this.tieBreaker=new ArenaTieBreaker(this,dispatch)
     this.scale.on('resize',()=>{this.inspectLayer.close();this.renderArena(true)})
+    this.observer=new MutationObserver(()=>this.queueRender())
+    this.observer.observe(this.shell,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class','disabled','src']})
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN,()=>this.observer?.disconnect())
+    this.events.once(Phaser.Scenes.Events.DESTROY,()=>this.observer?.disconnect())
     this.renderArena(true)
     this.shell.dispatchEvent(new Event('mega-x:arena-ready'))
+  }
+
+  private queueRender(){
+    if(this.renderQueued)return
+    this.renderQueued=true
+    requestAnimationFrame(()=>{
+      this.renderQueued=false
+      if(this.scene.isActive())this.renderArena()
+    })
   }
 
   private keep<T extends Phaser.GameObjects.GameObject>(obj:T){this.ambience.push(obj);return obj}
@@ -69,7 +84,6 @@ export class ArenaScene extends Phaser.Scene{
 
     const combat=this.layout.combat
     const cx=combat.x+combat.width/2,cy=combat.y+combat.height/2
-
     const wash=this.keep(this.add.graphics().setDepth(-34))
     wash.fillStyle(0x01030a,0.18).fillRect(0,0,w,h)
     wash.fillStyle(ARENA_THEME.colors.player,0.08).fillCircle(combat.x+combat.width*0.17,cy,Math.max(w,h)*0.42)
@@ -78,7 +92,6 @@ export class ArenaScene extends Phaser.Scene{
     const field=this.keep(this.add.graphics().setDepth(-19))
     const beamW=Math.max(3,min*0.004)
     const glowW=Math.max(12,min*0.015)
-
     field.lineStyle(glowW,ARENA_THEME.colors.player,0.055)
     field.lineBetween(combat.x+combat.width*0.06,cy,combat.x+combat.width*0.43,cy)
     field.lineStyle(glowW,ARENA_THEME.colors.opponent,0.055)
@@ -87,7 +100,6 @@ export class ArenaScene extends Phaser.Scene{
     field.lineBetween(combat.x+combat.width*0.07,cy,combat.x+combat.width*0.43,cy)
     field.lineStyle(beamW,ARENA_THEME.colors.opponent,0.72)
     field.lineBetween(combat.x+combat.width*0.57,cy,combat.x+combat.width*0.93,cy)
-
     field.lineStyle(Math.max(2,min*0.0025),0xe0c26c,0.46)
     field.strokeEllipse(cx,cy,combat.width*0.29,combat.height*0.44)
     field.lineStyle(Math.max(1,min*0.0014),0xe0c26c,0.18)
@@ -106,8 +118,8 @@ export class ArenaScene extends Phaser.Scene{
 
     const localFixtureAlpha=0.82
     const opponentFixtureAlpha=0.82
-    this.asset(ARENA_ASSETS.arenaUi.fieldNeutral,this.layout.effectLeft,state.localEffects.length?0.76:0.26,-7)
-    this.asset(ARENA_ASSETS.arenaUi.fieldNeutral,this.layout.effectRight,state.opponentEffects.length?0.76:0.26,-7,true)
+    this.asset(ARENA_ASSETS.arenaUi.fieldNeutral,this.layout.effectLeft,state.localEffects.length?0.76:0.18,-7)
+    this.asset(ARENA_ASSETS.arenaUi.fieldNeutral,this.layout.effectRight,state.opponentEffects.length?0.76:0.18,-7,true)
     this.asset(ARENA_ASSETS.arenaUi.zonXFixture,this.layout.zonXLeft,state.localZonX?0.98:localFixtureAlpha,-7)
     this.asset(ARENA_ASSETS.arenaUi.zonXFixture,this.layout.zonXRight,state.opponentZonX?0.98:opponentFixtureAlpha,-7,true)
     this.asset(ARENA_ASSETS.arenaUi.discardFixture,this.layout.discard,state.localDiscard?0.96:0.72,-8)
