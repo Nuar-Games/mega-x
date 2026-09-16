@@ -12,4 +12,10 @@ const wideHand=Number(source.match(/const handH=h\*([0-9.]+)/)?.[1]||0)
 must(portraitHand>=0.20&&wideHand>=0.20,'Local hand must retain at least one fifth of the live viewport')
 must(source.includes('combatH')&&source.includes('arenaH'),'Combat region must scale from live viewport')
 must(source.includes('promptH=h*0.10'),'Action/prompt band must reserve dedicated space outside the hand')
+
+// Desktop must read like a card battle: opponent hand across the top, player hand across the bottom.
+must(source.includes('const opponentHandH=h*0.14'),'Wide layout must reserve a dedicated top opponent-hand band')
+must(source.includes('opponentHand:rect(pad+side,arenaY,w-pad*2-side*2,opponentHandH)'),'Wide opponent hand must span the top center instead of sitting in a left-side column')
+must(source.includes('const combatY=arenaY+opponentHandH'),'Wide combat stage must begin below the opponent hand')
+
 console.log('PASS clean arena viewport-native layout contract')
