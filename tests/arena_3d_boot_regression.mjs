@@ -8,7 +8,8 @@ const bootPath='src/game/arena3d/Arena3DBoot.tsx'
 for(const dep of ['three','@react-three/fiber','@react-three/drei','@react-three/postprocessing']){
   must(pkg.dependencies?.[dep],`missing 3D runtime dependency: ${dep}`)
 }
-must(loader.includes("get('arena')==='3d'"),"3D arena must be opt-in via ?arena=3d")
+must(loader.includes("mode==='3d'"),"3D arena must be opt-in via ?arena=3d")
+must(loader.includes("mode!=='clean'"),"fallback arena must remain default when no explicit renderer is requested")
 must(loader.includes("import('./game/arena3d/Arena3DBoot')"),"loader must dynamically import the 3D boot module")
 must(fs.existsSync(bootPath),'3D boot module must exist')
 const boot=fs.readFileSync(bootPath,'utf8')
