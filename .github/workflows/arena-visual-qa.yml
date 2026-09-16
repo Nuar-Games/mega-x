@@ -54,32 +54,30 @@ jobs:
             records.push(`[${label}] guestPractice=${text} pointerEvents=${pointerEvents} box=${JSON.stringify(box)}`)
             if(pointerEvents==='none'||!box) throw new Error('GUEST_PRACTICE_NOT_CLICKABLE')
             await button.click()
-            records.push(`[${label}] practiceClick=${text}`)
           }
 
-          async function advanceToPlayablePhase(page,label){
-            const canvas=page.locator('#mx-clean-arena canvas')
-            const box=await canvas.boundingBox()
-            if(box){
-              // Choose a hand card through the actual Phaser hit area first.
-              await page.mouse.click(box.x+box.width*0.38,box.y+box.height*0.84)
-              await page.waitForTimeout(500)
-            }
-            for(let step=0;step<8;step++){
-              const shellText=((await page.locator('.duel-shell').innerText().catch(()=>''))||'').replace(/\s+/g,' ')
-              if(/MAIN PHASE|MAIN_PHASE|SERANG|ATTACK|END TURN/i.test(shellText)){
-                records.push(`[${label}] playablePhase=${shellText.slice(0,180)}`)
-                return
+          async function bestEffortAdvance(page,label){
+            try{
+              for(let step=0;step<8;step++){
+                const shellText=((await page.locator('.duel-shell').innerText().catch(()=>''))||'').replace(/\s+/g,' ')
+                if(/MAIN PHASE|MAIN_PHASE|SERANG|ATTACK|END TURN/i.test(shellText)){
+                  records.push(`[${label}] playablePhase=${shellText.slice(0,180)}`)
+                  return
+                }
+                const action=await page.locator('button[data-arena-action-id]').evaluateAll(nodes=>{
+                  const candidates=nodes.filter(node=>!node.disabled&&!/quit|audio|surrender|keluar/i.test((node.textContent||'').replace(/\s+/g,' ')))
+                  const node=candidates[0]
+                  if(!node)return null
+                  const item={id:node.getAttribute('data-arena-action-id')||'',text:(node.textContent||'').replace(/\s+/g,' ').trim()}
+                  node.click()
+                  return item
+                })
+                records.push(`[${label}] setupStep=${step} action=${JSON.stringify(action)}`)
+                if(!action)break
+                await page.waitForTimeout(700)
               }
-              const actions=await page.locator('button[data-arena-action-id]').evaluateAll(nodes=>nodes.map(node=>({
-                id:node.getAttribute('data-arena-action-id')||'',
-                text:(node.textContent||'').replace(/\s+/g,' ').trim(),
-                disabled=node.disabled
-              })).filter(item=>!item.disabled&&!/quit|audio|surrender|keluar/i.test(item.text)))
-              records.push(`[${label}] setupStep=${step} actions=${JSON.stringify(actions.slice(0,8))}`)
-              if(!actions.length)break
-              await page.locator(`button[data-arena-action-id="${actions[0].id.replaceAll('"','\\"')}"]`).evaluate(el=>el.click())
-              await page.waitForTimeout(650)
+            }catch(error){
+              records.push(`[${label}] advanceSkipped=${error?.message||error}`)
             }
           }
 
@@ -96,28 +94,28 @@ jobs:
             await page.waitForTimeout(1800)
             const cleanCanvas=await page.locator('#mx-clean-arena canvas').count()
             const duelShell=await page.locator('.duel-shell').count()
-            records.push(`[${label}] cleanCanvas=${cleanCanvas} duelShell=${duelShell}`)
             if(cleanCanvas!==1||duelShell<1) throw new Error('PRACTICE_ARENA_NOT_MOUNTED')
-            await advanceToPlayablePhase(page,label)
-            await page.waitForTimeout(1400)
+            await page.screenshot({path:`${out}/${label}-mounted.png`,fullPage:false})
+            await bestEffortAdvance(page,label)
+            await page.waitForTimeout(1200)
             await page.screenshot({path:`${out}/${label}-practice-arena.png`,fullPage:false})
             await context.close()
           }
 
+          let fatal=null
           try{
             await capture('portrait-412x915',{width:412,height:915})
             await capture('landscape-915x412',{width:915,height:412})
             await capture('desktop-1366x768',{width:1366,height:768})
             await capture('desktop-1920x1080',{width:1920,height:1080})
           }catch(error){
+            fatal=error
             records.push(`[fatal] ${error?.stack||error}`)
-            throw error
           }finally{
             await browser.close()
-            const report=records.join('\n\n')
-            console.log(report)
-            fs.writeFileSync(`${out}/report.txt`,report)
+            fs.writeFileSync(`${out}/report.txt`,records.join('\n\n'))
           }
+          if(fatal)throw fatal
           EOF
           node arena-qa.mjs
       - uses: actions/upload-artifact@v4
