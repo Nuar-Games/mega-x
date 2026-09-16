@@ -49,6 +49,7 @@ export class ArenaScene extends Phaser.Scene{
     this.tieBreaker=new ArenaTieBreaker(this,dispatch)
     this.scale.on('resize',()=>{this.inspectLayer.close();this.renderArena(true)})
     this.renderArena(true)
+    this.shell.dispatchEvent(new Event('mega-x:arena-ready'))
   }
 
   private keep<T extends Phaser.GameObjects.GameObject>(obj:T){this.ambience.push(obj);return obj}
