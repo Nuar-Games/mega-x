@@ -17,40 +17,46 @@ type ActionObjects={plate:Phaser.GameObjects.GameObject;label:Phaser.GameObjects
 
 export class ArenaInput{
   private objects:ActionObjects[]=[]
-  private tray?:Phaser.GameObjects.Image
   constructor(private scene:Phaser.Scene,private dispatch:ArenaDispatch){}
-  clear(){for(const item of this.objects){item.plate.destroy();item.label.destroy();item.hit.destroy()}this.objects=[];this.tray?.destroy();this.tray=undefined}
+  clear(){for(const item of this.objects){item.plate.destroy();item.label.destroy();item.hit.destroy()}this.objects=[]}
 
   private plate(src:string,x:number,y:number,w:number,h:number,depth:number,alpha=1){
     const key=`asset:${src}`
     if(this.scene.textures.exists(key))return this.scene.add.image(x+w/2,y+h/2,key).setDisplaySize(w,h).setDepth(depth).setAlpha(alpha)
     const g=this.scene.add.graphics().setDepth(depth)
-    g.lineStyle(2,0xd7b35a,0.55).lineBetween(x,y+h/2,x+w,y+h/2)
+    g.fillStyle(0x071018,0.92).fillRoundedRect(x,y,w,h,8)
+    g.lineStyle(2,0xd7b35a,0.75).strokeRoundedRect(x,y,w,h,8)
     return g
   }
 
-  private addCommand(action:ArenaLegalAction,x:number,y:number,w:number,h:number,accent:number){
-    const plate=this.plate(ARENA_ASSETS.arenaUi.commandControl,x,y,w,h,118,0.96)
-    if('setTint' in plate && typeof (plate as Phaser.GameObjects.Image).setTint==='function') (plate as Phaser.GameObjects.Image).setTint(accent)
-    const label=this.scene.add.text(x+w/2,y+h/2,action.label.toUpperCase(),{
-      fontFamily:'Oxanium, sans-serif',fontSize:`${Math.max(12,Math.min(18,h*0.34))}px`,fontStyle:'bold',color:'#ffffff',stroke:'#02040a',strokeThickness:3,letterSpacing:1.1
+  private commandAsset(action:ArenaLegalAction){
+    const label=action.label.toLowerCase()
+    if(/serang|attack/.test(label))return ARENA_ASSETS.arenaUi.commandAttack
+    if(/zon\s*x|zonx/.test(label))return ARENA_ASSETS.arenaUi.commandZonX
+    if(/move|position|posisi|pindah/.test(label))return ARENA_ASSETS.arenaUi.commandMove
+    if(/pass|end|tamat/.test(label))return ARENA_ASSETS.arenaUi.commandEnd
+    return ARENA_ASSETS.arenaUi.commandSkill
+  }
+
+  private addCommand(action:ArenaLegalAction,x:number,y:number,w:number,h:number){
+    const plate=this.plate(this.commandAsset(action),x,y,w,h,118,0.98)
+    const label=this.scene.add.text(x+w*0.53,y+h/2,action.label.toUpperCase(),{
+      fontFamily:'Oxanium, sans-serif',fontSize:`${Math.max(12,Math.min(20,h*0.31))}px`,fontStyle:'bold',color:'#ffffff',stroke:'#02040a',strokeThickness:3,letterSpacing:1.15
     }).setOrigin(0.5).setDepth(120)
     const hit=this.scene.add.zone(x+w/2,y+h/2,w,h).setDepth(121).setInteractive({useHandCursor:true})
     hit.on('pointerover',()=>{(plate as any).setAlpha?.(1);label.setScale(1.035)})
-    hit.on('pointerout',()=>{(plate as any).setAlpha?.(0.96);label.setScale(1)})
+    hit.on('pointerout',()=>{(plate as any).setAlpha?.(0.98);label.setScale(1)})
     hit.on('pointerdown',()=>this.dispatch(action.id))
     this.objects.push({plate,label,hit})
   }
 
   private addUtility(action:ArenaLegalAction,x:number,y:number,align:'left'|'right'){
     const text=/audio/i.test(action.label)?'AUDIO':'QUIT'
-    const w=Math.max(52,Math.min(78,this.scene.scale.width*0.15))
-    const h=Math.max(24,Math.min(32,this.scene.scale.height*0.035))
+    const w=Math.max(58,Math.min(86,this.scene.scale.width*0.16))
+    const h=Math.max(26,Math.min(34,this.scene.scale.height*0.038))
     const left=align==='left'?x:x-w
-    const accent=text==='QUIT'?ARENA_THEME.colors.opponent:0x95a3b8
-    const plate=this.plate(ARENA_ASSETS.arenaUi.commandControl,left,y,w,h,118,0.72)
-    if('setTint' in plate && typeof (plate as Phaser.GameObjects.Image).setTint==='function') (plate as Phaser.GameObjects.Image).setTint(accent)
-    const label=this.scene.add.text(left+w/2,y+h/2,text,{fontFamily:'Barlow Condensed, sans-serif',fontSize:`${Math.max(10,h*0.38)}px`,fontStyle:'bold',color:'#dfe5ee',letterSpacing:0.9}).setOrigin(0.5).setDepth(120)
+    const plate=this.plate(ARENA_ASSETS.arenaUi.statusBadge,left,y,w,h,118,0.88)
+    const label=this.scene.add.text(left+w/2,y+h/2,text,{fontFamily:'Barlow Condensed, sans-serif',fontSize:`${Math.max(10,h*0.38)}px`,fontStyle:'bold',color:'#eef6fb',letterSpacing:0.9}).setOrigin(0.5).setDepth(120)
     const hit=this.scene.add.zone(left+w/2,y+h/2,w,h).setDepth(121).setInteractive({useHandCursor:true})
     hit.on('pointerdown',()=>this.dispatch(action.id))
     this.objects.push({plate,label,hit})
@@ -59,8 +65,8 @@ export class ArenaInput{
   render(state:ArenaRenderState,layout:ArenaLayoutSnapshot){
     this.clear()
     const utilities=state.legalActions.filter(action=>/quit|audio/i.test(action.label))
-    const actions=state.legalActions.filter(action=>!/quit|audio/i.test(action.label)).slice(0,4)
-    const w=this.scene.scale.width
+    const actions=state.legalActions.filter(action=>!/quit|audio/i.test(action.label)).slice(0,5)
+    const w=this.scene.scale.width,h=this.scene.scale.height
 
     utilities.forEach(action=>{
       const y=layout.hud.y+Math.max(2,layout.hud.height*0.08)
@@ -69,33 +75,32 @@ export class ArenaInput{
     })
 
     if(!actions.length)return
-    const portrait=layout.mode==='portrait'
-    const columns=Math.min(2,actions.length)
-    const rows=Math.ceil(actions.length/columns)
-    const gapX=portrait?7:11
-    const gapY=6
-    const availableW=Math.min(layout.prompt.width*0.92,portrait?w*0.91:560)
-    const buttonW=(availableW-(columns-1)*gapX)/columns
-    const lowerY=layout.prompt.y+layout.prompt.height*0.47
-    const availableH=layout.prompt.y+layout.prompt.height-lowerY-2
-    const buttonH=Math.max(32,Math.min(46,(availableH-(rows-1)*gapY)/rows))
-    const totalW=columns*buttonW+(columns-1)*gapX
-    const totalH=rows*buttonH+(rows-1)*gapY
-    const startX=w/2-totalW/2
-    const startY=lowerY+Math.max(0,(availableH-totalH)/2)
 
-    if(portrait){
-      const key=`asset:${ARENA_ASSETS.arenaUi.mobileCommandTray}`
-      if(this.scene.textures.exists(key))this.tray=this.scene.add.image(w/2,startY+totalH/2,key).setDisplaySize(Math.min(w*0.96,totalW+28),totalH+18).setDepth(116).setAlpha(0.68)
+    if(layout.mode==='wide'){
+      const buttonW=Math.min(330,Math.max(230,w*0.17))
+      const buttonH=Math.min(66,Math.max(52,h*0.058))
+      const gap=Math.max(8,h*0.011)
+      const x=w-buttonW-Math.max(18,w*0.018)
+      const total=actions.length*buttonH+(actions.length-1)*gap
+      const startY=Math.max(layout.hud.y+layout.hud.height+24,h*0.5-total*0.43)
+      actions.forEach((action,index)=>this.addCommand(action,x,startY+index*(buttonH+gap),buttonW,buttonH))
+      return
     }
 
+    const columns=Math.min(2,actions.length)
+    const rows=Math.ceil(actions.length/columns)
+    const gapX=7,gapY=6
+    const availableW=Math.min(layout.prompt.width*0.94,w*0.94)
+    const buttonW=(availableW-(columns-1)*gapX)/columns
+    const lowerY=layout.prompt.y+layout.prompt.height*0.40
+    const availableH=layout.prompt.y+layout.prompt.height-lowerY-2
+    const buttonH=Math.max(34,Math.min(48,(availableH-(rows-1)*gapY)/rows))
+    const totalW=columns*buttonW+(columns-1)*gapX
+    const startX=w/2-totalW/2
+    const startY=lowerY
     actions.forEach((action,index)=>{
-      const col=index%columns
-      const row=Math.floor(index/columns)
-      const x=startX+col*(buttonW+gapX)
-      const y=startY+row*(buttonH+gapY)
-      const accent=/serang|attack/i.test(action.label)?ARENA_THEME.colors.opponent:/pass|tamat|end/i.test(action.label)?0xd7b35a:ARENA_THEME.colors.player
-      this.addCommand(action,x,y,buttonW,buttonH,accent)
+      const col=index%columns,row=Math.floor(index/columns)
+      this.addCommand(action,startX+col*(buttonW+gapX),startY+row*(buttonH+gapY),buttonW,buttonH)
     })
   }
 }
