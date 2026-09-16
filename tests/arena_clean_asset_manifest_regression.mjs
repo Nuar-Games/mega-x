@@ -26,7 +26,8 @@ for(const asset of paths){
 must(source.includes('cardGameUrl') && source.includes('cardInspectUrl'), 'Gameplay and inspection card helpers are required')
 must(theme.includes('player: 0x2f8cff') && theme.includes('opponent: 0xff3b4f'), 'Player/opponent identity colors are required')
 must(theme.includes('decisive: 0xd7b35a'), 'Gold must be reserved as the decisive accent')
-must(scene.includes('fieldBlue') && scene.includes('fieldRed'), 'Live arena must render authored battlefield frames')
 must(scene.includes('deckFixture') && scene.includes('discardFixture') && scene.includes('zonXFixture'), 'Live arena must render deck/discard/Zon X hardware')
+must(!scene.includes('strokeRoundedRect(combat.x+combat.width*0.08'), 'Arena must not rebuild the rejected giant bordered board')
+must(!scene.includes('const fieldSlots=5'), 'Arena must not lay five generic boxed field slots across combat')
 
 console.log('PASS clean Mega X arena v3 asset manifest')
