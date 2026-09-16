@@ -31,6 +31,7 @@ export class ArenaScene extends Phaser.Scene{
   preload(){
     this.texturePool=new ArenaTexturePool(this,()=>this.renderArena())
     this.load.image(`asset:${ARENA_ASSETS.background}`,ARENA_ASSETS.background)
+    this.load.image(`asset:${ARENA_ASSETS.logo}`,ARENA_ASSETS.logo)
     this.load.image(`asset:${ARENA_ASSETS.vs.mark}`,ARENA_ASSETS.vs.mark)
     this.load.image(`asset:${ARENA_ASSETS.vs.player}`,ARENA_ASSETS.vs.player)
     this.load.image(`asset:${ARENA_ASSETS.vs.opponent}`,ARENA_ASSETS.vs.opponent)
