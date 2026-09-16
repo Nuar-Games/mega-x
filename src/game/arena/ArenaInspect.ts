@@ -16,6 +16,7 @@ export class ArenaInspect{
     this.objects.forEach(obj=>obj.destroy())
     this.objects=[]
     this.scene.game.canvas.removeAttribute('data-arena-choice')
+    this.scene.game.canvas.removeAttribute('data-arena-choice-actions')
   }
 
   show(card:ArenaCardRef,onAction?:(action:ArenaCardAction)=>void){
@@ -71,26 +72,32 @@ export class ArenaInspect{
       const actionX=wide?w*0.71:w/2
       const baseY=wide?h*0.43:Math.min(h-116,cardY+cardH/2+44)
       const gap=wide?70:54
+      const actionCenters=actions.map((_,index)=>({x:actionX,y:baseY+(index-(actions.length-1)/2)*gap}))
+      this.scene.game.canvas.dataset.arenaChoiceActions=JSON.stringify(actionCenters)
       actions.forEach((action,index)=>{
-        const y=baseY+(index-(actions.length-1)/2)*gap
+        const {x,y}=actionCenters[index]
         const isAttack=/ATK|ATTACK|SERANG/i.test(action.label)
         const isEffect=/EFFECT/i.test(action.label)
         const src=isAttack?ARENA_ASSETS.arenaUi.commandAttack:isEffect?ARENA_ASSETS.arenaUi.commandSkill:ARENA_ASSETS.arenaUi.commandMove
         const assetKey=`asset:${src}`
         const width=Math.min(wide?250:w*0.72,300)
         const height=Math.max(48,Math.min(66,h*0.075))
+        const hitHeight=Math.max(height,wide?64:52)
+        const hit=this.scene.add.rectangle(x,y,width,hitHeight,0x000000,0.001).setDepth(203.5).setInteractive({useHandCursor:true})
+        hit.on('pointerdown',()=>{this.close();onAction(action)})
+        this.objects.push(hit)
         let control:Phaser.GameObjects.GameObject
         if(this.scene.textures.exists(assetKey)){
-          const button=this.scene.add.image(actionX,y,assetKey).setDisplaySize(width,height).setDepth(204).setInteractive({useHandCursor:true})
+          const button=this.scene.add.image(x,y,assetKey).setDisplaySize(width,height).setDepth(204).setInteractive({useHandCursor:true})
           button.on('pointerdown',()=>{this.close();onAction(action)})
           control=button
         }else{
-          const button=this.scene.add.text(actionX,y,action.label,{fontFamily:'Oxanium, sans-serif',fontSize:'18px',fontStyle:'bold',color:'#f5e5a4',backgroundColor:'#11151d',padding:{x:18,y:12}}).setOrigin(0.5).setDepth(204).setInteractive({useHandCursor:true})
+          const button=this.scene.add.text(x,y,action.label,{fontFamily:'Oxanium, sans-serif',fontSize:'18px',fontStyle:'bold',color:'#f5e5a4',backgroundColor:'#11151d',padding:{x:18,y:12}}).setOrigin(0.5).setDepth(204).setInteractive({useHandCursor:true})
           button.on('pointerdown',()=>{this.close();onAction(action)})
           control=button
         }
         this.objects.push(control)
-        const label=this.scene.add.text(actionX,y,action.label.replace(/^SET VS · /i,''),{fontFamily:'Oxanium, sans-serif',fontSize:`${Math.max(13,Math.min(18,w*0.023))}px`,fontStyle:'bold',color:'#fff8d8',stroke:'#080b10',strokeThickness:3,letterSpacing:1}).setOrigin(0.5).setDepth(205).setInteractive({useHandCursor:true})
+        const label=this.scene.add.text(x,y,action.label.replace(/^SET VS · /i,''),{fontFamily:'Oxanium, sans-serif',fontSize:`${Math.max(13,Math.min(18,w*0.023))}px`,fontStyle:'bold',color:'#fff8d8',stroke:'#080b10',strokeThickness:3,letterSpacing:1}).setOrigin(0.5).setDepth(205).setInteractive({useHandCursor:true})
         label.on('pointerdown',()=>{this.close();onAction(action)})
         this.objects.push(label)
       })
