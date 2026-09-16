@@ -26,8 +26,6 @@ export class ArenaScene extends Phaser.Scene{
   private layout!:ArenaLayoutSnapshot
   private backdrop?:Phaser.GameObjects.Image
   private ambience:Phaser.GameObjects.GameObject[]=[]
-  private observer?:MutationObserver
-  private renderQueued=false
   constructor(shell:HTMLElement){super('MegaXCleanArena');this.shell=shell}
 
   preload(){
@@ -51,21 +49,8 @@ export class ArenaScene extends Phaser.Scene{
     this.inputLayer=new ArenaInput(this,dispatch)
     this.tieBreaker=new ArenaTieBreaker(this,dispatch)
     this.scale.on('resize',()=>{this.inspectLayer.close();this.renderArena(true)})
-    this.observer=new MutationObserver(()=>this.queueRender())
-    this.observer.observe(this.shell,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class','disabled','src']})
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN,()=>this.observer?.disconnect())
-    this.events.once(Phaser.Scenes.Events.DESTROY,()=>this.observer?.disconnect())
     this.renderArena(true)
     this.shell.dispatchEvent(new Event('mega-x:arena-ready'))
-  }
-
-  private queueRender(){
-    if(this.renderQueued)return
-    this.renderQueued=true
-    requestAnimationFrame(()=>{
-      this.renderQueued=false
-      if(this.scene.isActive())this.renderArena()
-    })
   }
 
   private keep<T extends Phaser.GameObjects.GameObject>(obj:T){this.ambience.push(obj);return obj}
