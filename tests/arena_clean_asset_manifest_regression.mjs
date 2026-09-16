@@ -2,6 +2,7 @@ import fs from 'node:fs'
 
 const source = fs.readFileSync('src/game/arena/ArenaAssets.ts', 'utf8')
 const theme = fs.readFileSync('src/game/arena/arena-theme.ts', 'utf8')
+const scene = fs.readFileSync('src/game/arena/ArenaScene.ts', 'utf8')
 const must = (ok, message) => { if (!ok) throw new Error(message) }
 
 must(source.includes('Array.from({ length: 30 }'), 'Clean arena must expose all 30 gameplay cards')
@@ -25,4 +26,11 @@ for (const asset of uiAssets) {
 must(source.includes('cardGameUrl') && source.includes('cardInspectUrl'), 'Gameplay and inspection card helpers are required')
 must(theme.includes('player: 0x2f8cff') && theme.includes('opponent: 0xff3b4f'), 'Player/opponent identity colors are required')
 must(theme.includes('decisive: 0xd7b35a'), 'Gold must be reserved as the decisive accent')
+
+// Arena hardware must read as game UI, not disappear into the background art.
+must(scene.includes('0.72:0.46'), 'Effect fixtures must remain visibly present even when inactive')
+must(scene.includes('0.74:0.44'), 'Zon X fixtures must remain visibly present even when inactive')
+must(scene.includes('0.66:0.42'), 'Deck/discard fixtures must remain visibly present even when inactive')
+must(scene.includes('fillStyle(0x01040a,0.48)'), 'Arena wash must not bury the UI hardware')
+
 console.log('PASS clean Mega X arena asset manifest')
