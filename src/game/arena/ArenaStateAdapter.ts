@@ -39,6 +39,9 @@ type LeftOrRight='left'|'right'
 
 const firstText=(root:ParentNode,selector:string)=>root.querySelector<HTMLElement>(selector)?.textContent?.trim()||''
 const numberFromText=(value:string)=>Number(value.match(/\d+/)?.[0]||0)
+const srcPath=(value:string)=>{
+  try{return new URL(value,location.href).pathname}catch{return value}
+}
 const actionIdFor=(button:HTMLButtonElement,index:number)=>{
   if(button.dataset.arenaActionId)return button.dataset.arenaActionId
   const base=(button.dataset.arenaCardAction||button.className?.toString().trim()||'action').replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').toLowerCase()||'action'
@@ -55,7 +58,7 @@ const mapCard=(img:HTMLImageElement):ArenaCardRef=>{
     label:btn.dataset.arenaCardAction||btn.textContent?.trim()||'ACTION',
   })):[]
   return {
-    src:new URL(img.src,location.href).pathname,
+    src:srcPath(img.src),
     alt:img.alt||'',
     actionId:button?.dataset.arenaActionId,
     actions:actions.length?actions:undefined,
@@ -74,8 +77,19 @@ const statsFrom=(root:ParentNode,side:LeftOrRight):ArenaStats=>({
 const positionFrom=(root:ParentNode,side:LeftOrRight)=>firstText(root,`.mx3-position-${side}`).replace(/^POSISI\s*/i,'').trim()||'—'
 
 export function readArenaRenderState(shell:HTMLElement):ArenaRenderState{
-  const allControls=Array.from(shell.querySelectorAll<HTMLButtonElement>('.mx3-phase-prompt button,.mx3-local-hand button,.mx3-position,.mx3-quit,.mx3-audio,.tie-breaker-choice-hand button')).filter(btn=>!btn.disabled)
+  const allControls=Array.from(shell.querySelectorAll<HTMLButtonElement>('.mx3-phase-prompt button,.mx3-local-hand button,.mx3-position,.mx3-quit,.mx3-audio,.tie-breaker-choice-hand button,.board-target-card')).filter(btn=>!btn.disabled)
   allControls.forEach((button,index)=>actionIdFor(button,index))
+
+  const boardTargets=Array.from(shell.querySelectorAll<HTMLButtonElement>('.board-target-card[data-arena-action-id]')).map(button=>{
+    const img=button.querySelector<HTMLImageElement>('img')
+    return img?{src:srcPath(img.src),alt:img.alt||'',actionId:button.dataset.arenaActionId}:null
+  }).filter((target):target is {src:string;alt:string;actionId:string}=>Boolean(target?.actionId))
+  const withBoardTarget=(card:ArenaCardRef|null):ArenaCardRef|null=>{
+    if(!card)return null
+    const target=boardTargets.find(item=>item.src===card.src||(item.alt&&card.alt&&item.alt===card.alt))
+    return target?{...card,actionId:target.actionId}:card
+  }
+  const withBoardTargets=(cards:ArenaCardRef[])=>cards.map(card=>withBoardTarget(card) as ArenaCardRef)
 
   const leftFighter=shell.querySelector<HTMLElement>('.mx3-fighter-left')
   const rightFighter=shell.querySelector<HTMLElement>('.mx3-fighter-right')
@@ -99,7 +113,7 @@ export function readArenaRenderState(shell:HTMLElement):ArenaRenderState{
   const phaseClass=Array.from(shell.querySelector('.mx3-canvas')?.classList||[]).find(v=>v.startsWith('phase-'))
   const phase=(phaseClass?.slice(6)||firstText(shell,'.mx3-phase-prompt strong')||'WAIT').toUpperCase()
   const phaseControls=allControls.filter(button=>{
-    if(button.closest('.mx3-local-hand')||button.closest('.tie-breaker-choice-hand'))return false
+    if(button.closest('.mx3-local-hand')||button.closest('.tie-breaker-choice-hand')||button.matches('.board-target-card'))return false
     if(button.matches('.mx3-position')){
       const label=(button.textContent||'').replace(/\s+/g,' ').trim()
       const isLocalPosition=button.classList.contains(`mx3-position-${localSide}`)
@@ -122,8 +136,8 @@ export function readArenaRenderState(shell:HTMLElement):ArenaRenderState{
     localSide,
     localHand,
     opponentHandCount,
-    localVs:cardFrom(shell,localVsSelector),
-    opponentVs:cardFrom(shell,opponentVsSelector),
+    localVs:withBoardTarget(cardFrom(shell,localVsSelector)),
+    opponentVs:withBoardTarget(cardFrom(shell,opponentVsSelector)),
     localStats:statsFrom(shell,localSide),
     opponentStats:statsFrom(shell,opponentSide),
     localPosition:positionFrom(shell,localSide),
@@ -135,8 +149,8 @@ export function readArenaRenderState(shell:HTMLElement):ArenaRenderState{
     opponentDiscard:cardFrom(shell,opponentDiscardSelector),
     localZonX:cardFrom(shell,localXSelector),
     opponentZonX:cardFrom(shell,opponentXSelector),
-    localEffects:cardsFrom(shell,localEffectsSelector),
-    opponentEffects:cardsFrom(shell,opponentEffectsSelector),
+    localEffects:withBoardTargets(cardsFrom(shell,localEffectsSelector)),
+    opponentEffects:withBoardTargets(cardsFrom(shell,opponentEffectsSelector)),
     tieBreakerCards:cardsFrom(shell,'.tie-breaker-choice-hand img'),
     tieBreakerReveal:cardsFrom(shell,'.tie-breaker-last-reveal img,.tie-breaker-pair img'),
     tieBreakerMessage:firstText(shell,'.tie-breaker-choice-copy em')||firstText(shell,'.tie-breaker-tied')||'',
