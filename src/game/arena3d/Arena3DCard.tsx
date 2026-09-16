@@ -26,7 +26,7 @@ function TexturedArenaCard({card,position,rotation,scale,dimmed,onPrimary,onSeco
   return <group position={position} rotation={rotation}>
     <mesh position={[0,-.035,0]} scale={[1.07,1.07,1]}>
       <planeGeometry args={[width,height]}/>
-      <meshBasicMaterial color={actionable?'#d6b34e':'#071018'} transparent opacity={actionable?.24:.16}/>
+      <meshBasicMaterial color={actionable?'#d6b34e':'#071018'} transparent opacity={actionable?0.24:0.16}/>
     </mesh>
     <mesh
       castShadow
@@ -40,7 +40,7 @@ function TexturedArenaCard({card,position,rotation,scale,dimmed,onPrimary,onSeco
       onPointerOut={()=>{document.body.style.cursor=''}}
     >
       <planeGeometry args={[width,height]}/>
-      <meshStandardMaterial map={texture} transparent opacity={dimmed?.46:1} roughness={.58} metalness={.02} emissive={actionable?'#241b08':'#000000'} emissiveIntensity={actionable?.5:0}/>
+      <meshStandardMaterial map={texture} transparent opacity={dimmed?0.46:1} roughness={.58} metalness={.02} emissive={actionable?'#241b08':'#000000'} emissiveIntensity={actionable?0.5:0}/>
     </mesh>
   </group>
 }
