@@ -1,7 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 420" fill="none">
-  <path d="M34 14H152L220 82V336L154 404H34" stroke="#8EA7BF" stroke-opacity=".32" stroke-width="3"/>
-  <path d="M28 46V374" stroke="#FFFFFF" stroke-opacity=".08" stroke-width="2"/>
-  <path d="M46 32H142M46 386H142" stroke="#8EA7BF" stroke-opacity=".20" stroke-width="2"/>
-  <path d="M204 112V308" stroke="#D7B35A" stroke-opacity=".35" stroke-width="3"/>
-  <circle cx="204" cy="96" r="5" fill="#D7B35A" fill-opacity=".7"/><circle cx="204" cy="324" r="5" fill="#D7B35A" fill-opacity=".7"/>
+<defs>
+  <linearGradient id="body" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#101A25"/><stop offset=".48" stop-color="#071018"/><stop offset="1" stop-color="#111822"/></linearGradient>
+  <radialGradient id="core"><stop stop-color="#8CEBFF" stop-opacity=".7"/><stop offset=".35" stop-color="#40B7E7" stop-opacity=".22"/><stop offset="1" stop-color="#06101A" stop-opacity="0"/></radialGradient>
+  <filter id="glow"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <pattern id="hex" width="28" height="24" patternUnits="userSpaceOnUse"><path d="M7 1H21L28 12L21 23H7L0 12Z" stroke="#7BD9F7" stroke-opacity=".05"/></pattern>
+</defs>
+<path d="M34 12H158L224 78V340L160 406H34L12 384V36L34 12Z" fill="url(#body)" stroke="#4C6879" stroke-width="3"/>
+<path d="M34 12H158L224 78V340L160 406H34L12 384V36L34 12Z" fill="url(#hex)"/>
+<path d="M42 30H146L204 88V329L149 387H42" stroke="#65D9FF" stroke-opacity=".28" stroke-width="2"/>
+<path d="M28 58V358" stroke="#B9F1FF" stroke-opacity=".12" stroke-width="4"/>
+<ellipse cx="118" cy="210" rx="86" ry="118" fill="url(#core)"/>
+<circle cx="118" cy="210" r="50" stroke="#63DAFF" stroke-opacity=".20" stroke-width="2"/><circle cx="118" cy="210" r="34" stroke="#D9F8FF" stroke-opacity=".12"/>
+<path d="M84 210H152M118 176V244" stroke="#86E7FF" stroke-opacity=".18" stroke-width="2"/>
+<path d="M182 100V320" stroke="#D7B35A" stroke-opacity=".28" stroke-width="4"/><circle cx="182" cy="83" r="6" fill="#D7B35A" filter="url(#glow)"/><circle cx="182" cy="337" r="6" fill="#D7B35A" filter="url(#glow)"/>
+<path d="M52 370H128" stroke="#70E4FF" stroke-opacity=".25" stroke-width="3"/><path d="M52 378H98" stroke="#fff" stroke-opacity=".10"/>
 </svg>
