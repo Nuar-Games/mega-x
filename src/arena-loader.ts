@@ -7,6 +7,8 @@ let destroy3D:(()=>void)|null=null
 let arena3DShell:HTMLElement|null=null
 let arena3DLoading=false
 
+const initialArenaMode=new URLSearchParams(window.location.search).get('arena')
+
 async function stopCleanArena(){
   cleanHandle?.destroy()
   cleanHandle=null
@@ -21,8 +23,13 @@ function stop3DArena(){
   document.body.classList.remove('mx-arena-3d-enabled')
 }
 
+function requestedArenaMode(){
+  const liveMode=new URLSearchParams(window.location.search).get('arena')
+  return liveMode ?? initialArenaMode
+}
+
 async function syncArena(){
-  const mode=new URLSearchParams(window.location.search).get('arena')
+  const mode=requestedArenaMode()
   const next=document.querySelector<HTMLElement>('.duel-shell')
 
   if(mode==='3d'){
