@@ -36,8 +36,8 @@ export class ArenaCards{
     const size=fit(region,CARD_ASPECT,scale)
     const x=region.x+region.width/2,y=region.y+region.height/2
     const g=this.keep(this.scene.add.graphics().setDepth(depth))
-    g.lineStyle(Math.max(2,size.width*0.026),accent,0.54).strokeEllipse(x,y,size.width*1.13,size.height*1.06)
-    g.lineStyle(Math.max(1,size.width*0.012),0xffffff,0.11).strokeEllipse(x,y,size.width*1.03,size.height*0.98)
+    g.lineStyle(Math.max(2,size.width*0.026),accent,0.68).strokeEllipse(x,y,size.width*1.13,size.height*1.06)
+    g.lineStyle(Math.max(1,size.width*0.012),0xffffff,0.16).strokeEllipse(x,y,size.width*1.03,size.height*0.98)
   }
   private card(card:ArenaCardRef|null,region:ArenaRect,scale=1,accent=0xffffff,depth=10,mode:CardMode='inspect',featured=false,alpha=1){
     if(!card)return
@@ -56,7 +56,7 @@ export class ArenaCards{
   private hand(cards:ArenaCardRef[],region:ArenaRect){
     if(!cards.length)return
     const count=Math.min(cards.length,8)
-    const maxCardH=region.height*0.96
+    const maxCardH=region.height*0.98
     const maxCardW=maxCardH*CARD_ASPECT
     const step=Math.min(maxCardW*0.66,region.width/Math.max(4,count+0.5))
     const cardW=Math.min(maxCardW,Math.max(region.width*0.17,step/0.66))
@@ -68,9 +68,9 @@ export class ArenaCards{
       const key=`asset:${card.src}`
       if(!this.scene.textures.exists(key))return
       const offset=index-center
-      const restY=region.y+region.height*0.56+Math.abs(offset)*Math.min(3,region.height*0.012)
+      const restY=region.y+region.height*0.55+Math.abs(offset)*Math.min(3,region.height*0.012)
       const angle=Phaser.Math.Clamp(offset*1.8,-6,6)
-      this.keep(this.scene.add.ellipse(start+index*step+3,restY+cardH*0.08,cardW*0.86,cardH*0.88,0x000000,0.36).setDepth(18+index).setAngle(angle))
+      this.keep(this.scene.add.ellipse(start+index*step+3,restY+cardH*0.08,cardW*0.86,cardH*0.88,0x000000,0.42).setDepth(18+index).setAngle(angle))
       const image=this.keep(this.scene.add.image(start+index*step,restY,key).setDisplaySize(cardW,cardH).setDepth(20+index).setAngle(angle))
       image.setData('arena-card-src',card.src)
       image.setInteractive({useHandCursor:true})
@@ -83,7 +83,7 @@ export class ArenaCards{
     const key=`asset:${ARENA_ASSETS.cards.backGame}`
     if(!this.scene.textures.exists(key)||count<=0)return
     const visible=Math.min(count,7)
-    const maxCardH=region.height*0.90
+    const maxCardH=region.height*0.92
     const maxCardW=maxCardH*CARD_ASPECT
     const step=Math.min(maxCardW*0.57,region.width/Math.max(5,visible+1))
     const cardW=Math.min(maxCardW,Math.max(region.width*0.12,step/0.57))
@@ -93,7 +93,7 @@ export class ArenaCards{
     const center=(visible-1)/2
     for(let i=0;i<visible;i++){
       const offset=i-center
-      const image=this.keep(this.scene.add.image(start+i*step,region.y+region.height*0.51,key).setDisplaySize(cardW,cardH).setAlpha(0.86).setDepth(12+i).setAngle(offset*1.35))
+      const image=this.keep(this.scene.add.image(start+i*step,region.y+region.height*0.51,key).setDisplaySize(cardW,cardH).setAlpha(0.90).setDepth(12+i).setAngle(offset*1.35))
       image.setData('arena-card-back',true)
     }
   }
@@ -103,22 +103,28 @@ export class ArenaCards{
     const slotH=region.height/Math.max(3,visible.length)
     visible.forEach((card,index)=>{
       const slot:ArenaRect={x:region.x,y:region.y+index*slotH,width:region.width,height:slotH}
-      this.card(card,slot,0.74,accent,30+index,'inspect',false,0.76)
+      this.card(card,slot,0.74,accent,30+index,'inspect',false,0.82)
     })
   }
   render(state:ArenaRenderState,layout:ArenaLayoutSnapshot){
     this.clear()
     this.hand(state.localHand,layout.localHand)
     this.opponentHand(state.opponentHandCount,layout.opponentHand)
-    const half=layout.combat.width/2
-    const localRegion={...layout.combat,x:layout.combat.x,y:layout.combat.y,width:half,height:layout.combat.height}
-    const opponentRegion={...layout.combat,x:layout.combat.x+half,y:layout.combat.y,width:half,height:layout.combat.height}
-    this.card(state.localVs,localRegion,layout.mode==='portrait'?0.98:0.94,ARENA_THEME.colors.player,42,'inspect',true,1)
-    this.card(state.opponentVs,opponentRegion,layout.mode==='portrait'?0.98:0.94,ARENA_THEME.colors.opponent,42,'inspect',true,1)
-    this.card(state.localZonX,layout.zonXLeft,0.88,ARENA_THEME.colors.player,24,'inspect',false,0.78)
-    this.card(state.opponentZonX,layout.zonXRight,0.88,ARENA_THEME.colors.opponent,24,'inspect',false,0.78)
-    this.card(state.localDiscard,layout.discard,0.76,0x8b93a1,22,'inspect',false,0.58)
-    this.card(state.opponentDiscard,layout.deck,0.76,0x8b93a1,22,'inspect',false,0.58)
+
+    const vsCardH=Math.min(layout.combat.height*0.68,310)
+    const vsCardW=vsCardH*CARD_ASPECT
+    const vsGap=Math.max(28,layout.combat.width*0.055)
+    const vsY=layout.combat.y+layout.combat.height*0.52-vsCardH/2
+    const centerX=layout.combat.x+layout.combat.width/2
+    const localRegion:ArenaRect={x:centerX-vsGap-vsCardW,y:vsY,width:vsCardW,height:vsCardH}
+    const opponentRegion:ArenaRect={x:centerX+vsGap,y:vsY,width:vsCardW,height:vsCardH}
+    this.card(state.localVs,localRegion,0.96,ARENA_THEME.colors.player,42,'inspect',true,1)
+    this.card(state.opponentVs,opponentRegion,0.96,ARENA_THEME.colors.opponent,42,'inspect',true,1)
+
+    this.card(state.localZonX,layout.zonXLeft,0.88,ARENA_THEME.colors.player,24,'inspect',false,0.84)
+    this.card(state.opponentZonX,layout.zonXRight,0.88,ARENA_THEME.colors.opponent,24,'inspect',false,0.84)
+    this.card(state.localDiscard,layout.discard,0.76,0x8b93a1,22,'inspect',false,0.66)
+    this.card(state.opponentDiscard,layout.deck,0.76,0x8b93a1,22,'inspect',false,0.66)
     this.effects(state.localEffects,layout.effectLeft,ARENA_THEME.colors.player)
     this.effects(state.opponentEffects,layout.effectRight,ARENA_THEME.colors.opponent)
   }
