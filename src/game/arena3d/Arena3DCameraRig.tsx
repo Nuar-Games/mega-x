@@ -8,13 +8,16 @@ export type Arena3DCameraMode='overview'|'set-vs'|'attack'|'inspect'|'result'
 type Props={state:ArenaRenderState;inspectOpen:boolean;impactToken:number}
 
 export function Arena3DCameraRig({state,inspectOpen,impactToken}:Props){
-  const {camera}=useThree()
+  const {camera,size}=useThree()
   const reducedMotion=useMemo(()=>window.matchMedia?.('(prefers-reduced-motion: reduce)').matches??false,[])
   const shake=useRef(0)
   useEffect(()=>{if(!reducedMotion&&impactToken>0)shake.current=.19},[impactToken,reducedMotion])
 
   const mode:Arena3DCameraMode=state.result?'result':inspectOpen?'inspect':state.phase.includes('ATTACK')?'attack':state.phase.includes('SET_VS')?'set-vs':'overview'
-  const target=mode==='set-vs'?new THREE.Vector3(0,6.4,8.9):mode==='attack'?new THREE.Vector3(0,5.7,8.1):mode==='inspect'?new THREE.Vector3(0,4.5,6.1):mode==='result'?new THREE.Vector3(0,8.8,11.2):new THREE.Vector3(0,6.8,9.3)
+  const aspect=size.height>0?size.width/size.height:1
+  const narrow=THREE.MathUtils.clamp((1.05-aspect)/.55,0,1)
+  const base=mode==='set-vs'?new THREE.Vector3(0,6.4,8.9):mode==='attack'?new THREE.Vector3(0,5.7,8.1):mode==='inspect'?new THREE.Vector3(0,4.5,6.1):mode==='result'?new THREE.Vector3(0,8.8,11.2):new THREE.Vector3(0,6.8,9.3)
+  const target=base.clone().add(new THREE.Vector3(0,narrow*.7,narrow*4.4))
   const look=mode==='inspect'?new THREE.Vector3(0,.38,1.15):mode==='attack'?new THREE.Vector3(0,.38,0):new THREE.Vector3(0,.05,.2)
 
   useFrame((_,delta)=>{
