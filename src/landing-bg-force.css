@@ -341,8 +341,8 @@
 }
 
 @keyframes mxStartPlateBreath{
-  0%,100%{transform:scale(1);filter:brightness(1)}
-  50%{transform:scale(1.010);filter:brightness(1.10)}
+  0%,100%{filter:brightness(1)}
+  50%{filter:brightness(1.10)}
 }
 
 @keyframes mxStartRailSweep{
