@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 import type { ArenaCardRef } from '../arena/ArenaStateAdapter'
@@ -56,12 +57,20 @@ function TexturedArenaCard({
   onSecondary,
 }: TexturedArenaCardProps) {
   const texture = useTexture(card.src)
+  const press = useRef<{ pointerId: number; x: number; y: number } | null>(null)
   texture.colorSpace = THREE.SRGBColorSpace
   texture.anisotropy = Math.max(texture.anisotropy, 4)
 
   const width = 1.42 * scale
   const height = 2.03 * scale
-  const actionable = Boolean(card.actionId)
+  const actionable = Boolean(card.actionId || card.actions?.length)
+  const activate = () => {
+    if (card.actionId) {
+      onPrimary?.(card.actionId)
+      return
+    }
+    onSecondary?.(card)
+  }
 
   return (
     <group position={position} rotation={rotation}>
@@ -78,17 +87,28 @@ function TexturedArenaCard({
         receiveShadow
         onPointerDown={(event) => {
           event.stopPropagation()
-          if (card.actionId) {
-            onPrimary?.(card.actionId)
-            return
-          }
-          onSecondary?.(card)
+          press.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY }
+        }}
+        onPointerUp={(event) => {
+          event.stopPropagation()
+          const start = press.current
+          press.current = null
+          if (!start || start.pointerId !== event.pointerId) return
+          const moved = Math.hypot(event.clientX - start.x, event.clientY - start.y)
+          if (moved > 18) return
+          activate()
+        }}
+        onPointerCancel={() => {
+          press.current = null
         }}
         onPointerOver={(event) => {
           event.stopPropagation()
-          document.body.style.cursor = 'pointer'
+          if (window.matchMedia?.('(hover: hover) and (pointer: fine)').matches) {
+            document.body.style.cursor = 'pointer'
+          }
         }}
         onPointerOut={() => {
+          press.current = null
           document.body.style.cursor = ''
         }}
       >
