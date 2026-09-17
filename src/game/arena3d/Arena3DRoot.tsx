@@ -41,13 +41,13 @@ export function Arena3DRoot({shell}:Props){
 
   return <div className="mx3d-root" data-arena-3d-root="true">
     <div className="mx3d-canvas">
-      <Canvas shadows={profile.shadows} dpr={profile.dpr} gl={{antialias:quality!=='low',powerPreference:quality==='low'?'low-power':'high-performance'}}>
+      <Canvas shadows={profile.shadows} dpr={profile.dpr} style={{touchAction:'none'}} gl={{antialias:quality!=='low',powerPreference:quality==='low'?'low-power':'high-performance'}}>
         <Suspense fallback={null}>
           <Arena3DScene state={state} onPrimary={dispatch} onSecondary={handleSecondary} inspectOpen={Boolean(chooser)} transitions={transitions} impactToken={impactToken} quality={quality}/>
           {profile.bloom?<EffectComposer multisampling={quality==='high'?4:0}><Bloom luminanceThreshold={1.05} luminanceSmoothing={.78} intensity={quality==='high'?0.72:0.42}/></EffectComposer>:null}
         </Suspense>
       </Canvas>
     </div>
-    <Arena3DHUD state={state} onAction={dispatch} chooser={chooser} onCloseChooser={()=>setChooser(null)} quality={quality} onQuality={changeQuality}/>
+    <Arena3DHUD state={state} onAction={dispatch} onCardSelect={handleSecondary} chooser={chooser} onCloseChooser={()=>setChooser(null)} quality={quality} onQuality={changeQuality}/>
   </div>
 }
