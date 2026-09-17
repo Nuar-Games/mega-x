@@ -19,6 +19,7 @@ export function Arena3DRoot({shell}:Props){
   const [transitions,setTransitions]=useState<Arena3DTransition[]>([])
   const [impactToken,setImpactToken]=useState(0)
   const [quality,setQuality]=useState<Arena3DQualityName>(()=>chooseArena3DQuality())
+  const [touchCapable]=useState(()=>typeof navigator!=='undefined'&&navigator.maxTouchPoints>0)
   const profile=ARENA_3D_QUALITY[quality]
 
   useEffect(()=>subscribeArena3DState(shell,next=>{
@@ -39,7 +40,7 @@ export function Arena3DRoot({shell}:Props){
   }
   const changeQuality=(next:Arena3DQualityName)=>{saveArena3DQuality(next);setQuality(next)}
 
-  return <div className="mx3d-root" data-arena-3d-root="true">
+  return <div className="mx3d-root" data-arena-3d-root="true" data-touch-capable={touchCapable?'true':'false'}>
     <div className="mx3d-canvas">
       <Canvas shadows={profile.shadows} dpr={profile.dpr} style={{touchAction:'none'}} gl={{antialias:quality!=='low',powerPreference:quality==='low'?'low-power':'high-performance'}}>
         <Suspense fallback={null}>
