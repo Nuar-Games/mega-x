@@ -1,0 +1,112 @@
+name: Arena 3D Device Input QA
+
+on:
+  push:
+    branches: [arena-clean-rebuild]
+  workflow_dispatch:
+
+jobs:
+  device-input:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install
+      - name: Run regression tests
+        run: npm test
+      - name: Build current branch
+        run: npm run build
+      - name: Install browser engines
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium webkit
+      - name: Start preview
+        run: |
+          nohup npx vite preview --host 127.0.0.1 --port 4173 > /tmp/mega-x-preview.log 2>&1 &
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/mega-x-preview.log
+          exit 1
+      - name: Exercise 3D arena input on touch and desktop engines
+        env:
+          MEGAX_PREVIEW_URL: http://127.0.0.1:4173/
+        run: |
+          cat > device-input-qa.mjs <<'EOF'
+          import { chromium, webkit } from 'playwright'
+
+          const base=process.env.MEGAX_PREVIEW_URL
+          const url=`${base}?arena=3d`
+
+          async function openPractice(browserType,label,{viewport,hasTouch,isMobile}){
+            const browser=await browserType.launch({headless:true})
+            const context=await browser.newContext({viewport,hasTouch,isMobile,deviceScaleFactor:1})
+            const page=await context.newPage()
+            const errors=[]
+            page.on('pageerror',error=>errors.push(error.message))
+            page.on('console',message=>{if(message.type()==='error')errors.push(message.text())})
+            const response=await page.goto(url,{waitUntil:'domcontentloaded',timeout:90000})
+            if(response?.status()!==200)throw new Error(`${label}:HTTP_${response?.status()}`)
+            await page.locator('#mx-main-practice-cta').waitFor({state:'visible',timeout:15000})
+            await page.locator('#mx-main-practice-cta').click()
+            await page.waitForSelector('[data-arena-3d-root="true"]',{timeout:30000})
+            await page.waitForSelector('.mx3d-canvas canvas',{state:'visible',timeout:30000})
+            await page.waitForTimeout(1000)
+
+            const root=page.locator('[data-arena-3d-root="true"]')
+            if(await root.count()!==1)throw new Error(`${label}:3D_ROOT_MISSING`)
+            if(hasTouch){
+              const touchFlag=await root.getAttribute('data-touch-capable')
+              if(touchFlag!=='true')throw new Error(`${label}:TOUCH_CAPABILITY_NOT_DETECTED`)
+              const hand=page.locator('.mx3d-mobile-hand')
+              if(await hand.count()!==1||!(await hand.isVisible()))throw new Error(`${label}:TOUCH_HAND_NOT_VISIBLE`)
+            }
+
+            let changes=0
+            let previous=''
+            for(let step=0;step<20;step++){
+              const snapshot=await page.evaluate(()=>JSON.stringify({
+                prompt:document.querySelector('.mx3d-prompt')?.textContent||'',
+                status:document.querySelector('.mx3d-status')?.textContent||'',
+                phase:document.querySelector('.mx3-canvas')?.getAttribute('data-arena-phase')||'',
+              }))
+              if(previous&&snapshot!==previous)changes++
+              previous=snapshot
+
+              const selectors=hasTouch?[
+                '.mx3d-mobile-card:not([disabled])',
+                '.mx3d-choice:not([disabled])',
+                '.mx3d-command:not([disabled])',
+              ]:[
+                '.mx3d-command:not([disabled])',
+                '.mx3d-choice:not([disabled])',
+              ]
+              let acted=false
+              for(const selector of selectors){
+                const target=page.locator(selector).filter({hasNotText:/QUIT|SURRENDER|AUDIO/i}).first()
+                if(await target.count()&&await target.isVisible()){
+                  await target.click()
+                  acted=true
+                  break
+                }
+              }
+              await page.waitForTimeout(acted?700:500)
+            }
+
+            if(changes<1)throw new Error(`${label}:ARENA_INPUT_STALLED`)
+            if(errors.length)throw new Error(`${label}:BROWSER_ERRORS:${errors.join(' | ')}`)
+            await browser.close()
+            console.log(`PASS ${label} changes=${changes}`)
+          }
+
+          await openPractice(chromium,'android-chromium-412x915',{viewport:{width:412,height:915},hasTouch:true,isMobile:true})
+          await openPractice(chromium,'tablet-chromium-820x1180',{viewport:{width:820,height:1180},hasTouch:true,isMobile:true})
+          await openPractice(webkit,'ios-webkit-390x844',{viewport:{width:390,height:844},hasTouch:true,isMobile:true})
+          await openPractice(chromium,'desktop-chromium-1366x768',{viewport:{width:1366,height:768},hasTouch:false,isMobile:false})
+          EOF
+          node device-input-qa.mjs
