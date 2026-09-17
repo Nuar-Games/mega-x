@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import { useTexture } from '@react-three/drei'
+import type { ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { ArenaCardRef } from '../arena/ArenaStateAdapter'
 
@@ -71,9 +72,44 @@ function TexturedArenaCard({
     }
     onSecondary?.(card)
   }
+  const handlePointerDown = (event: ThreeEvent<PointerEvent>) => {
+    event.stopPropagation()
+    press.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY }
+  }
+  const handlePointerUp = (event: ThreeEvent<PointerEvent>) => {
+    event.stopPropagation()
+    const start = press.current
+    press.current = null
+    if (!start || start.pointerId !== event.pointerId) return
+    const moved = Math.hypot(event.clientX - start.x, event.clientY - start.y)
+    if (moved > 22) return
+    activate()
+  }
+  const handlePointerCancel = () => {
+    press.current = null
+  }
 
   return (
-    <group position={position} rotation={rotation}>
+    <group
+      position={position}
+      rotation={rotation}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
+      onPointerOver={(event) => {
+        event.stopPropagation()
+        if (window.matchMedia?.('(hover: hover) and (pointer: fine)').matches) {
+          document.body.style.cursor = 'pointer'
+        }
+      }}
+      onPointerOut={() => {
+        document.body.style.cursor = ''
+      }}
+    >
+      <mesh name="mx3d-hit-target" position={[0, 0, -0.012]} scale={[1.24, 1.18, 1]}>
+        <planeGeometry args={[width, height]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
       <mesh position={[0, -0.035, 0]} scale={[1.07, 1.07, 1]}>
         <planeGeometry args={[width, height]} />
         <meshBasicMaterial
@@ -82,36 +118,7 @@ function TexturedArenaCard({
           opacity={actionable ? 0.24 : 0.16}
         />
       </mesh>
-      <mesh
-        castShadow
-        receiveShadow
-        onPointerDown={(event) => {
-          event.stopPropagation()
-          press.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY }
-        }}
-        onPointerUp={(event) => {
-          event.stopPropagation()
-          const start = press.current
-          press.current = null
-          if (!start || start.pointerId !== event.pointerId) return
-          const moved = Math.hypot(event.clientX - start.x, event.clientY - start.y)
-          if (moved > 18) return
-          activate()
-        }}
-        onPointerCancel={() => {
-          press.current = null
-        }}
-        onPointerOver={(event) => {
-          event.stopPropagation()
-          if (window.matchMedia?.('(hover: hover) and (pointer: fine)').matches) {
-            document.body.style.cursor = 'pointer'
-          }
-        }}
-        onPointerOut={() => {
-          press.current = null
-          document.body.style.cursor = ''
-        }}
-      >
+      <mesh castShadow receiveShadow>
         <planeGeometry args={[width, height]} />
         <meshStandardMaterial
           map={texture}
