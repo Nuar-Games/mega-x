@@ -1,6 +1,7 @@
 import { getSavedSession } from './onlineAuth'
 
 const SIGN_IN_ID='mx-main-sign-in'
+const PRACTICE_CTA_ID='mx-main-practice-cta'
 
 function isSignedIn(){
   const session=getSavedSession()
@@ -12,6 +13,9 @@ function mountGuestFirstLanding(){
   if(!landing)return
 
   const mainCta=landing.querySelector<HTMLButtonElement>('.mx-main-cta')
+  if(mainCta){
+    mainCta.id=PRACTICE_CTA_ID
+  }
   if(mainCta&&!mainCta.dataset.guestFirstBound){
     mainCta.dataset.guestFirstBound='1'
     mainCta.addEventListener('click',(event)=>{
