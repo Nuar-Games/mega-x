@@ -5,13 +5,14 @@ import { getSavedSession } from '../../onlineAuth'
 type Props={
   state:ArenaRenderState
   onAction:(id:string)=>void
+  onCardSelect:(card:ArenaCardRef)=>void
   chooser:ArenaCardRef|null
   onCloseChooser:()=>void
   quality:Arena3DQualityName
   onQuality:(quality:Arena3DQualityName)=>void
 }
 
-export function Arena3DHUD({state,onAction,chooser,onCloseChooser,quality,onQuality}:Props){
+export function Arena3DHUD({state,onAction,onCardSelect,chooser,onCloseChooser,quality,onQuality}:Props){
   const prompt=(state.prompt||state.status||state.phase||'BATTLE').trim()
   const commands=state.legalActions.filter(action=>!/audio/i.test(action.label)).slice(0,6)
   const session=getSavedSession()
@@ -25,6 +26,10 @@ export function Arena3DHUD({state,onAction,chooser,onCloseChooser,quality,onQual
       if(document.fullscreenElement)await document.exitFullscreen()
       else await root.requestFullscreen()
     }catch{}
+  }
+  const activateCard=(card:ArenaCardRef)=>{
+    if(card.actionId){onAction(card.actionId);return}
+    if(card.actions?.length)onCardSelect(card)
   }
   return <div className="mx3d-hud">
     <div className="mx3d-meta">
@@ -40,6 +45,14 @@ export function Arena3DHUD({state,onAction,chooser,onCloseChooser,quality,onQual
       {commands.filter(action=>!/quit/i.test(action.label)).map(action=><button key={action.id} type="button" className="mx3d-command" onClick={()=>onAction(action.id)}>{action.label}</button>)}
     </div>
     <div className="mx3d-status">{state.playerName} · {state.phase.replaceAll('_',' ')} · {state.timer==='—'?'BATTLE':state.timer} · DECK {state.deckCount}</div>
+    {state.localHand.length?<div className="mx3d-mobile-hand" aria-label="Your hand">
+      {state.localHand.slice(-7).map((card,index)=>{
+        const enabled=Boolean(card.actionId||card.actions?.length)
+        return <button key={`${card.src}-${index}`} type="button" className="mx3d-mobile-card" disabled={!enabled} onClick={()=>activateCard(card)} aria-label={card.alt||`Card ${index+1}`}>
+          <img src={card.src} alt="" draggable={false}/>
+        </button>
+      })}
+    </div>:null}
     {chooser&&chooser.actions?.length?<div className="mx3d-chooser">
       <strong>CARD ACTION</strong>
       {chooser.actions.map(action=><button key={action.id} type="button" className="mx3d-choice" onClick={()=>{onAction(action.id);onCloseChooser()}}>{action.label}</button>)}
