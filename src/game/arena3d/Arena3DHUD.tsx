@@ -65,6 +65,6 @@ export function Arena3DHUD({state,onAction,onCardSelect,chooser,onCloseChooser,q
       <button type="button" className="mx3d-choice" onClick={openSignIn}>SIGN IN</button>
       <button type="button" className="mx3d-choice" onClick={playAgainAsGuest}>PLAY AGAIN AS GUEST</button>
     </div>:null}
-    <div className="mx3d-hint">3D ARENA · DEVELOPMENT OPT-IN</div>
+    <div className="mx3d-hint">3D ARENA</div>
   </div>
 }
