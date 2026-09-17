@@ -16,7 +16,7 @@ export async function mountArena3D(shell:HTMLElement):Promise<()=>void>{
 
   const host=document.createElement('div')
   host.dataset.arena3dHost='true'
-  Object.assign(host.style,{position:'fixed',inset:'0',width:'100vw',height:'100dvh',zIndex:'40',overflow:'hidden',background:'#03060b'})
+  Object.assign(host.style,{position:'fixed',inset:'0',zIndex:'40',overflow:'hidden',background:'#03060b',touchAction:'none',overscrollBehavior:'none'})
   shell.appendChild(host)
 
   let root:Root|null=null
