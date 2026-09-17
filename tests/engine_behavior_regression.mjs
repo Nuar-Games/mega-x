@@ -100,11 +100,11 @@ test('06 BARA NANDEZ forces and locks DEF', () => {
 })
 
 // 07 KUDA PELONJAK LANGIT
-test('07 KUDA destroys lower-DEF VS to Zon Tepi', () => {
+test('07 KUDA destroys lower-DEF VS to Zon X', () => {
   let s = play(makeState({ p1Hand: [7], p1Vs: vs(20), p2Vs: vs(1) }), 7)
   assert(s.pendingBoardChoice?.cardIds.includes(1), 'KUDA target missing')
   s = act(s, P1, 'RESOLVE_BOARD_CHOICE', { cardId: 1 })
-  assert(s.player2.discard.includes(1) && !s.player2.vs, 'KUDA did not destroy VS to discard')
+  assert(s.player1.x.includes(1) && !s.player2.vs, 'KUDA did not destroy VS to Zon X')
 })
 
 // 08 RATU TABUAN LANGIT
@@ -120,11 +120,11 @@ test('09 NAGA captures qualifying VS/effects', () => {
 })
 
 // 10 TIKUS KILAT ANGKASA
-test('10 TIKUS destroys ATK <=800 VS', () => {
+test('10 TIKUS destroys ATK <=800 VS to Zon X', () => {
   let s = play(makeState({ p1Hand: [10], p2Vs: vs(17) }), 10)
   assert(s.pendingBoardChoice?.cardIds.includes(17), 'TIKUS eligible target missing')
   s = act(s, P1, 'RESOLVE_BOARD_CHOICE', { cardId: 17 })
-  assert(s.player2.discard.includes(17) && !s.player2.vs, 'TIKUS did not destroy eligible VS')
+  assert(s.player1.x.includes(17) && !s.player2.vs, 'TIKUS did not destroy eligible VS to Zon X')
 })
 
 // 11 JENAKA FARISH
