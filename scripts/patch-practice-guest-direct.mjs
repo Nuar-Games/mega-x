@@ -9,6 +9,7 @@ const listener=app.indexOf(listenerMarker,start)
 if(start<0||listener<0) throw new Error('Practice direct-entry anchors missing')
 
 const replacement=`    const startPractice = () => {
+      console.log('[MX_QA] startPractice entry')
       const guestKey = 'mega-x-practice-guest-id-v1'
       let guestId = onlineSession?.userId || window.localStorage.getItem(guestKey)
       if (!guestId) {
@@ -22,8 +23,10 @@ const replacement=`    const startPractice = () => {
         userId: guestId,
       }
       if (!onlineSession) setOnlineSession(practiceSession)
+      console.log('[MX_QA] startPractice before startPracticeMatch')
       const match = startPracticeMatch(practiceSession.userId, fighterProfile?.fighter_handle || 'GUEST X FIGHTER')
       applyOnlineMatchView(match as any, practiceSession)
+      console.log('[MX_QA] startPractice after applyOnlineMatchView')
     }
 `
 
@@ -39,7 +42,7 @@ app=app.replace(listenerMarker,signInListener)
 
 const cleanupMarker="window.removeEventListener('mega-x:start-practice-match', startPractice)"
 if(app.includes(cleanupMarker)){
-  app=app.replace(cleanupMarker,`window.removeEventListener('mega-x:open-sign-in', openGuestSignIn)\n      ${cleanupMarker}`)
+  app=app.replace(cleanupMarker,`{ window.removeEventListener('mega-x:open-sign-in', openGuestSignIn); ${cleanupMarker} }`)
 }
 
 const viewSignature='  function applyOnlineMatchView(match: ActiveOnlineMatch) {'

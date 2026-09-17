@@ -31,6 +31,7 @@ function requestedArenaMode(){
 async function syncArena(){
   const mode=requestedArenaMode()
   const next=document.querySelector<HTMLElement>('.duel-shell')
+  if(next)console.log('[MX_QA] arena-loader syncArena duel-shell found')
 
   if(mode==='3d'){
     await stopCleanArena()
@@ -42,8 +43,14 @@ async function syncArena(){
     arena3DLoading=true
     try{
       const { mountArena3D }=await import('./game/arena3d/Arena3DBoot')
-      if(document.contains(next))destroy3D=await mountArena3D(next)
+      if(document.contains(next)){
+        console.log('[MX_QA] arena-loader before mountArena3D')
+        destroy3D=await mountArena3D(next)
+        console.log('[MX_QA] arena-loader after mountArena3D')
+      }
     }catch(error){
+      const message=error instanceof Error?error.message:String(error)
+      console.log('[MX_QA] arena-loader mountArena3D error',message)
       console.error('[Mega X] 3D arena boot failed; using fallback arena.',error)
       stop3DArena()
     }finally{

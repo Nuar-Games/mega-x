@@ -22,6 +22,7 @@ function mountGuestFirstLanding(){
       if(isSignedIn())return
       event.preventDefault()
       event.stopImmediatePropagation()
+      console.log('[MX_QA] guest-practice-cta dispatch start-practice-match')
       window.dispatchEvent(new CustomEvent('mega-x:start-practice-match'))
     },true)
   }

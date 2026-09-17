@@ -48,8 +48,18 @@ jobs:
             const context=await browser.newContext({viewport,hasTouch,isMobile,deviceScaleFactor:1})
             const page=await context.newPage()
             const errors=[]
-            page.on('pageerror',error=>errors.push(error.message))
-            page.on('console',message=>{if(message.type()==='error')errors.push(message.text())})
+            page.on('pageerror',error=>{
+              errors.push(error.message)
+              console.log(`[${label}] [PAGE_ERROR] ${error.message}`)
+            })
+            page.on('console',message=>{
+              const text=message.text()
+              if(text.startsWith('[MX_QA]'))console.log(`[${label}] ${text}`)
+              if(message.type()==='error'){
+                errors.push(text)
+                console.log(`[${label}] [BROWSER_ERROR] ${text}`)
+              }
+            })
             const response=await page.goto(url,{waitUntil:'domcontentloaded',timeout:90000})
             if(response?.status()!==200)throw new Error(`${label}:HTTP_${response?.status()}`)
             await page.locator('#mx-main-practice-cta').waitFor({state:'visible',timeout:15000})
