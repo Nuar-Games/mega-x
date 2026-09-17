@@ -37,6 +37,7 @@ function syncLandingActivation() {
 function forwardLandingCta(event: Event) {
   const target = event.target
   if (!(target instanceof Element)) return
+  if (target.closest('#mx-main-practice-cta')) return
   if (!target.closest(`#${LANDING_ID} .mx-main-cta`)) return
 
   const originalAction = findOriginalLandingAction()
