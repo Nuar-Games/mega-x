@@ -60,7 +60,7 @@ const mapCard=(img:HTMLImageElement):ArenaCardRef=>{
   return {
     src:srcPath(img.src),
     alt:img.alt||'',
-    actionId:button?.dataset.arenaActionId,
+    actionId:actions.length?undefined:button?.dataset.arenaActionId,
     actions:actions.length?actions:undefined,
   }
 }
