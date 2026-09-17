@@ -25,7 +25,7 @@ function stop3DArena(){
 
 function requestedArenaMode(){
   const liveMode=new URLSearchParams(window.location.search).get('arena')
-  return liveMode ?? initialArenaMode
+  return liveMode ?? initialArenaMode ?? '3d'
 }
 
 async function syncArena(){
