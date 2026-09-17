@@ -193,8 +193,8 @@
   62%{opacity:0;transform:translate(-50%,-50%) scale(.30)}
 }
 @keyframes mxCtaBreathe{
-  0%,100%{transform:scale(1);filter:brightness(1)}
-  50%{transform:scale(1.012);filter:brightness(1.08)}
+  0%,100%{filter:brightness(1)}
+  50%{filter:brightness(1.08)}
 }
 @keyframes mxRailShift{
   0%{filter:hue-rotate(0deg) drop-shadow(0 0 4px rgba(255,255,255,.75)) drop-shadow(0 0 9px rgba(113,205,255,.78)) drop-shadow(0 0 16px rgba(209,65,255,.60))}
