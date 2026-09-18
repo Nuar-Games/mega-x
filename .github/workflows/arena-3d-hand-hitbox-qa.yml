@@ -62,7 +62,7 @@ jobs:
           const stateSnapshot=page=>page.evaluate(()=>JSON.stringify({
             prompt:document.querySelector('.mx3d-prompt')?.textContent||'',
             status:document.querySelector('.mx3d-status')?.textContent||'',
-            phase:document.querySelector('.mx3-canvas')?.getAttribute('data-arena-phase')||'',
+            phase:document.querySelector('.mx3d-canvas')?.getAttribute('data-arena-phase')||'',
             chooser:document.querySelector('.mx3d-chooser')?.textContent||''
           }))
 
