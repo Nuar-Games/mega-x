@@ -5,7 +5,7 @@ let source = fs.readFileSync(path, 'utf8')
 const active = 'sb_publishable_fXF7LXgKXeH4p5_Bwai0nQ_d-NWdOk_'
 
 source = source.replace(
-  /const SUPABASE_KEY = VITE_ENV\.VITE_SUPABASE_KEY \|\| '[^']+'/,
+  /const SUPABASE_KEY = VITE_ENV\.VITE_SUPABASE_KEY \|\| '[^']+'/, 
   `const SUPABASE_KEY = '${active}'`,
 )
 
@@ -13,8 +13,10 @@ const oldBlock = `export async function signInWithEmail(email: string, password:
 
 const newBlock = `export async function signInWithEmail(email: string, password: string) {\n  const controller = new AbortController()\n  const timeout = window.setTimeout(() => controller.abort(), 12000)\n  try {\n    const response = await fetch(\`${'${SUPABASE_URL}'}/auth/v1/token?grant_type=password\`, {\n      method: 'POST', headers: headers(), body: JSON.stringify({ email, password }), signal: controller.signal,\n    })\n    const payload = await readJson(response)\n    const session = sessionFromAuthPayload(payload)\n    if (!session) throw new Error('SESSION_NOT_RETURNED')\n    saveSession(session)\n    return session\n  } catch (error) {\n    if (error instanceof DOMException && error.name === 'AbortError') throw new Error('SIGN_IN_TIMEOUT')\n    throw error\n  } finally {\n    window.clearTimeout(timeout)\n  }\n}`
 
-if (!source.includes(oldBlock)) throw new Error('signInWithEmail anchor not found')
-source = source.replace(oldBlock, newBlock)
+if (!source.includes(newBlock)) {
+  if (!source.includes(oldBlock)) throw new Error('signInWithEmail anchor not found')
+  source = source.replace(oldBlock, newBlock)
+}
 
 if (!source.includes('export async function requestPasswordReset')) {
   const googleAnchor = 'export function signInWithGoogle() {'
@@ -24,11 +26,11 @@ if (!source.includes('export async function requestPasswordReset')) {
 }
 
 const googleHashAnchor = `export function consumeGoogleSessionFromHash(): OnlineSession | null {\n  if (!location.hash.includes('access_token=')) return null`
-if (!source.includes(googleHashAnchor)) throw new Error('Google hash consumer anchor missing')
-source = source.replace(
-  googleHashAnchor,
-  `export function consumeGoogleSessionFromHash(): OnlineSession | null {\n  if (location.hash.includes('type=recovery')) return null\n  if (!location.hash.includes('access_token=')) return null`,
-)
+const googleHashPatched = `export function consumeGoogleSessionFromHash(): OnlineSession | null {\n  if (location.hash.includes('type=recovery')) return null\n  if (!location.hash.includes('access_token=')) return null`
+if (!source.includes(googleHashPatched)) {
+  if (!source.includes(googleHashAnchor)) throw new Error('Google hash consumer anchor missing')
+  source = source.replace(googleHashAnchor, googleHashPatched)
+}
 
 fs.writeFileSync(path, source)
 
