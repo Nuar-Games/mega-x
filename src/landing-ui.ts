@@ -134,7 +134,7 @@ html.mx-main-active #mx-audio-controls{display:none!important}
 @keyframes mxArcFlicker{0%{opacity:.2;transform:translate(-1px,0)}20%{opacity:1;transform:translate(2px,-1px)}40%{opacity:.35;transform:translate(-2px,1px)}60%{opacity:.9;transform:translate(1px,0)}80%{opacity:.25;transform:translate(-1px,-1px)}100%{opacity:.82;transform:translate(2px,1px)}}
 @keyframes mxIconGlow{0%,100%{filter:drop-shadow(0 0 6px rgba(255,76,239,.82)) drop-shadow(0 0 11px rgba(70,153,255,.58))}50%{filter:drop-shadow(0 0 10px rgba(255,113,246,1)) drop-shadow(0 0 18px rgba(80,190,255,.9))}}
 @keyframes mxEnergyBreath{0%,100%{opacity:.24;transform:scale(.94)}50%{opacity:.48;transform:scale(1.08)}}
-@media (prefers-reduced-motion:reduce){#${LANDING_ID} *{animation-duration:.001ms!important;animation-iteration-count:1!important}}
+@media (prefers-reduced-motion:reduce){#${LANDING_ID} .mx-main-energy,#${LANDING_ID} .mx-main-hero,#${LANDING_ID} .mx-main-card,#${LANDING_ID} .mx-main-cta,#${LANDING_ID} .mx-main-cta::before,#${LANDING_ID} .mx-main-cta::after,#${LANDING_ID} .mx-main-cta-arc,#${LANDING_ID} .mx-feature-badge{animation:none!important}}
 @media (min-width:900px) and (orientation:landscape){#${LANDING_ID} .mx-main-portrait{height:100dvh;width:calc(100dvh * 9 / 16)}}
 `
 document.head.appendChild(landingStyle)

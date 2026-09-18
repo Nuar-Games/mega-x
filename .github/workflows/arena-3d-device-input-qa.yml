@@ -45,7 +45,7 @@ jobs:
 
           async function openPractice(browserType,label,{viewport,hasTouch,isMobile}){
             const browser=await browserType.launch({headless:true})
-            const context=await browser.newContext({viewport,hasTouch,isMobile,deviceScaleFactor:1})
+            const context=await browser.newContext({viewport,hasTouch,isMobile,deviceScaleFactor:1,reducedMotion:'reduce'})
             const page=await context.newPage()
             const errors=[]
             page.on('pageerror',error=>{
