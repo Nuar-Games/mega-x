@@ -22,8 +22,10 @@ app = app.replace(rankLoopOld, `Array.from({ length: 17 }, (_, index) => {`)
 
 const rpcOld = "`${SUPABASE_URL}/rest/v1/rpc/get_top_10_leaderboard`"
 const rpcNew = "`${SUPABASE_URL}/rest/v1/rpc/get_top_20_leaderboard`"
-if (!auth.includes(rpcOld)) throw new Error('top-20 rpc patch target missing')
-auth = auth.replace(rpcOld, rpcNew)
+if (!auth.includes(rpcNew)) {
+  if (!auth.includes(rpcOld)) throw new Error('top-20 rpc patch target missing')
+  auth = auth.replace(rpcOld, rpcNew)
+}
 
 const marker = '/* User feedback: arena timer visibility + top-20 lobby */'
 if (!css.includes(marker)) {
