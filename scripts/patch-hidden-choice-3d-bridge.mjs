@@ -21,7 +21,7 @@ addPanelAttributes(
 )
 
 addPanelAttributes(
-  '{game.pendingBoardChoice && (',
+  '{game.pendingBoardChoice && passToPlayer === null && pendingChoice === null && (',
   'choice-panel board-choice-panel',
   'data-pending-choice-kind={game.pendingBoardChoice.purpose} data-pending-choice-remaining={game.pendingBoardChoice.cardIds.length} data-pending-choice-source={game.pendingBoardChoice.title}',
   'pendingBoardChoice',
