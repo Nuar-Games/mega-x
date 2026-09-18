@@ -16,10 +16,10 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install
-      - name: Run regression tests
-        run: npm test
       - name: Build current branch
         run: npm run build
+      - name: Run full regression suite
+        run: npm test
       - name: Install Chromium
         run: |
           npm install --no-save playwright@1.55.0
@@ -126,7 +126,6 @@ jobs:
             )||null
           }
 
-          // Establish the real opening-hand ceiling before choosing geometry sizes.
           const probe=await openArena(7)
           const probeGeometry=Object.values(await readGeometry(probe))
           const available=probeGeometry.length
@@ -154,7 +153,6 @@ jobs:
             await geometryPage.close()
 
             for(const {target,inside,outside} of points){
-              // Fresh real arena for each inside click so one card action cannot alter the next card's test.
               const page=await openArena(handSize)
               await page.evaluate(()=>{window.__mx3dQaLastActivated=undefined})
               await page.mouse.click(inside.x,inside.y)
@@ -173,7 +171,6 @@ jobs:
               console.log(`PASS_INSIDE size=${handSize} card=${target.qaId} action=${activated.actionId||'chooser'}`)
               await page.close()
 
-              // Separate fresh arena for outside click; no card activation and no observable game-state change are allowed.
               const edgePage=await openArena(handSize)
               await edgePage.evaluate(()=>{window.__mx3dQaLastActivated=undefined})
               const before=await stateSnapshot(edgePage)

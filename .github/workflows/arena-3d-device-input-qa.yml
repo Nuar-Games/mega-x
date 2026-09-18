@@ -16,10 +16,10 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install
-      - name: Run regression tests
-        run: npm test
       - name: Build current branch
         run: npm run build
+      - name: Run full regression suite
+        run: npm test
       - name: Install browser engines
         run: |
           npm install --no-save playwright@1.55.0
