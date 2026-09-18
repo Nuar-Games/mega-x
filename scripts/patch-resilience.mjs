@@ -30,8 +30,11 @@ const newSub = `export function subscribeToMatchChanges(session: OnlineSession, 
     })
   return () => { onStatus?.(false); void REALTIME_CLIENT.removeChannel(channel) }
 }`
-if (!auth.includes(oldSub)) throw new Error('Realtime subscription block missing')
-auth = auth.replace(oldSub, newSub)
+const realtimeStatusAlreadyPatched = auth.includes('onStatus?: (healthy: boolean) => void') && auth.includes("status === 'SUBSCRIBED'") && auth.includes("status === 'CHANNEL_ERROR'")
+if (!realtimeStatusAlreadyPatched) {
+  if (!auth.includes(oldSub)) throw new Error('Realtime subscription block missing')
+  auth = auth.replace(oldSub, newSub)
+}
 
 const oldRealtimeCall = `    const unsubscribeMatch = subscribeToMatchChanges(onlineSession, activeOnlineMatch.id, () => {
       window.clearTimeout(signalTimer)
