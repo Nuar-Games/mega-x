@@ -12,9 +12,11 @@ type Props={
   onQuality:(quality:Arena3DQualityName)=>void
 }
 
+const stat=(label:string,value:string)=><span className="mx3d-stat"><small>{label}</small><strong>{value||'—'}</strong></span>
+
 export function Arena3DHUD({state,onAction,onCardSelect,chooser,onCloseChooser,quality,onQuality}:Props){
   const prompt=(state.prompt||state.status||state.phase||'BATTLE').trim()
-  const commands=state.legalActions.filter(action=>!/audio/i.test(action.label)).slice(0,6)
+  const commands=state.legalActions.filter(action=>!/audio|quit/i.test(action.label)).slice(0,5)
   const session=getSavedSession()
   const isGuest=!session?.accessToken||session.accessToken==='practice-local'
   const openSignIn=()=>window.dispatchEvent(new CustomEvent('mega-x:open-sign-in'))
@@ -31,21 +33,52 @@ export function Arena3DHUD({state,onAction,onCardSelect,chooser,onCloseChooser,q
     if(card.actionId){onAction(card.actionId);return}
     if(card.actions?.length)onCardSelect(card)
   }
+  const quit=()=>{
+    const action=state.legalActions.find(action=>/quit/i.test(action.label))
+    if(action)onAction(action.id)
+  }
   const discardSelectedCount=state.pendingSelfDiscard?.cards.filter(card=>card.selected).length||0
   return <div className="mx3d-hud">
+    <div className="mx3d-duelist mx3d-duelist-opponent">
+      <div className="mx3d-duelist-kicker">OPPONENT</div>
+      <div className="mx3d-duelist-name">{state.opponentName||'X FIGHTER'}</div>
+      <div className="mx3d-statline">
+        {stat('ATK',state.opponentStats.atk)}{stat('DEF',state.opponentStats.def)}{stat('STA',state.opponentStats.sta)}
+      </div>
+      <div className="mx3d-duelist-foot"><span>{state.opponentPosition||'—'}</span><span>HAND {state.opponentHandCount}</span></div>
+    </div>
+
+    <div className="mx3d-duelist mx3d-duelist-local">
+      <div className="mx3d-duelist-kicker">YOU</div>
+      <div className="mx3d-duelist-name">{state.playerName||'X FIGHTER'}</div>
+      <div className="mx3d-statline">
+        {stat('ATK',state.localStats.atk)}{stat('DEF',state.localStats.def)}{stat('STA',state.localStats.sta)}
+      </div>
+      <div className="mx3d-duelist-foot"><span>{state.localPosition||'—'}</span><span>DECK {state.deckCount}</span></div>
+    </div>
+
+    <div className="mx3d-topbar">
+      <div className="mx3d-phase">{state.phase.replaceAll('_',' ')}</div>
+      <div className="mx3d-prompt">{prompt}</div>
+      {state.timer!=='—'?<div className="mx3d-timer">{state.timer}</div>:null}
+    </div>
+
     <div className="mx3d-meta">
-      <button type="button" onClick={()=>{const quit=state.legalActions.find(action=>/quit/i.test(action.label));if(quit)onAction(quit.id)}}>QUIT</button>
+      <button type="button" onClick={quit}>QUIT</button>
       <button type="button" onClick={fullscreen} aria-label="Toggle fullscreen">⛶</button>
       <select aria-label="3D quality" value={quality} onChange={event=>onQuality(event.target.value as Arena3DQualityName)}>
         <option value="high">HIGH</option><option value="medium">MED</option><option value="low">LOW</option>
       </select>
       {isGuest?<button type="button" onClick={openSignIn} aria-label="Sign in to earn leaderboard points">SIGN IN</button>:null}
     </div>
-    <div className="mx3d-topbar"><div className="mx3d-prompt">{prompt}</div></div>
-    <div className="mx3d-commands">
-      {commands.filter(action=>!/quit/i.test(action.label)).map(action=><button key={action.id} type="button" className="mx3d-command" onClick={()=>onAction(action.id)}>{action.label}</button>)}
-    </div>
-    <div className="mx3d-status">{state.playerName} · {state.phase.replaceAll('_',' ')} · {state.timer==='—'?'BATTLE':state.timer} · DECK {state.deckCount}</div>
+
+    {isGuest?<div className="mx3d-guest-chip">GUEST · NO POINTS</div>:null}
+
+    {commands.length?<div className="mx3d-commands">
+      <div className="mx3d-command-title">ACTIONS</div>
+      {commands.map(action=><button key={action.id} type="button" className="mx3d-command" onClick={()=>onAction(action.id)}>{action.label}</button>)}
+    </div>:null}
+
     {state.localHand.length?<div className="mx3d-mobile-hand" aria-label="Your hand">
       {state.localHand.slice(-7).map((card,index)=>{
         const enabled=Boolean(card.actionId||card.actions?.length)
@@ -54,6 +87,7 @@ export function Arena3DHUD({state,onAction,onCardSelect,chooser,onCloseChooser,q
         </button>
       })}
     </div>:null}
+
     {state.pendingSelfDiscard?<div className="mx3d-chooser" data-pending-self-discard-3d>
       <strong>{state.pendingSelfDiscard.reason||'BUANG KAD'}</strong>
       <div className="mx3d-discard-copy">{state.pendingSelfDiscard.mode==='EXACT'?`PILIH ${state.pendingSelfDiscard.count} · ${discardSelectedCount}/${state.pendingSelfDiscard.count}`:`PILIH 0+ · ${discardSelectedCount} DIPILIH`}</div>
@@ -70,6 +104,7 @@ export function Arena3DHUD({state,onAction,onCardSelect,chooser,onCloseChooser,q
       {chooser.actions.map(action=><button key={action.id} type="button" className="mx3d-choice" onClick={()=>{onAction(action.id);onCloseChooser()}}>{action.label}</button>)}
       <button type="button" className="mx3d-choice" onClick={onCloseChooser}>CLOSE</button>
     </div>:null}
+
     {isGuest&&state.result?<div className="mx3d-chooser" data-guest-result-reminder>
       <strong>MATCH COMPLETE</strong>
       <div>GUEST RESULT — LEADERBOARD POINTS WERE NOT RECORDED.</div>
@@ -77,6 +112,5 @@ export function Arena3DHUD({state,onAction,onCardSelect,chooser,onCloseChooser,q
       <button type="button" className="mx3d-choice" onClick={openSignIn}>SIGN IN</button>
       <button type="button" className="mx3d-choice" onClick={playAgainAsGuest}>PLAY AGAIN AS GUEST</button>
     </div>:null}
-    <div className="mx3d-hint">3D ARENA</div>
   </div>
 }
