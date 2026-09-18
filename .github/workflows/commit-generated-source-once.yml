@@ -1,4 +1,4 @@
-name: One-off — diagnose generated source snapshot
+name: One-off — commit verified generated snapshots
 
 on:
   workflow_dispatch:
@@ -8,10 +8,10 @@ on:
       - '.github/workflows/commit-generated-source-once.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  diagnose-generated-source:
+  commit-generated-source:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,30 +26,28 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Status after dependency install
-        run: |
-          echo '===== STATUS AFTER NPM INSTALL ====='
-          git status --short
+      - name: Reset working tree
+        run: git checkout -- .
 
-      - name: Regenerate authoritative source once
+      - name: Regenerate authoritative source
         run: node scripts/build-clean.mjs --prepare-only
 
-      - name: Show complete materialization delta
-        run: |
-          echo '===== STATUS AFTER PREPARE ====='
-          git status --short
-          echo '===== TRACKED DIFF NAME/STATUS ====='
-          git diff --name-status
-          echo '===== TRACKED DIFF STAT ====='
-          git diff --stat
-          echo '===== SELF-PATCH DIFF ====='
-          git diff -- scripts/patch-arena-ownership-choice.mjs
-          echo '===== SOURCE/TEST DIFFS ====='
-          git diff -- src/VsIntro.css src/VsIntro.tsx src/VsIntroHype.css src/arena-stage.css src/arena-stage.ts src/arena-usability.css src/audio.ts src/lobby-ui.ts src/main.tsx src/practice-match.ts supabase/functions/match-action/engine.ts tests/practice_real_exhaustion_lifecycle_regression.mjs
-          echo '===== UNTRACKED FILES ====='
-          git ls-files --others --exclude-standard
+      - name: Verify full regression suite
+        run: npm test
 
-      - name: Stop without committing
+      - name: Verify typecheck
+        run: npx tsc --noEmit
+
+      - name: Commit verified generated snapshots
         run: |
-          echo 'DIAGNOSTIC_ONLY_NO_COMMIT'
-          exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/App.tsx src/onlineAuth.ts src/arena-blueprint.fragment
+          echo '===== GENERATED SNAPSHOT DIFF ====='
+          git diff --cached --stat
+          if git diff --cached --quiet; then
+            echo 'Generated snapshots already in sync.'
+            exit 0
+          fi
+          git commit -m "chore: commit authoritative generated source snapshots"
+          git push origin HEAD:arena-clean-rebuild
