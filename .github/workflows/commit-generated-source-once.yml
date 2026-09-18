@@ -6,8 +6,9 @@ name: One-off — commit generated source snapshot
 # then runs the full regression suite and reports pass/fail.
 #
 # Safe by construction:
-#   - workflow_dispatch only (never runs on push/PR)
-#   - requires typing CONFIRM to actually commit+push
+#   - workflow_dispatch still supported
+#   - this temporary push trigger only matches edits to THIS workflow file
+#   - generated-source commits therefore do not retrigger it
 #   - only ever stages the same fixed path list the drift check uses
 #   - runs on arena-clean-rebuild's own checkout; never touches main
 #   - delete this file once the branch is green
@@ -19,6 +20,10 @@ on:
         description: 'Type CONFIRM to commit + push the regenerated source'
         required: true
         default: ''
+  push:
+    branches: [arena-clean-rebuild]
+    paths:
+      - '.github/workflows/commit-generated-source-once.yml'
 
 permissions:
   contents: write
@@ -26,7 +31,7 @@ permissions:
 jobs:
   commit-generated-source:
     runs-on: ubuntu-latest
-    if: github.event.inputs.confirm == 'CONFIRM'
+    if: github.event_name == 'push' || github.event.inputs.confirm == 'CONFIRM'
     steps:
       - uses: actions/checkout@v4
         with:
