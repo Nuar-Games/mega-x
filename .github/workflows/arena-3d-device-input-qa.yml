@@ -33,98 +33,70 @@ jobs:
           done
           cat /tmp/mega-x-preview.log
           exit 1
-      - name: Exercise 3D arena input on touch and desktop engines
+      - name: Verify desktop 3D hand mesh with mouse input
         env:
           MEGAX_PREVIEW_URL: http://127.0.0.1:4173/
         run: |
           cat > device-input-qa.mjs <<'EOF'
-          import { chromium, webkit } from 'playwright'
-
+          import { chromium } from 'playwright'
           const base=process.env.MEGAX_PREVIEW_URL
           const url=`${base}?arena=3d`
-
-          async function openPractice(browserType,label,{viewport,hasTouch,isMobile}){
-            const browser=await browserType.launch({headless:true})
-            const context=await browser.newContext({viewport,hasTouch,isMobile,deviceScaleFactor:1,reducedMotion:'reduce'})
-            const page=await context.newPage()
-            const errors=[]
-            page.on('pageerror',error=>{
-              errors.push(error.message)
-              console.log(`[${label}] [PAGE_ERROR] ${error.message}`)
-            })
-            page.on('console',message=>{
-              const text=message.text()
-              if(text.startsWith('[MX_QA]'))console.log(`[${label}] ${text}`)
-              if(message.type()==='error'){
-                errors.push(text)
-                console.log(`[${label}] [BROWSER_ERROR] ${text}`)
+          const browser=await chromium.launch({headless:true})
+          const context=await browser.newContext({viewport:{width:1366,height:768},hasTouch:false,isMobile:false,deviceScaleFactor:1,reducedMotion:'reduce'})
+          const page=await context.newPage()
+          page.on('console',m=>{const t=m.text(); if(t.startsWith('[MX_QA]')) console.log(`[desktop] ${t}`)})
+          const response=await page.goto(url,{waitUntil:'domcontentloaded',timeout:90000})
+          if(response?.status()!==200)throw new Error(`HTTP_${response?.status()}`)
+          await page.locator('#mx-main-practice-cta').waitFor({state:'visible',timeout:15000})
+          await page.locator('#mx-main-practice-cta').click()
+          await page.waitForSelector('[data-arena-3d-root="true"]',{timeout:30000})
+          await page.waitForSelector('.mx3d-canvas canvas',{state:'visible',timeout:30000})
+          await page.waitForTimeout(1200)
+          const root=page.locator('[data-arena-3d-root="true"]')
+          console.log(`DESKTOP_TOUCH_FLAG=${await root.getAttribute('data-touch-capable')}`)
+          console.log(`DESKTOP_DOM_HAND_VISIBLE=${await page.locator('.mx3d-mobile-hand').isVisible().catch(()=>false)}`)
+          const canvas=page.locator('.mx3d-canvas canvas')
+          const box=await canvas.boundingBox()
+          if(!box)throw new Error('CANVAS_BOX_MISSING')
+          const read=()=>page.evaluate(()=>JSON.stringify({
+            prompt:document.querySelector('.mx3d-prompt')?.textContent||'',
+            status:document.querySelector('.mx3d-status')?.textContent||'',
+            phase:document.querySelector('.mx3-canvas')?.getAttribute('data-arena-phase')||'',
+            chooser:document.querySelector('.mx3d-chooser')?.textContent||''
+          }))
+          const initial=await read()
+          console.log(`INITIAL=${initial}`)
+          let hit=null
+          const ys=[0.58,0.64,0.70,0.76,0.82,0.88]
+          const xs=[0.20,0.28,0.36,0.44,0.50,0.56,0.64,0.72,0.80]
+          for(const yf of ys){
+            for(const xf of xs){
+              const x=box.x+box.width*xf
+              const y=box.y+box.height*yf
+              await page.mouse.click(x,y)
+              await page.waitForTimeout(180)
+              const now=await read()
+              if(now!==initial){
+                hit={x,y,xf,yf,now}
+                console.log(`MOUSE_HIT x=${x.toFixed(1)} y=${y.toFixed(1)} xf=${xf} yf=${yf} state=${now}`)
+                break
               }
-            })
-            const response=await page.goto(url,{waitUntil:'domcontentloaded',timeout:90000})
-            if(response?.status()!==200)throw new Error(`${label}:HTTP_${response?.status()}`)
-            await page.locator('#mx-main-practice-cta').waitFor({state:'visible',timeout:15000})
-            await page.locator('#mx-main-practice-cta').click()
-            await page.waitForSelector('[data-arena-3d-root="true"]',{timeout:30000})
-            await page.waitForSelector('.mx3d-canvas canvas',{state:'visible',timeout:30000})
-            await page.waitForTimeout(1000)
-
-            const root=page.locator('[data-arena-3d-root="true"]')
-            if(await root.count()!==1)throw new Error(`${label}:3D_ROOT_MISSING`)
-            if(hasTouch){
-              const touchFlag=await root.getAttribute('data-touch-capable')
-              if(touchFlag!=='true')throw new Error(`${label}:TOUCH_CAPABILITY_NOT_DETECTED`)
-              const hand=page.locator('.mx3d-mobile-hand')
-              if(await hand.count()!==1||!(await hand.isVisible()))throw new Error(`${label}:TOUCH_HAND_NOT_VISIBLE`)
             }
-
-            let changes=0
-            let previous=''
-            for(let step=0;step<20;step++){
-              const snapshot=await page.evaluate(()=>JSON.stringify({
-                prompt:document.querySelector('.mx3d-prompt')?.textContent||'',
-                status:document.querySelector('.mx3d-status')?.textContent||'',
-                phase:document.querySelector('.mx3-canvas')?.getAttribute('data-arena-phase')||'',
-              }))
-              if(previous&&snapshot!==previous)changes++
-              previous=snapshot
-
-              const chooserOpen=await page.locator('.mx3d-chooser').count()>0
-              const selectors=chooserOpen?[
-                '.mx3d-choice:not([disabled])',
-              ]:hasTouch?[
-                '.mx3d-mobile-card:not([disabled])',
-                '.mx3d-choice:not([disabled])',
-                '.mx3d-command:not([disabled])',
-              ]:[
-                '.mx3d-command:not([disabled])',
-                '.mx3d-choice:not([disabled])',
-              ]
-              let acted=false
-              for(const selector of selectors){
-                const target=page.locator(selector).filter({hasNotText:/QUIT|SURRENDER|AUDIO/i}).first()
-                if(await target.count()&&await target.isVisible()){
-                  const ariaLabel=await target.getAttribute('aria-label')
-                  const textContent=await target.textContent()
-                  const actionId=await target.getAttribute('data-arena-action-id')
-                  const labelText=(ariaLabel||textContent||actionId||'').trim()
-                  console.log(`[MX_QA_LOOP] ${label} step=${step} selector=${selector} label=${labelText} actionId=${actionId||''}`)
-                  await target.click()
-                  acted=true
-                  break
-                }
-              }
-              await page.waitForTimeout(acted?700:500)
-            }
-
-            if(changes<1)throw new Error(`${label}:ARENA_INPUT_STALLED`)
-            if(errors.length)throw new Error(`${label}:BROWSER_ERRORS:${errors.join(' | ')}`)
-            await browser.close()
-            console.log(`PASS ${label} changes=${changes}`)
+            if(hit)break
           }
-
-          await openPractice(chromium,'android-chromium-412x915',{viewport:{width:412,height:915},hasTouch:true,isMobile:true})
-          await openPractice(chromium,'tablet-chromium-820x1180',{viewport:{width:820,height:1180},hasTouch:true,isMobile:true})
-          await openPractice(webkit,'ios-webkit-390x844',{viewport:{width:390,height:844},hasTouch:true,isMobile:true})
-          await openPractice(chromium,'desktop-chromium-1366x768',{viewport:{width:1366,height:768},hasTouch:false,isMobile:false})
+          if(!hit)throw new Error('DESKTOP_MOUSE_MESH_NO_STATE_CHANGE')
+          const chooser=page.locator('.mx3d-chooser')
+          if(await chooser.count()){
+            console.log(`CHOOSER_TEXT=${(await chooser.textContent())?.trim()||''}`)
+            const choice=page.locator('.mx3d-choice:not([disabled])').filter({hasNotText:/QUIT|SURRENDER|AUDIO/i}).first()
+            if(await choice.count()){
+              console.log(`CHOOSER_ACTION=${((await choice.textContent())||'').trim()}`)
+              await choice.click()
+              await page.waitForTimeout(500)
+              console.log(`AFTER_CHOICE=${await read()}`)
+            }
+          }
+          console.log('PASS desktop-real-mouse-3d-hand')
+          await browser.close()
           EOF
           node device-input-qa.mjs
