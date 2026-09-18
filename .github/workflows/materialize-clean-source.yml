@@ -26,7 +26,12 @@ jobs:
         run: node scripts/build-clean.mjs --prepare-only
       - name: Fail if generated source is not committed exactly
         run: |
-          paths=(src/App.tsx src/onlineAuth.ts src/index.css src/arena-blueprint.fragment public/cards public/ui)
+          # public/cards and public/ui are intentionally excluded: recover-cards.mjs
+          # and recover-landing-assets.mjs deterministically rebuild them every run
+          # from committed recovery/cards and recovery/landing-assets source chunks.
+          # They're regenerated build outputs, not authoritative source, so there's
+          # nothing to keep in sync here — only the true generated-source files are.
+          paths=(src/App.tsx src/onlineAuth.ts src/index.css src/arena-blueprint.fragment)
           if [[ -n "$(git status --porcelain -- "${paths[@]}")" ]]; then
             echo 'Generated source drift detected. Regenerate locally and commit the resulting files; CI will never push back to this branch.'
             git status --short -- "${paths[@]}"
