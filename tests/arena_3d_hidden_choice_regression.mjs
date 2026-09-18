@@ -22,6 +22,7 @@ must(hud.includes("state.pendingChoice.visibleTargets"),'3D HUD must render visi
 must(hud.includes("state.pendingChoice.hiddenSlots"),'3D HUD must render hidden pending slots')
 must(css.includes("body.mx-arena-3d-enabled .choice-overlay:has(.choice-panel[data-pending-choice-kind])"),'legacy supported choice overlay must be disabled while 3D is active')
 must(build.includes("'patch-hidden-choice-3d-bridge.mjs'"),'build prepare must run hidden-choice patch')
-must(materialize.includes('node scripts/patch-hidden-choice-3d-bridge.mjs'),'materialize workflow must run hidden-choice patch')
+must(materialize.includes('node scripts/build-clean.mjs --prepare-only'),'generated-source verification must use the authoritative build prepare chain')
+must(materialize.includes('Generated source drift detected'),'generated-source verification must fail on drift instead of self-mutating the branch')
 
 console.log('PASS Mega X 3D hidden-card choice bridge contract')
