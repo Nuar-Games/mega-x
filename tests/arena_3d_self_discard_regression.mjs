@@ -26,8 +26,9 @@ must(hud.includes("card.selected?'is-selected':''"),'3D HUD must visibly preserv
 must(css.includes("body.mx-arena-3d-enabled .choice-overlay:has(.discard-panel[data-pending-discard-reason])"),'supported legacy discard overlay must be disabled while 3D is active')
 must(build.includes("'patch-self-discard-3d-bridge.mjs'"),'build prepare must run self-discard patch')
 must(build.includes("'arena_3d_self_discard_regression.mjs'"),'build must run self-discard regression')
-must(verify.includes("tests/arena_3d_self_discard_regression.mjs"),'npm test must run self-discard regression')
-must(materialize.includes('node scripts/patch-self-discard-3d-bridge.mjs'),'materialize workflow must run self-discard patch')
+must(verify.includes("entry.name.endsWith('_regression.mjs')"),'npm test must discover every regression file instead of hardcoding a short list')
+must(materialize.includes('node scripts/build-clean.mjs --prepare-only'),'generated-source verification must use the authoritative build prepare chain')
+must(materialize.includes('Generated source drift detected'),'generated-source verification must fail on drift instead of self-mutating the branch')
 if(generatedApp){
   must(generatedApp.includes('<div className="choice-panel discard-panel" data-pending-discard-reason={game.pendingSelfDiscard.reason} data-pending-discard-mode={game.pendingSelfDiscard.mode} data-pending-discard-count={game.pendingSelfDiscard.count}>'),'generated App must contain self-discard 3D bridge metadata on the discard panel')
 }
