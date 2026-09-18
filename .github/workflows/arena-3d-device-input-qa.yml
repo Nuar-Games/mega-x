@@ -100,6 +100,11 @@ jobs:
               for(const selector of selectors){
                 const target=page.locator(selector).filter({hasNotText:/QUIT|SURRENDER|AUDIO/i}).first()
                 if(await target.count()&&await target.isVisible()){
+                  const ariaLabel=await target.getAttribute('aria-label')
+                  const textContent=await target.textContent()
+                  const actionId=await target.getAttribute('data-arena-action-id')
+                  const labelText=(ariaLabel||textContent||actionId||'').trim()
+                  console.log(`[MX_QA_LOOP] ${label} step=${step} selector=${selector} label=${labelText} actionId=${actionId||''}`)
                   await target.click()
                   acted=true
                   break
