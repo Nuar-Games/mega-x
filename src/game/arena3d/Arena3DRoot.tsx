@@ -19,7 +19,13 @@ export function Arena3DRoot({shell}:Props){
   const [transitions,setTransitions]=useState<Arena3DTransition[]>([])
   const [impactToken,setImpactToken]=useState(0)
   const [quality,setQuality]=useState<Arena3DQualityName>(()=>chooseArena3DQuality())
-  const [touchCapable]=useState(()=>typeof navigator!=='undefined'&&navigator.maxTouchPoints>0)
+  const [touchCapable]=useState(()=>{
+    if(typeof navigator==='undefined')return false
+    if(navigator.maxTouchPoints>0)return true
+    if(typeof window!=='undefined'&&'ontouchstart' in window)return true
+    if(typeof window!=='undefined'&&window.matchMedia?.('(pointer: coarse), (hover: none)').matches)return true
+    return false
+  })
   const profile=ARENA_3D_QUALITY[quality]
 
   useEffect(()=>subscribeArena3DState(shell,next=>{
