@@ -4,3 +4,7 @@
 @media(max-width:420px){.mx3d-topbar{width:calc(100% - 98px)}.mx3d-prompt{font-size:10px;letter-spacing:.02em}.mx3d-commands{bottom:142px}.mx3d-command{font-size:10px;padding:0 6px}.mx3d-mobile-card{width:44px}.mx3d-status{bottom:78px}.mx3d-chooser{left:8px;right:8px;transform:none;max-width:none}}
 @media(orientation:landscape) and (max-height:520px){.mx3d-topbar{top:4px}.mx3d-meta{top:4px}.mx3d-commands{right:6px;left:auto;bottom:8px;top:auto;width:min(190px,32vw);grid-template-columns:1fr}.mx3d-command{min-height:38px}.mx3d-mobile-hand{left:10%;right:34%;bottom:4px;justify-content:flex-start}.mx3d-mobile-card{width:42px;min-height:52px}.mx3d-status{left:8px;bottom:4px;max-width:28vw}.mx3d-chooser{bottom:58px}}
 @media(prefers-reduced-motion:reduce){.mx3d-root *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+/* 3D authoritative choice overlays */
+body.mx-arena-3d-enabled .choice-overlay:has(.choice-panel[data-pending-choice-kind]),body.mx-arena-3d-enabled .choice-overlay:has(.board-choice-panel){opacity:0!important;pointer-events:none!important}
+.mx3d-choice-waiting{padding:8px 12px;font:800 12px/1.2 Oxanium,sans-serif;letter-spacing:.04em;white-space:nowrap}

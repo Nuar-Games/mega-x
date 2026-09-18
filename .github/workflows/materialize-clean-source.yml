@@ -46,7 +46,6 @@ jobs:
           node scripts/patch-mobile-lobby.mjs
           node scripts/patch-arena-mobile-audit.mjs
           node scripts/patch-gameplay-flow-regressions.mjs
-          node scripts/patch-engine-behavior-core-rules.mjs
           node scripts/patch-vs-card-id-anchors.mjs
           node scripts/patch-arena-blueprint-structure.mjs
           node scripts/patch-tie-breaker-choice.mjs
@@ -58,6 +57,7 @@ jobs:
           node scripts/patch-vs-intro-consistency.mjs
           node scripts/hotfix-discard-build.mjs
           node scripts/patch-arena-ownership-choice.mjs
+          node scripts/patch-hidden-choice-3d-bridge.mjs
           node scripts/patch-discard-direct-image.mjs
           node scripts/patch-mobile-wake-lock.mjs
           node scripts/patch-final-arena-touchup.mjs

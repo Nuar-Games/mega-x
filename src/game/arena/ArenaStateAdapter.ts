@@ -26,6 +26,7 @@ export type ArenaRenderState={
   tieBreakerCards:ArenaCardRef[]
   tieBreakerReveal:ArenaCardRef[]
   tieBreakerMessage:string
+  pendingChoice:{kind:string;remaining:number;sourceCardName:string;hiddenSlots:ArenaCardRef[];visibleTargets:ArenaCardRef[]}|null
   phase:string
   prompt:string
   timer:string
@@ -77,13 +78,30 @@ const statsFrom=(root:ParentNode,side:LeftOrRight):ArenaStats=>({
 const positionFrom=(root:ParentNode,side:LeftOrRight)=>firstText(root,`.mx3-position-${side}`).replace(/^POSISI\s*/i,'').trim()||'—'
 
 export function readArenaRenderState(shell:HTMLElement):ArenaRenderState{
-  const allControls=Array.from(shell.querySelectorAll<HTMLButtonElement>('.mx3-phase-prompt button,.mx3-local-hand button,.mx3-position,.mx3-quit,.mx3-audio,.tie-breaker-choice-hand button,.board-target-card')).filter(btn=>!btn.disabled)
+  const allControls=Array.from(shell.querySelectorAll<HTMLButtonElement>('.mx3-phase-prompt button,.mx3-local-hand button,.mx3-position,.mx3-quit,.mx3-audio,.tie-breaker-choice-hand button,.board-target-card,.choice-overlay .card-back-button,.choice-overlay .target-effect:not(.board-target-card)')).filter(btn=>!btn.disabled)
   allControls.forEach((button,index)=>actionIdFor(button,index))
 
   const boardTargets=Array.from(shell.querySelectorAll<HTMLButtonElement>('.board-target-card[data-arena-action-id]')).map(button=>{
     const img=button.querySelector<HTMLImageElement>('img')
     return img?{src:srcPath(img.src),alt:img.alt||'',actionId:button.dataset.arenaActionId}:null
   }).filter((target):target is {src:string;alt:string;actionId:string}=>Boolean(target?.actionId))
+  const pendingChoicePanel=shell.querySelector<HTMLElement>('.choice-overlay .choice-panel[data-pending-choice-kind]:not(.board-choice-panel)')
+  const hiddenSlots=Array.from(shell.querySelectorAll<HTMLButtonElement>('.choice-overlay .card-back-button[data-arena-action-id]')).map((button,index)=>({
+    src:'/cards/back-game.webp',
+    alt:`KAD ${index+1}`,
+    actionId:button.dataset.arenaActionId,
+  })).filter((card):card is ArenaCardRef&{actionId:string}=>Boolean(card.actionId))
+  const visibleTargets=Array.from(shell.querySelectorAll<HTMLButtonElement>('.choice-overlay .target-effect:not(.board-target-card)[data-arena-action-id]')).map(button=>{
+    const img=button.querySelector<HTMLImageElement>('img')
+    return img?{src:srcPath(img.src),alt:img.alt||button.textContent?.trim()||'TARGET',actionId:button.dataset.arenaActionId}:null
+  }).filter((card):card is ArenaCardRef&{actionId:string}=>Boolean(card?.actionId))
+  const pendingChoice=pendingChoicePanel?{
+    kind:pendingChoicePanel.dataset.pendingChoiceKind||'',
+    remaining:Number(pendingChoicePanel.dataset.pendingChoiceRemaining||0),
+    sourceCardName:pendingChoicePanel.dataset.pendingChoiceSource||'',
+    hiddenSlots,
+    visibleTargets,
+  }:null
   const withBoardTarget=(card:ArenaCardRef|null):ArenaCardRef|null=>{
     if(!card)return null
     const target=boardTargets.find(item=>item.src===card.src||(item.alt&&card.alt&&item.alt===card.alt))
@@ -113,7 +131,7 @@ export function readArenaRenderState(shell:HTMLElement):ArenaRenderState{
   const phaseClass=Array.from(shell.querySelector('.mx3-canvas')?.classList||[]).find(v=>v.startsWith('phase-'))
   const phase=(phaseClass?.slice(6)||firstText(shell,'.mx3-phase-prompt strong')||'WAIT').toUpperCase()
   const phaseControls=allControls.filter(button=>{
-    if(button.closest('.mx3-local-hand')||button.closest('.tie-breaker-choice-hand')||button.matches('.board-target-card'))return false
+    if(button.closest('.mx3-local-hand')||button.closest('.tie-breaker-choice-hand')||button.matches('.board-target-card,.card-back-button,.target-effect:not(.board-target-card)'))return false
     if(button.matches('.mx3-position')){
       const label=(button.textContent||'').replace(/\s+/g,' ').trim()
       const isLocalPosition=button.classList.contains(`mx3-position-${localSide}`)
@@ -154,6 +172,7 @@ export function readArenaRenderState(shell:HTMLElement):ArenaRenderState{
     tieBreakerCards:cardsFrom(shell,'.tie-breaker-choice-hand img'),
     tieBreakerReveal:cardsFrom(shell,'.tie-breaker-last-reveal img,.tie-breaker-pair img'),
     tieBreakerMessage:firstText(shell,'.tie-breaker-choice-copy em')||firstText(shell,'.tie-breaker-tied')||'',
+    pendingChoice,
     phase,
     prompt:firstText(shell,'.mx3-phase-prompt strong'),
     timer:firstText(shell,'.mx3-timer strong')||'—',

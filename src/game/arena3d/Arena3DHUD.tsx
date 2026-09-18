@@ -53,7 +53,12 @@ export function Arena3DHUD({state,onAction,onCardSelect,chooser,onCloseChooser,q
         </button>
       })}
     </div>:null}
-    {chooser&&chooser.actions?.length?<div className="mx3d-chooser">
+    {state.pendingChoice?<div className="mx3d-chooser" data-pending-choice-3d>
+      <strong>{state.pendingChoice.sourceCardName||state.pendingChoice.kind||'PILIH SASARAN'}</strong>
+      {state.pendingChoice.visibleTargets.map((card,index)=><button key={card.actionId||`visible-${index}`} type="button" className="mx3d-choice" onClick={()=>{if(card.actionId)onAction(card.actionId)}}>{card.alt||`KAD ${index+1}`}</button>)}
+      {state.pendingChoice.hiddenSlots.map((card,index)=><button key={card.actionId||`hidden-${index}`} type="button" className="mx3d-choice" onClick={()=>{if(card.actionId)onAction(card.actionId)}}>{`KAD ${index+1}`}</button>)}
+      {!state.pendingChoice.visibleTargets.length&&!state.pendingChoice.hiddenSlots.length?<div className="mx3d-choice-waiting">WAITING · {state.pendingChoice.sourceCardName||state.pendingChoice.kind} · {state.pendingChoice.remaining} REMAINING</div>:null}
+    </div>:chooser&&chooser.actions?.length?<div className="mx3d-chooser">
       <strong>CARD ACTION</strong>
       {chooser.actions.map(action=><button key={action.id} type="button" className="mx3d-choice" onClick={()=>{onAction(action.id);onCloseChooser()}}>{action.label}</button>)}
       <button type="button" className="mx3d-choice" onClick={onCloseChooser}>CLOSE</button>
