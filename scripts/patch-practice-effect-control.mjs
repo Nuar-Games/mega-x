@@ -13,18 +13,26 @@ let lifecycleTest = fs.readFileSync(lifecycleTestPath, 'utf8')
 const effectFrom = "game.phase === 'EFFECT' && game.effectTurn === bottomPlayer"
 const effectTo = "game.phase === 'EFFECT' && (game.effectTurn === bottomPlayer || (activeOnlineMatch?.id?.startsWith('practice-local:') && (activeOnlineMatch?.state?.effectTurn === onlineSession?.userId || activeOnlineMatch?.state?.effectTurn === 0)))"
 
-const patchEffectControls = (source, label) => {
-  const already = source.split(effectTo).length - 1
-  if (already >= 2) return { source, count: already }
-  const matches = source.split(effectFrom).length - 1
-  if (matches < 2) throw new Error(`practice Effect-control ${label} patch expected at least 2 Arena targets, found ${matches}`)
-  return { source: source.split(effectFrom).join(effectTo), count: matches }
+// Idempotent by construction: split-on-effectFrom/join-effectTo is a no-op once a
+// target is already expanded (effectFrom's exact substring no longer occurs inside
+// effectTo), so this is safe to run any number of times regardless of starting
+// state. The check is on the POST-condition (how many expanded targets exist at
+// the end), not a pre-condition match count — a stale, already-expanded fragment
+// file must never cause this to short-circuit before reaching every target.
+// App.tsx has 3 targets (2 spliced in from the fragment + 1 hardcoded separately
+// in patch-arena-blueprint-structure.mjs's compactFocus overlay literal); the
+// standalone fragment file only carries the first 2.
+const patchEffectControls = (source, label, expectedMin) => {
+  source = source.split(effectFrom).join(effectTo)
+  const finalCount = source.split(effectTo).length - 1
+  if (finalCount < expectedMin) throw new Error(`practice Effect-control ${label} patch expected at least ${expectedMin} Arena targets, found ${finalCount}`)
+  return { source, count: finalCount }
 }
 
-const arenaPatch = patchEffectControls(arena, 'fragment')
+const arenaPatch = patchEffectControls(arena, 'fragment', 2)
 arena = arenaPatch.source
 const arenaMatches = arenaPatch.count
-const appPatch = patchEffectControls(app, 'App')
+const appPatch = patchEffectControls(app, 'App', 3)
 app = appPatch.source
 const appMatches = appPatch.count
 

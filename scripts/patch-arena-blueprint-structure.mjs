@@ -6,7 +6,10 @@ const stagePath = 'src/arena-stage.css'
 let app = fs.readFileSync(appPath, 'utf8')
 let stage = fs.readFileSync(stagePath, 'utf8')
 if (!app.includes("from './arena-card-info.ts'")) app = `import { CARD_INFO } from './arena-card-info.ts'\n${app}`
-const replacement = fs.readFileSync(fragmentPath, 'utf8').trim()
+// The fragment file carries a GENERATED-FILE header once committed; strip it
+// before splicing so this stays idempotent whether the file on disk is
+// header-free (mid-chain) or already headered (fresh checkout of committed output).
+const replacement = fs.readFileSync(fragmentPath, 'utf8').replace(/^<!-- GENERATED FILE[^\n]*-->\n/, '').trim()
 const shellStart = app.indexOf('<section className="duel-shell">')
 if (shellStart < 0) throw new Error('Arena MX3 rebuild: duel-shell missing')
 
