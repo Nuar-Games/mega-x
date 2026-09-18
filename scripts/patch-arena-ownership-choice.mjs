@@ -10,6 +10,7 @@ let css = fs.readFileSync(cssPath, 'utf8')
 let arenaCss = fs.readFileSync(arenaCssPath, 'utf8')
 
 function replaceRequired(source, from, to, label) {
+  if (source.includes(to)) return source
   if (!source.includes(from)) throw new Error(`Arena ownership patch target missing: ${label}`)
   return source.replaceAll(from, to)
 }
@@ -33,6 +34,7 @@ fragment = fragment.replaceAll('TANGAN ANDA', 'KAD DI TANGAN')
 
 function removeVsLabels(source, label) {
   const before = (source.match(/className="mx3-vs-label"/g) || []).length
+  if (before === 0) return source
   source = source.replace(/\s*<span className="mx3-vs-label"[^>]*>KAD VS X FIGHTER [12]<\/span>/g, '')
   const after = (source.match(/className="mx3-vs-label"/g) || []).length
   if (before < 2 || after !== before - 2) throw new Error(`Arena ownership patch target missing: ${label}`)
@@ -45,10 +47,11 @@ app = removeVsLabels(app, 'app inner VS labels')
 const legacyStartToken = "{game.pendingSelfDiscard && game.pendingSelfDiscard.player === localViewer && ("
 const authoritativeNextToken = "{game.phase === 'TIE_BREAKER' && game.tieBreaker && ("
 const legacyStart = app.indexOf(legacyStartToken)
-if (legacyStart < 0) throw new Error('Legacy duplicate discard sheet start missing')
-const legacyEnd = app.indexOf(authoritativeNextToken, legacyStart)
-if (legacyEnd < 0) throw new Error('Legacy duplicate discard sheet end marker missing')
-app = app.slice(0, legacyStart) + app.slice(legacyEnd)
+if (legacyStart >= 0) {
+  const legacyEnd = app.indexOf(authoritativeNextToken, legacyStart)
+  if (legacyEnd < 0) throw new Error('Legacy duplicate discard sheet end marker missing')
+  app = app.slice(0, legacyStart) + app.slice(legacyEnd)
+}
 
 if (app.includes('mx-discard-confirm-sheet') || app.includes('CONFIRM DISCARD')) throw new Error('Legacy duplicate discard sheet survived shared cleanup')
 if (!app.includes('choice-overlay') || !app.includes('discard-panel') || !app.includes('SAHKAN BUANG')) throw new Error('Authoritative shared discard choice overlay was damaged')
