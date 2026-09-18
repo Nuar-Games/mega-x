@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useTexture } from '@react-three/drei'
 import type { ThreeEvent } from '@react-three/fiber'
@@ -91,6 +91,14 @@ function TexturedArenaCard({
   const width = 1.42 * scale
   const height = 2.03 * scale
   const actionable = Boolean(card.actionId || card.actions?.length)
+
+  useEffect(() => {
+    if (!qaId || !qaHitboxMode()) return
+    return () => {
+      const geometry = (window as QaWindow).__mx3dQaHitGeometry
+      if (geometry) delete geometry[qaId]
+    }
+  }, [qaId])
 
   useFrame(() => {
     if (!qaId || !qaHitboxMode() || !hitTarget.current) return
