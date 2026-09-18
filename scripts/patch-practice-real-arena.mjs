@@ -8,6 +8,11 @@ let auth = fs.readFileSync(authPath, 'utf8')
 let vs = fs.readFileSync(vsPath, 'utf8')
 
 const mustReplace = (source, from, to, label) => {
+  if (source.includes(to)) return source
+  // The final verified practice surrender path clears the local match and emits
+  // the arena-exit event directly. It supersedes the older surrenderPracticeMatch
+  // form this patch originally installed, so preserve it when already present.
+  if (label === 'surrenderMatch' && source.includes("if (isPracticeMatchId(matchId)) { clearPracticeMatch(session.userId, matchId); window.dispatchEvent(new CustomEvent('mega-x:practice-exit')); return }")) return source
   if (!source.includes(from)) throw new Error(`practice real-arena patch target missing: ${label}`)
   return source.replace(from, to)
 }
@@ -56,7 +61,7 @@ if (auth.includes(`export async function resolveActionTimeout(session: OnlineSes
 `export async function resolveActionTimeout(session: OnlineSession, matchId: string): Promise<boolean> {\n  if (isPracticeMatchId(matchId)) return false\n  return Boolean(await rpcAuthed(session, 'resolve_action_timeout', { p_match: matchId }))`)
 }
 
-if (!auth.includes('if (isPracticeMatchId(matchId)) { surrenderPracticeMatch')) auth = mustReplace(auth,
+if (!auth.includes('if (isPracticeMatchId(matchId)) { surrenderPracticeMatch') && !auth.includes("if (isPracticeMatchId(matchId)) { clearPracticeMatch(session.userId, matchId); window.dispatchEvent(new CustomEvent('mega-x:practice-exit')); return }")) auth = mustReplace(auth,
 `export async function surrenderMatch(session: OnlineSession, matchId: string) {\n  await rpcAuthed(session, 'surrender_match', { p_match: matchId })`,
 `export async function surrenderMatch(session: OnlineSession, matchId: string) {\n  if (isPracticeMatchId(matchId)) { surrenderPracticeMatch(session.userId, matchId); return }\n  await rpcAuthed(session, 'surrender_match', { p_match: matchId })`,
 'surrenderMatch')
