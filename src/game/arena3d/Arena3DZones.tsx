@@ -8,13 +8,22 @@ const handX=(index:number,count:number)=>{
   return (index-(count-1)/2)*spread
 }
 
+const qaHandSize=()=>{
+  if(typeof window==='undefined')return 0
+  if(new URLSearchParams(window.location.search).get('qa3dHitboxes')!=='1')return 0
+  const requested=Number(new URLSearchParams(window.location.search).get('qaHandSize')||0)
+  return Number.isInteger(requested)&&requested>0?Math.min(7,requested):0
+}
+
 export function Arena3DZones({state,onPrimary,onSecondary}:Props){
-  const localHand=state.localHand.slice(-7)
+  const fullLocalHand=state.localHand.slice(-7)
+  const requestedQaHandSize=qaHandSize()
+  const localHand=requestedQaHandSize?fullLocalHand.slice(0,requestedQaHandSize):fullLocalHand
   return <group>
     <ZonePad position={[-1.8,.1,.1]} size={[2.15,3.05]} color="#1b9ee4" active={Boolean(state.localVs?.actionId)}/>
     <ZonePad position={[1.8,.1,-.1]} size={[2.15,3.05]} color="#e73a57" active={Boolean(state.opponentVs?.actionId)}/>
 
-    {localHand.map((card,index)=><Arena3DCard key={`hand-${card.src}-${index}`} card={card} position={[handX(index,localHand.length),.26,3.68+Math.abs(index-(localHand.length-1)/2)*.09]} rotation={[-Math.PI/2,0,(index-(localHand.length-1)/2)*-.035]} scale={1.02} onPrimary={onPrimary} onSecondary={onSecondary}/>) }
+    {localHand.map((card,index)=><Arena3DCard key={`hand-${card.src}-${index}`} card={card} position={[handX(index,localHand.length),.26,3.68+Math.abs(index-(localHand.length-1)/2)*.09]} rotation={[-Math.PI/2,0,(index-(localHand.length-1)/2)*-.035]} scale={1.02} onPrimary={onPrimary} onSecondary={onSecondary} qaId={`hand-${index}-${card.alt||card.src}`}/>) }
 
     <Arena3DCard card={state.localVs} position={[-1.8,.32,.1]} scale={1.46} onPrimary={onPrimary} onSecondary={onSecondary}/>
     <Arena3DCard card={state.opponentVs} position={[1.8,.32,-.1]} rotation={[-Math.PI/2,0,Math.PI]} scale={1.46} onPrimary={onPrimary} onSecondary={onSecondary}/>
