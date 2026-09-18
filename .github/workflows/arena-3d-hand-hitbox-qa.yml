@@ -1,0 +1,194 @@
+name: Arena 3D Hand Hitbox QA
+
+on:
+  push:
+    branches: [arena-clean-rebuild]
+  workflow_dispatch:
+
+jobs:
+  desktop-hand-hitboxes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install
+      - name: Run regression tests
+        run: npm test
+      - name: Build current branch
+        run: npm run build
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start preview
+        run: |
+          nohup npx vite preview --host 127.0.0.1 --port 4173 > /tmp/mega-x-preview.log 2>&1 &
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/mega-x-preview.log
+          exit 1
+      - name: Verify every desktop hand card and hitbox edge
+        env:
+          MEGAX_PREVIEW_URL: http://127.0.0.1:4173/
+        run: |
+          cat > hand-hitbox-qa.mjs <<'EOF'
+          import { chromium } from 'playwright'
+
+          const base=process.env.MEGAX_PREVIEW_URL
+          const browser=await chromium.launch({headless:true})
+          const context=await browser.newContext({viewport:{width:1366,height:768},hasTouch:false,isMobile:false,deviceScaleFactor:1,reducedMotion:'reduce'})
+
+          const pointInPolygon=(point,polygon)=>{
+            let inside=false
+            for(let i=0,j=polygon.length-1;i<polygon.length;j=i++){
+              const xi=polygon[i].x, yi=polygon[i].y
+              const xj=polygon[j].x, yj=polygon[j].y
+              const intersect=((yi>point.y)!==(yj>point.y))&&(point.x<(xj-xi)*(point.y-yi)/(yj-yi||Number.EPSILON)+xi)
+              if(intersect)inside=!inside
+            }
+            return inside
+          }
+          const centroid=polygon=>({
+            x:polygon.reduce((sum,p)=>sum+p.x,0)/polygon.length,
+            y:polygon.reduce((sum,p)=>sum+p.y,0)/polygon.length,
+          })
+          const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y)
+          const stateSnapshot=page=>page.evaluate(()=>JSON.stringify({
+            prompt:document.querySelector('.mx3d-prompt')?.textContent||'',
+            status:document.querySelector('.mx3d-status')?.textContent||'',
+            phase:document.querySelector('.mx3-canvas')?.getAttribute('data-arena-phase')||'',
+            chooser:document.querySelector('.mx3d-chooser')?.textContent||''
+          }))
+
+          async function openArena(handSize){
+            const page=await context.newPage()
+            page.on('console',m=>{const t=m.text(); if(t.startsWith('[MX_QA]'))console.log(`[size=${handSize}] ${t}`)})
+            const url=`${base}?arena=3d&qa3dHitboxes=1&qaHandSize=${handSize}`
+            const response=await page.goto(url,{waitUntil:'domcontentloaded',timeout:90000})
+            if(response?.status()!==200)throw new Error(`size=${handSize}:HTTP_${response?.status()}`)
+            await page.locator('#mx-main-practice-cta').waitFor({state:'visible',timeout:15000})
+            await page.locator('#mx-main-practice-cta').click()
+            await page.waitForSelector('[data-arena-3d-root="true"]',{timeout:30000})
+            await page.waitForSelector('.mx3d-canvas canvas',{state:'visible',timeout:30000})
+            await page.waitForFunction(size=>{
+              const entries=Object.values(window.__mx3dQaHitGeometry||{})
+              return entries.length===size&&entries.every(item=>item?.polygon?.length===4)
+            },handSize,{timeout:15000})
+            await page.waitForTimeout(700)
+            return page
+          }
+
+          const readGeometry=page=>page.evaluate(()=>JSON.parse(JSON.stringify(window.__mx3dQaHitGeometry||{})))
+
+          function findUniqueInterior(target,all){
+            const c=centroid(target.polygon)
+            const candidates=[c]
+            for(const p of target.polygon){
+              candidates.push({x:c.x+(p.x-c.x)*.35,y:c.y+(p.y-c.y)*.35})
+              candidates.push({x:c.x+(p.x-c.x)*.62,y:c.y+(p.y-c.y)*.62})
+              candidates.push({x:c.x+(p.x-c.x)*.82,y:c.y+(p.y-c.y)*.82})
+            }
+            const b=target.bounds
+            for(let fy=.15;fy<=.85;fy+=.1){
+              for(let fx=.15;fx<=.85;fx+=.1){
+                candidates.push({x:b.left+(b.right-b.left)*fx,y:b.top+(b.bottom-b.top)*fy})
+              }
+            }
+            return candidates.find(point=>
+              pointInPolygon(point,target.polygon)&&
+              all.every(other=>other.qaId===target.qaId||!pointInPolygon(point,other.polygon))
+            )||null
+          }
+
+          function findSafeOutside(target,all,canvasBox){
+            const c=centroid(target.polygon)
+            const candidates=[]
+            for(let i=0;i<target.polygon.length;i++){
+              const a=target.polygon[i]
+              const b=target.polygon[(i+1)%target.polygon.length]
+              const mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2}
+              const dx=mid.x-c.x,dy=mid.y-c.y
+              const len=Math.hypot(dx,dy)||1
+              for(const offset of [4,7,11,16,24]){
+                candidates.push({x:mid.x+dx/len*offset,y:mid.y+dy/len*offset})
+              }
+            }
+            return candidates.find(point=>
+              point.x>canvasBox.x+2&&point.x<canvasBox.x+canvasBox.width-2&&
+              point.y>canvasBox.y+2&&point.y<canvasBox.y+canvasBox.height-2&&
+              all.every(other=>!pointInPolygon(point,other.polygon))
+            )||null
+          }
+
+          // Establish the real opening-hand ceiling before choosing geometry sizes.
+          const probe=await openArena(7)
+          const probeGeometry=Object.values(await readGeometry(probe))
+          const available=probeGeometry.length
+          console.log(`REAL_OPENING_HAND_RENDERABLE=${available}`)
+          await probe.close()
+          const sizes=[3,4,5].filter(size=>size<=available)
+          if(sizes.length<2)throw new Error(`INSUFFICIENT_REAL_HAND_FOR_MULTI_SIZE_COVERAGE available=${available}`)
+
+          for(const handSize of sizes){
+            const geometryPage=await openArena(handSize)
+            const geometry=Object.values(await readGeometry(geometryPage)).sort((a,b)=>a.qaId.localeCompare(b.qaId))
+            const canvasBox=await geometryPage.locator('.mx3d-canvas canvas').boundingBox()
+            if(!canvasBox)throw new Error(`size=${handSize}:CANVAS_BOX_MISSING`)
+            console.log(`HAND_SIZE=${handSize} cards=${geometry.map(item=>item.qaId).join(' | ')}`)
+
+            const points=[]
+            for(const target of geometry){
+              const inside=findUniqueInterior(target,geometry)
+              const outside=findSafeOutside(target,geometry,canvasBox)
+              if(!inside)throw new Error(`size=${handSize}:${target.qaId}:NO_UNIQUE_EXPOSED_INTERIOR_POINT`)
+              if(!outside)throw new Error(`size=${handSize}:${target.qaId}:NO_SAFE_OUTSIDE_POINT`)
+              points.push({target,inside,outside})
+              console.log(`GEOMETRY size=${handSize} card=${target.qaId} inside=${inside.x.toFixed(1)},${inside.y.toFixed(1)} outside=${outside.x.toFixed(1)},${outside.y.toFixed(1)} edgeGap=${distance(inside,outside).toFixed(1)}`)
+            }
+            await geometryPage.close()
+
+            for(const {target,inside,outside} of points){
+              // Fresh real arena for each inside click so one card action cannot alter the next card's test.
+              const page=await openArena(handSize)
+              await page.evaluate(()=>{window.__mx3dQaLastActivated=undefined})
+              await page.mouse.click(inside.x,inside.y)
+              await page.waitForTimeout(350)
+              const activated=await page.evaluate(()=>window.__mx3dQaLastActivated||null)
+              if(!activated)throw new Error(`size=${handSize}:${target.qaId}:INSIDE_CLICK_NO_ACTIVATION`)
+              if(activated.qaId!==target.qaId)throw new Error(`size=${handSize}:${target.qaId}:INSIDE_CLICK_WRONG_CARD actual=${activated.qaId}`)
+              if(target.actionId&&activated.actionId!==target.actionId)throw new Error(`size=${handSize}:${target.qaId}:WRONG_ACTION expected=${target.actionId} actual=${activated.actionId||''}`)
+              if(target.actions?.length){
+                const chooser=page.locator('.mx3d-chooser')
+                if(!(await chooser.count()))throw new Error(`size=${handSize}:${target.qaId}:EXPECTED_CHOOSER_MISSING`)
+                const text=((await chooser.textContent())||'').replace(/\s+/g,' ').trim()
+                const labels=target.actions.map(action=>action.label).filter(Boolean)
+                if(labels.length&&!labels.some(label=>text.includes(label)))throw new Error(`size=${handSize}:${target.qaId}:CHOOSER_DOES_NOT_MATCH_CARD chooser=${text}`)
+              }
+              console.log(`PASS_INSIDE size=${handSize} card=${target.qaId} action=${activated.actionId||'chooser'}`)
+              await page.close()
+
+              // Separate fresh arena for outside click; no card activation and no observable game-state change are allowed.
+              const edgePage=await openArena(handSize)
+              await edgePage.evaluate(()=>{window.__mx3dQaLastActivated=undefined})
+              const before=await stateSnapshot(edgePage)
+              await edgePage.mouse.click(outside.x,outside.y)
+              await edgePage.waitForTimeout(350)
+              const after=await stateSnapshot(edgePage)
+              const edgeActivation=await edgePage.evaluate(()=>window.__mx3dQaLastActivated||null)
+              if(edgeActivation)throw new Error(`size=${handSize}:${target.qaId}:OUTSIDE_CLICK_ACTIVATED_CARD actual=${edgeActivation.qaId}`)
+              if(after!==before)throw new Error(`size=${handSize}:${target.qaId}:OUTSIDE_CLICK_CHANGED_STATE before=${before} after=${after}`)
+              console.log(`PASS_OUTSIDE size=${handSize} card=${target.qaId}`)
+              await edgePage.close()
+            }
+          }
+
+          console.log(`PASS desktop-3d-hand-per-card-hitbox sizes=${sizes.join(',')}`)
+          await browser.close()
+          EOF
+          node hand-hitbox-qa.mjs
