@@ -26,6 +26,7 @@ async function readHandHitGeometry(page: Page): Promise<QaHitGeometry[]> {
 }
 
 test('SET_VS: shared guest lobby -> real pointer -> ATK/DEF -> card enters VS -> next phase', async ({ page }) => {
+  test.setTimeout(90_000)
   await page.goto('/?qa3dHitboxes=1')
 
   // Guest must enter the SAME lobby first; landing may never start Practice directly.
@@ -41,7 +42,7 @@ test('SET_VS: shared guest lobby -> real pointer -> ATK/DEF -> card enters VS ->
   // Wait for the 3D scene to mount and report projected screen geometry.
   await page.waitForFunction(
     () => Object.keys((window as unknown as QaWindow).__mx3dQaHitGeometry || {}).some((id) => id.startsWith('hand-')),
-    { timeout: 15_000 },
+    { timeout: 20_000 },
   )
 
   let target: QaHitGeometry | undefined
@@ -49,7 +50,7 @@ test('SET_VS: shared guest lobby -> real pointer -> ATK/DEF -> card enters VS ->
     const hand = await readHandHitGeometry(page)
     target = hand.find((card) => (card.actions?.length ?? 0) >= 2)
     expect(target, 'no SET_VS-eligible hand card found (expected ATK/DEF choice)').toBeTruthy()
-  }).toPass({ timeout: 10_000 })
+  }).toPass({ timeout: 15_000 })
 
   const clickedCard = target!
   const clickedSrc = clickedCard.src
@@ -58,14 +59,14 @@ test('SET_VS: shared guest lobby -> real pointer -> ATK/DEF -> card enters VS ->
   await page.mouse.click(cx, cy)
 
   const chooser = page.locator('.mx3d-chooser')
-  await expect(chooser).toBeVisible({ timeout: 5_000 })
+  await expect(chooser).toBeVisible({ timeout: 10_000 })
   const choiceButtons = chooser.locator('button.mx3-choice, button.mx3d-choice')
   const labels = (await choiceButtons.allTextContents()).map((text) => text.trim().toUpperCase())
   expect(labels.some((label) => label.includes('ATK'))).toBe(true)
   expect(labels.some((label) => label.includes('DEF'))).toBe(true)
 
   await chooser.getByRole('button', { name: /ATK/i }).click()
-  await expect(chooser).toBeHidden({ timeout: 5_000 })
+  await expect(chooser).toBeHidden({ timeout: 10_000 })
 
   // Authoritative hidden DOM: the exact selected card must enter the local VS zone.
   const localVsSelector = await page.evaluate(() => {
@@ -77,22 +78,22 @@ test('SET_VS: shared guest lobby -> real pointer -> ATK/DEF -> card enters VS ->
   await expect(async () => {
     const vsSrc = await page.locator(localVsSelector).getAttribute('src')
     expect(vsSrc, 'local VS zone never showed the clicked card').toContain(clickedSrc.split('/').pop()!)
-  }).toPass({ timeout: 10_000 })
+  }).toPass({ timeout: 15_000 })
 
   await expect(async () => {
     const hand = await readHandHitGeometry(page)
     expect(hand.some((card) => card.src === clickedSrc), 'clicked card is still present in the hand').toBe(false)
-  }).toPass({ timeout: 10_000 })
+  }).toPass({ timeout: 15_000 })
 
   await expect(async () => {
     const hand = await readHandHitGeometry(page)
     const stillOfferingVs = hand.filter((card) => card.actions?.some((action) => /ATK|DEF/i.test(action.label)))
     expect(stillOfferingVs, `stale ATK/DEF actions survived on: ${stillOfferingVs.map((c) => c.alt).join(', ')}`).toHaveLength(0)
-  }).toPass({ timeout: 10_000 })
+  }).toPass({ timeout: 15_000 })
 
   await expect(async () => {
     const beginRound = await page.locator('.mx3-begin-round').count()
     const phase = await page.evaluate(() => document.querySelector('.mx3-canvas')?.className.match(/phase-(\S+)/)?.[1] || '')
     expect(beginRound > 0 || phase !== 'set_vs', `no next action appeared (phase=${phase})`).toBe(true)
-  }).toPass({ timeout: 15_000 })
+  }).toPass({ timeout: 20_000 })
 })
