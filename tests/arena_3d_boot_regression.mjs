@@ -11,6 +11,14 @@ for(const dep of ['three','@react-three/fiber','@react-three/drei','@react-three
 must(loader.includes("mode==='3d'"),"3D arena must be opt-in via ?arena=3d")
 must(loader.includes("mode!=='clean'"),"fallback arena must remain default when no explicit renderer is requested")
 must(loader.includes("import('./game/arena3d/Arena3DBoot')"),"loader must dynamically import the 3D boot module")
+
+const importIndex=loader.indexOf("import('./game/arena3d/Arena3DBoot')")
+const legacyIndex=loader.indexOf("next.querySelector<HTMLElement>('.mx3-canvas')")
+const hideIndex=loader.indexOf("legacy.style.opacity='0'")
+must(legacyIndex>=0&&hideIndex>=0,'3D loader must pre-hide the legacy arena canvas')
+must(legacyIndex<importIndex&&hideIndex<importIndex,'legacy arena must be hidden before the async 3D import starts')
+must(loader.includes('restoreLegacy'),'3D loader must restore legacy visibility if 3D boot fails')
+
 must(fs.existsSync(bootPath),'3D boot module must exist')
 const boot=fs.readFileSync(bootPath,'utf8')
 must(boot.includes('createRoot'),'3D boot must mount through a React root')
