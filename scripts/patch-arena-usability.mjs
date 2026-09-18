@@ -8,6 +8,7 @@ let stage = fs.readFileSync(stagePath, 'utf8')
 let usabilityCss = fs.readFileSync(usabilityCssPath, 'utf8')
 
 function mustReplace(source, from, to, label) {
+  if (source.includes(to)) return source
   if (!source.includes(from)) throw new Error(`Arena usability patch target missing: ${label}`)
   return source.replace(from, to)
 }
