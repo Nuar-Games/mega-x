@@ -5,7 +5,8 @@ import { test, expect, type Page } from 'playwright/test'
 // It then proves the exact SET_VS sequence that was reported broken:
 //
 //   landing -> shared lobby -> practice
-//   click card -> choose ATK/DEF -> exact card enters VS zone
+//   click card -> choose ATK/DEF -> exact card enters authoritative VS
+//   -> exact card mesh appears in the 3D VS centerpiece
 //   -> card leaves hand -> stale SET_VS actions clear -> next phase appears.
 
 type QaHitGeometry = {
@@ -18,14 +19,16 @@ type QaHitGeometry = {
 }
 type QaWindow = Window & { __mx3dQaHitGeometry?: Record<string, QaHitGeometry> }
 
-async function readHandHitGeometry(page: Page): Promise<QaHitGeometry[]> {
-  return page.evaluate(() => {
-    const geometry = (window as unknown as QaWindow).__mx3dQaHitGeometry || {}
-    return Object.values(geometry).filter((entry) => entry.qaId.startsWith('hand-'))
-  })
+async function readHitGeometry(page: Page): Promise<Record<string,QaHitGeometry>> {
+  return page.evaluate(() => (window as unknown as QaWindow).__mx3dQaHitGeometry || {})
 }
 
-test('SET_VS: shared guest lobby -> real pointer -> ATK/DEF -> card enters VS -> next phase', async ({ page }) => {
+async function readHandHitGeometry(page: Page): Promise<QaHitGeometry[]> {
+  const geometry=await readHitGeometry(page)
+  return Object.values(geometry).filter((entry) => entry.qaId.startsWith('hand-'))
+}
+
+test('SET_VS: shared guest lobby -> real pointer -> ATK/DEF -> visible 3D VS card -> next phase', async ({ page }) => {
   test.setTimeout(90_000)
   await page.goto('/?qa3dHitboxes=1')
 
@@ -54,6 +57,7 @@ test('SET_VS: shared guest lobby -> real pointer -> ATK/DEF -> card enters VS ->
 
   const clickedCard = target!
   const clickedSrc = clickedCard.src
+  const clickedFile = clickedSrc.split('/').pop()!
   const cx = (clickedCard.bounds.left + clickedCard.bounds.right) / 2
   const cy = (clickedCard.bounds.top + clickedCard.bounds.bottom) / 2
   await page.mouse.click(cx, cy)
@@ -77,12 +81,23 @@ test('SET_VS: shared guest lobby -> real pointer -> ATK/DEF -> card enters VS ->
 
   await expect(async () => {
     const vsSrc = await page.locator(localVsSelector).getAttribute('src')
-    expect(vsSrc, 'local VS zone never showed the clicked card').toContain(clickedSrc.split('/').pop()!)
+    expect(vsSrc, 'authoritative local VS zone never showed the clicked card').toContain(clickedFile)
+  }).toPass({ timeout: 15_000 })
+
+  // Actual 3D surface: the same card must mount as the local VS mesh with a real
+  // projected on-screen rectangle. Hidden DOM success alone does not satisfy this test.
+  await expect(async () => {
+    const geometry=await readHitGeometry(page)
+    const visibleVs=geometry['local-vs']
+    expect(visibleVs, '3D local VS card mesh never mounted').toBeTruthy()
+    expect(visibleVs.src, '3D local VS mesh is not the selected card').toContain(clickedFile)
+    expect(visibleVs.bounds.right-visibleVs.bounds.left, '3D VS mesh has no visible width').toBeGreaterThan(20)
+    expect(visibleVs.bounds.bottom-visibleVs.bounds.top, '3D VS mesh has no visible height').toBeGreaterThan(20)
   }).toPass({ timeout: 15_000 })
 
   await expect(async () => {
     const hand = await readHandHitGeometry(page)
-    expect(hand.some((card) => card.src === clickedSrc), 'clicked card is still present in the hand').toBe(false)
+    expect(hand.some((card) => card.src === clickedSrc), 'clicked card is still present in the 3D hand').toBe(false)
   }).toPass({ timeout: 15_000 })
 
   await expect(async () => {
