@@ -41,14 +41,31 @@ async function syncArena(){
     stop3DArena()
     arena3DShell=next
     arena3DLoading=true
+
+    const legacy=next.querySelector<HTMLElement>('.mx3-canvas')
+    const legacyOpacity=legacy?.style.opacity ?? ''
+    const legacyPointerEvents=legacy?.style.pointerEvents ?? ''
+    const restoreLegacy=()=>{
+      if(!legacy)return
+      legacy.style.opacity=legacyOpacity
+      legacy.style.pointerEvents=legacyPointerEvents
+    }
+    if(legacy){
+      legacy.style.opacity='0'
+      legacy.style.pointerEvents='none'
+    }
+
     try{
       const { mountArena3D }=await import('./game/arena3d/Arena3DBoot')
       if(document.contains(next)){
         console.log('[MX_QA] arena-loader before mountArena3D')
-        destroy3D=await mountArena3D(next)
+        destroy3D=await mountArena3D(next,{element:legacy,opacity:legacyOpacity,pointerEvents:legacyPointerEvents})
         console.log('[MX_QA] arena-loader after mountArena3D')
+      }else{
+        restoreLegacy()
       }
     }catch(error){
+      restoreLegacy()
       const message=error instanceof Error?error.message:String(error)
       console.log('[MX_QA] arena-loader mountArena3D error',message)
       console.error('[Mega X] 3D arena boot failed; using fallback arena.',error)
