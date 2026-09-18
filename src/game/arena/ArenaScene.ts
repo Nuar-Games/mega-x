@@ -64,7 +64,7 @@ export class ArenaScene extends Phaser.Scene{
 
   private drawArenaFrame(state:ArenaRenderState){
     this.ambience.forEach(obj=>obj.destroy());this.ambience=[];this.backdrop?.destroy()
-    const w=this.scale.width,h=this.scale.height,min=Math.min(w,h)
+    const w=this.scale.width,h=this.scale.height
     if(this.textures.exists(`asset:${ARENA_ASSETS.background}`))this.backdrop=this.add.image(w/2,h/2,`asset:${ARENA_ASSETS.background}`).setDisplaySize(w,h).setAlpha(0.90).setDepth(-40)
 
     const combat=this.layout.combat
@@ -74,27 +74,40 @@ export class ArenaScene extends Phaser.Scene{
     wash.fillStyle(ARENA_THEME.colors.player,0.08).fillCircle(combat.x+combat.width*0.17,cy,Math.max(w,h)*0.42)
     wash.fillStyle(ARENA_THEME.colors.opponent,0.08).fillCircle(combat.x+combat.width*0.83,cy,Math.max(w,h)*0.42)
 
-    const field=this.keep(this.add.graphics().setDepth(-19))
-    const beamW=Math.max(3,min*0.004)
-    const glowW=Math.max(12,min*0.015)
-    field.lineStyle(glowW,ARENA_THEME.colors.player,0.055)
-    field.lineBetween(combat.x+combat.width*0.06,cy,combat.x+combat.width*0.43,cy)
-    field.lineStyle(glowW,ARENA_THEME.colors.opponent,0.055)
-    field.lineBetween(combat.x+combat.width*0.57,cy,combat.x+combat.width*0.94,cy)
-    field.lineStyle(beamW,ARENA_THEME.colors.player,0.72)
-    field.lineBetween(combat.x+combat.width*0.07,cy,combat.x+combat.width*0.43,cy)
-    field.lineStyle(beamW,ARENA_THEME.colors.opponent,0.72)
-    field.lineBetween(combat.x+combat.width*0.57,cy,combat.x+combat.width*0.93,cy)
-    field.lineStyle(Math.max(2,min*0.0025),0xe0c26c,0.46)
-    field.strokeEllipse(cx,cy,combat.width*0.29,combat.height*0.44)
-    field.lineStyle(Math.max(1,min*0.0014),0xe0c26c,0.18)
-    field.strokeEllipse(cx,cy,combat.width*0.43,combat.height*0.64)
+    const fieldSlots=5
+    const slotAspect=360/500
+    const desiredSlotH=Math.min(combat.height*0.68,310)
+    const clashGap=Math.max(28,combat.width*0.055)
+    const wideSpreadFactor=3.56
+    const maxSlotW=Math.max(28,(combat.width*0.96-clashGap*2)/wideSpreadFactor)
+    const slotW=Math.min(desiredSlotH*slotAspect,maxSlotW)
+    const slotH=slotW/slotAspect
+    const slotY=cy-slotH/2
+    const innerOffset=clashGap+slotW/2
+    const outerOffset=innerOffset+slotW*0.78
+    const slotRegions:ArenaRect[]=[
+      {x:cx-outerOffset-slotW/2,y:slotY,width:slotW,height:slotH},
+      {x:cx-innerOffset-slotW/2,y:slotY,width:slotW,height:slotH},
+      {x:cx-slotW/2,y:slotY,width:slotW,height:slotH},
+      {x:cx+innerOffset-slotW/2,y:slotY,width:slotW,height:slotH},
+      {x:cx+outerOffset-slotW/2,y:slotY,width:slotW,height:slotH},
+    ]
+    const fieldFrames=[
+      ARENA_ASSETS.arenaUi.fieldBlue,
+      ARENA_ASSETS.arenaUi.fieldBlue,
+      ARENA_ASSETS.arenaUi.fieldNeutral,
+      ARENA_ASSETS.arenaUi.fieldRed,
+      ARENA_ASSETS.arenaUi.fieldRed,
+    ]
+    fieldFrames.slice(0,fieldSlots).forEach((src,index)=>this.asset(src,slotRegions[index],index===2?0.74:0.92,-18,index>2))
 
-    const wingY=cy-combat.height*0.22
-    field.lineStyle(Math.max(2,min*0.002),ARENA_THEME.colors.player,0.26)
-    field.beginPath();field.moveTo(combat.x+combat.width*0.12,wingY);field.lineTo(combat.x+combat.width*0.28,wingY-combat.height*0.08);field.lineTo(combat.x+combat.width*0.39,wingY);field.strokePath()
-    field.lineStyle(Math.max(2,min*0.002),ARENA_THEME.colors.opponent,0.26)
-    field.beginPath();field.moveTo(combat.x+combat.width*0.61,wingY);field.lineTo(combat.x+combat.width*0.72,wingY-combat.height*0.08);field.lineTo(combat.x+combat.width*0.88,wingY);field.strokePath()
+    const field=this.keep(this.add.graphics().setDepth(-19))
+    field.lineStyle(Math.max(1,slotW*0.012),0xe0c26c,0.12)
+    field.lineBetween(cx-slotW*0.18,cy,cx+slotW*0.18,cy)
+    field.lineStyle(Math.max(2,slotW*0.018),ARENA_THEME.colors.player,0.12)
+    field.lineBetween(slotRegions[0].x+slotW*0.25,cy,slotRegions[1].x+slotW*0.75,cy)
+    field.lineStyle(Math.max(2,slotW*0.018),ARENA_THEME.colors.opponent,0.12)
+    field.lineBetween(slotRegions[3].x+slotW*0.25,cy,slotRegions[4].x+slotW*0.75,cy)
 
     if(this.textures.exists(`asset:${ARENA_ASSETS.vs.mark}`)){
       const mark=Math.min(combat.width*0.12,combat.height*0.20,124)
