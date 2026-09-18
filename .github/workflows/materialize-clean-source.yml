@@ -59,6 +59,7 @@ jobs:
           node scripts/patch-arena-ownership-choice.mjs
           node scripts/patch-hidden-choice-3d-bridge.mjs
           node scripts/patch-self-discard-3d-bridge.mjs
+          node scripts/patch-spudur-atk.mjs
           node scripts/patch-discard-direct-image.mjs
           node scripts/patch-mobile-wake-lock.mjs
           node scripts/patch-final-arena-touchup.mjs
