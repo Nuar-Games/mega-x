@@ -1,0 +1,107 @@
+name: One-off — commit generated source snapshot
+
+# Manual, one-time-use workflow to close out the P1 migration:
+# regenerates the authoritative source, commits ONLY the known
+# generated paths if they differ, pushes to arena-clean-rebuild,
+# then runs the full regression suite and reports pass/fail.
+#
+# Safe by construction:
+#   - workflow_dispatch only (never runs on push/PR)
+#   - requires typing CONFIRM to actually commit+push
+#   - only ever stages the same fixed path list the drift check uses
+#   - runs on arena-clean-rebuild's own checkout; never touches main
+#   - delete this file once the branch is green
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type CONFIRM to commit + push the regenerated source'
+        required: true
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  commit-generated-source:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm == 'CONFIRM'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: arena-clean-rebuild
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Regenerate authoritative source once
+        run: node scripts/build-clean.mjs --prepare-only
+
+      - name: Show what changed
+        id: diff
+        run: |
+          paths=(src/App.tsx src/onlineAuth.ts src/index.css src/arena-blueprint.fragment public/cards public/ui)
+          echo "----- git status (generated paths) -----"
+          git status --short -- "${paths[@]}"
+          echo "----- git status (everything else, should be empty) -----"
+          git status --short | grep -v -F -f <(printf '%s\n' "${paths[@]}") || true
+          if [[ -z "$(git status --porcelain -- "${paths[@]}")" ]]; then
+            echo "NOTHING_TO_COMMIT=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "NOTHING_TO_COMMIT=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Refuse to run if changes exist outside the known generated paths
+        run: |
+          paths=(src/App.tsx src/onlineAuth.ts src/index.css src/arena-blueprint.fragment public/cards public/ui)
+          outside="$(git status --porcelain | grep -v -F -f <(printf '%s\n' "${paths[@]}") || true)"
+          if [[ -n "$outside" ]]; then
+            echo "Refusing to commit: unexpected changes outside the known generated paths:"
+            echo "$outside"
+            exit 1
+          fi
+          echo "OK: all changes are within the known generated paths."
+
+      - name: Commit and push generated source snapshot
+        if: steps.diff.outputs.NOTHING_TO_COMMIT == 'false'
+        run: |
+          paths=(src/App.tsx src/onlineAuth.ts src/index.css src/arena-blueprint.fragment public/cards public/ui)
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -- "${paths[@]}"
+          git commit -m "chore: commit authoritative generated source snapshot (one-off)"
+          git push origin HEAD:arena-clean-rebuild
+
+      - name: Report if nothing needed committing
+        if: steps.diff.outputs.NOTHING_TO_COMMIT == 'true'
+        run: echo "GENERATED_SOURCE_ALREADY_IN_SYNC — nothing to commit."
+
+      - name: Re-checkout latest (post-push) before verifying
+        run: git pull origin arena-clean-rebuild
+
+      - name: Re-run drift check to confirm it is now clean
+        run: |
+          paths=(src/App.tsx src/onlineAuth.ts src/index.css src/arena-blueprint.fragment public/cards public/ui)
+          if [[ -n "$(git status --porcelain -- "${paths[@]}")" ]]; then
+            echo "DRIFT_CHECK: FAIL — still dirty after commit"
+            git status --short -- "${paths[@]}"
+            exit 1
+          fi
+          echo "DRIFT_CHECK: PASS — GENERATED_SOURCE_IN_SYNC"
+
+      - name: Run full regression suite
+        run: npm test
+
+      - name: Final summary
+        if: always()
+        run: |
+          echo "======================================"
+          echo "  Branch head after this run:"
+          git rev-parse HEAD
+          echo "======================================"
