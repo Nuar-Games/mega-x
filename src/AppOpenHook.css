@@ -1,0 +1,43 @@
+.mx-cold-open-root{position:fixed!important;inset:0!important;z-index:99999!important;background:#03050a!important;overflow:hidden!important;cursor:pointer!important}
+.mx-cold-open{position:absolute!important;inset:0!important;display:grid!important;place-items:center!important;overflow:hidden!important;animation:mxColdOpenFadeOut .5s ease-in 2.7s forwards!important}
+
+.mx-cold-open-grid{position:absolute!important;inset:-10%!important;z-index:1!important;opacity:0!important;mix-blend-mode:screen!important;background:
+  linear-gradient(rgba(246,207,91,.06) 1px,transparent 1px) 0 0/44px 44px,
+  linear-gradient(90deg,rgba(246,207,91,.06) 1px,transparent 1px) 0 0/44px 44px!important;
+  animation:mxColdOpenGridFlicker .1s steps(2,end) infinite,mxColdOpenGridIn .18s ease-out .05s forwards!important}
+
+.mx-cold-open-speedlines{position:absolute!important;top:50%!important;width:60vw!important;height:220vh!important;z-index:2!important;opacity:0!important;background-repeat:repeat-y!important;transform:translateY(-50%)!important}
+.mx-cold-open-speedlines-left{left:-10vw!important;background:repeating-linear-gradient(100deg,rgba(78,180,255,.5) 0 3px,transparent 3px 34px)!important;animation:mxColdOpenSpeedIn .38s .08s ease-out forwards!important}
+.mx-cold-open-speedlines-right{right:-10vw!important;background:repeating-linear-gradient(-100deg,rgba(255,58,70,.5) 0 3px,transparent 3px 34px)!important;animation:mxColdOpenSpeedIn .38s .08s ease-out forwards!important}
+
+.mx-cold-open-clash{position:relative!important;z-index:5!important;max-width:min(92vw,900px)!important;max-height:70vh!important;width:auto!important;height:auto!important;object-fit:contain!important;opacity:0!important;filter:drop-shadow(0 0 40px rgba(246,207,91,.35))!important;animation:mxColdOpenClashIn .5s .18s cubic-bezier(.16,.9,.3,1) forwards,mxColdOpenShake .32s .58s ease-out 1!important}
+
+.mx-cold-open-clash-fallback{width:min(92vw,900px)!important;height:52vh!important;position:relative!important;display:flex!important}
+.mx-cold-open-fallback-half{flex:1 1 50%!important;position:relative!important;overflow:hidden!important}
+.mx-cold-open-fallback-left{background:linear-gradient(120deg,rgba(246,207,91,.85),rgba(120,80,10,.55) 70%)!important;clip-path:polygon(0 0,92% 0,78% 100%,0 100%)!important;transform:translateX(-120%)!important;animation:mxColdOpenSlamLeft .42s .18s cubic-bezier(.16,.9,.3,1) forwards!important}
+.mx-cold-open-fallback-right{background:linear-gradient(-120deg,rgba(192,57,43,.9),rgba(70,10,10,.55) 70%)!important;clip-path:polygon(22% 0,100% 0,100% 100%,8% 100%)!important;transform:translateX(120%)!important;animation:mxColdOpenSlamRight .42s .18s cubic-bezier(.16,.9,.3,1) forwards!important}
+
+.mx-cold-open-impact-ring{position:absolute!important;z-index:6!important;left:50%!important;top:50%!important;width:12px!important;height:12px!important;border-radius:50%!important;border:2px solid rgba(255,251,208,.95)!important;box-shadow:0 0 24px rgba(246,207,91,.8)!important;opacity:0!important;transform:translate(-50%,-50%)!important;animation:mxColdOpenShockwave .7s .5s ease-out forwards!important}
+
+.mx-cold-open-lens-flare{position:absolute!important;z-index:7!important;left:50%!important;top:50%!important;width:140vw!important;height:5px!important;opacity:0!important;transform:translate(-50%,-50%) rotate(-8deg) scaleX(.04)!important;background:linear-gradient(90deg,transparent 0 20%,rgba(255,58,70,.3) 35%,#fff 49%,#fffbd0 50%,rgba(78,180,255,.6) 65%,transparent 80%)!important;box-shadow:0 0 14px #fff,0 0 40px rgba(255,232,156,.9)!important;animation:mxColdOpenFlare .5s .5s ease-out forwards!important}
+
+.mx-cold-open-logo{position:relative!important;z-index:8!important;width:min(58vw,340px)!important;height:auto!important;opacity:0!important;filter:drop-shadow(0 6px 30px rgba(0,0,0,.6))!important;animation:mxColdOpenLogoIn .5s .68s cubic-bezier(.2,1.4,.4,1) forwards!important}
+
+.mx-cold-open-skip{position:absolute!important;bottom:28px!important;left:50%!important;z-index:9!important;transform:translateX(-50%)!important;color:rgba(255,255,255,.5)!important;font-size:12px!important;letter-spacing:.14em!important;opacity:0!important;animation:mxColdOpenSkipIn .4s 1.4s ease-out forwards!important}
+
+@keyframes mxColdOpenGridIn{from{opacity:0}to{opacity:1}}
+@keyframes mxColdOpenGridFlicker{0%{opacity:.14}50%{opacity:.22}100%{opacity:.14}}
+@keyframes mxColdOpenSpeedIn{from{opacity:0;transform:translateY(-50%) scaleX(.4)}to{opacity:1;transform:translateY(-50%) scaleX(1)}}
+@keyframes mxColdOpenClashIn{from{opacity:0;transform:scale(.72)}to{opacity:1;transform:scale(1)}}
+@keyframes mxColdOpenSlamLeft{from{transform:translateX(-120%)}to{transform:translateX(0)}}
+@keyframes mxColdOpenSlamRight{from{transform:translateX(120%)}to{transform:translateX(0)}}
+@keyframes mxColdOpenShake{0%,100%{transform:translate(0,0)}20%{transform:translate(-8px,3px)}40%{transform:translate(7px,-4px)}60%{transform:translate(-5px,2px)}80%{transform:translate(4px,-2px)}}
+@keyframes mxColdOpenShockwave{0%{opacity:1;width:12px;height:12px}100%{opacity:0;width:130vw;height:130vw}}
+@keyframes mxColdOpenFlare{0%{opacity:0;transform:translate(-50%,-50%) rotate(-8deg) scaleX(.04)}45%{opacity:1;transform:translate(-50%,-50%) rotate(-8deg) scaleX(1)}100%{opacity:0;transform:translate(-50%,-50%) rotate(-8deg) scaleX(1.05)}}
+@keyframes mxColdOpenLogoIn{0%{opacity:0;transform:scale(.5) translateY(10px)}70%{opacity:1;transform:scale(1.06) translateY(0)}100%{opacity:1;transform:scale(1) translateY(0)}}
+@keyframes mxColdOpenSkipIn{from{opacity:0}to{opacity:1}}
+@keyframes mxColdOpenFadeOut{from{opacity:1}to{opacity:0}}
+
+@media (prefers-reduced-motion:reduce){
+  .mx-cold-open-root{display:none!important}
+}
