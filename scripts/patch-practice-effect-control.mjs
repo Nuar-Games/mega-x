@@ -12,12 +12,21 @@ let lifecycleTest = fs.readFileSync(lifecycleTestPath, 'utf8')
 
 const effectFrom = "game.phase === 'EFFECT' && game.effectTurn === bottomPlayer"
 const effectTo = "game.phase === 'EFFECT' && (game.effectTurn === bottomPlayer || (activeOnlineMatch?.id?.startsWith('practice-local:') && (activeOnlineMatch?.state?.effectTurn === onlineSession?.userId || activeOnlineMatch?.state?.effectTurn === 0)))"
-const arenaMatches = arena.split(effectFrom).length - 1
-if (arenaMatches < 2) throw new Error(`practice Effect-control patch expected at least 2 Arena targets, found ${arenaMatches}`)
-arena = arena.split(effectFrom).join(effectTo)
-const appMatches = app.split(effectFrom).length - 1
-if (appMatches < 2) throw new Error(`practice Effect-control App patch expected at least 2 Arena targets, found ${appMatches}`)
-app = app.split(effectFrom).join(effectTo)
+
+const patchEffectControls = (source, label) => {
+  const already = source.split(effectTo).length - 1
+  if (already >= 2) return { source, count: already }
+  const matches = source.split(effectFrom).length - 1
+  if (matches < 2) throw new Error(`practice Effect-control ${label} patch expected at least 2 Arena targets, found ${matches}`)
+  return { source: source.split(effectFrom).join(effectTo), count: matches }
+}
+
+const arenaPatch = patchEffectControls(arena, 'fragment')
+arena = arenaPatch.source
+const arenaMatches = arenaPatch.count
+const appPatch = patchEffectControls(app, 'App')
+app = appPatch.source
+const appMatches = appPatch.count
 
 const tieDelete = '    delete visible.tieBreaker'
 const tieVisible = "    visible.tieBreaker = { status: tie.status || 'CHOOSING', pair: Math.max(1, Number(tie.pair || 1)) }"
