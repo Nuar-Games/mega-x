@@ -24,8 +24,8 @@ export function Arena3DZonesVSFirst({state,onPrimary,onSecondary}:Props){
     <VsStage position={[0,.09,1.62]} color="#1da9f1" active={Boolean(state.localVs)}/>
     <VsStage position={[0,.09,-1.62]} color="#ef3d5f" active={Boolean(state.opponentVs)}/>
 
-    <Arena3DCard card={state.localVs} position={[0,.35,1.62]} scale={1.72} onPrimary={onPrimary} onSecondary={onSecondary}/>
-    <Arena3DCard card={state.opponentVs} position={[0,.35,-1.62]} rotation={[-Math.PI/2,0,Math.PI]} scale={1.72} onPrimary={onPrimary} onSecondary={onSecondary}/>
+    <Arena3DCard card={state.localVs} position={[0,.35,1.62]} scale={1.72} onPrimary={onPrimary} onSecondary={onSecondary} qaId="local-vs"/>
+    <Arena3DCard card={state.opponentVs} position={[0,.35,-1.62]} rotation={[-Math.PI/2,0,Math.PI]} scale={1.72} onPrimary={onPrimary} onSecondary={onSecondary} qaId="opponent-vs"/>
 
     {localHand.map((card,index)=><Arena3DCard
       key={`hand-${card.src}-${index}`}
