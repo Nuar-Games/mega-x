@@ -33,14 +33,15 @@ jobs:
           done
           cat /tmp/mega-x-preview.log
           exit 1
-      - name: Verify desktop 3D hand mesh with mouse input
+      - name: Verify desktop 3D hand mesh with mouse input and iOS touch capability
         env:
           MEGAX_PREVIEW_URL: http://127.0.0.1:4173/
         run: |
           cat > device-input-qa.mjs <<'EOF'
-          import { chromium } from 'playwright'
+          import { chromium, devices, webkit } from 'playwright'
           const base=process.env.MEGAX_PREVIEW_URL
           const url=`${base}?arena=3d`
+
           const browser=await chromium.launch({headless:true})
           const context=await browser.newContext({viewport:{width:1366,height:768},hasTouch:false,isMobile:false,deviceScaleFactor:1,reducedMotion:'reduce'})
           const page=await context.newPage()
@@ -98,5 +99,20 @@ jobs:
           }
           console.log('PASS desktop-real-mouse-3d-hand')
           await browser.close()
+
+          const iosBrowser=await webkit.launch({headless:true})
+          const iosContext=await iosBrowser.newContext({...devices['iPhone 13'],reducedMotion:'reduce'})
+          const iosPage=await iosContext.newPage()
+          iosPage.on('console',m=>{const t=m.text(); if(t.startsWith('[MX_QA]')) console.log(`[ios-webkit] ${t}`)})
+          const iosResponse=await iosPage.goto(url,{waitUntil:'domcontentloaded',timeout:90000})
+          if(iosResponse?.status()!==200)throw new Error(`IOS_HTTP_${iosResponse?.status()}`)
+          await iosPage.locator('#mx-main-practice-cta').waitFor({state:'visible',timeout:15000})
+          await iosPage.locator('#mx-main-practice-cta').click()
+          const iosRoot=iosPage.locator('[data-arena-3d-root="true"]')
+          await iosRoot.waitFor({state:'attached',timeout:30000})
+          await iosPage.waitForFunction(()=>document.querySelector('[data-arena-3d-root="true"]')?.getAttribute('data-touch-capable')==='true',null,{timeout:15000})
+          if(await iosRoot.getAttribute('data-touch-capable')!=='true')throw new Error('IOS_WEBKIT_TOUCH_CAPABILITY_NOT_TRUE')
+          console.log('PASS ios-webkit-touch-capability')
+          await iosBrowser.close()
           EOF
           node device-input-qa.mjs

@@ -11,6 +11,14 @@ import './arena3d.css'
 
 type Props={shell:HTMLElement}
 
+function detectTouchCapability(){
+  if(typeof navigator==='undefined')return false
+  if(navigator.maxTouchPoints>0)return true
+  if(typeof window!=='undefined'&&'ontouchstart' in window)return true
+  if(typeof window!=='undefined'&&window.matchMedia?.('(pointer: coarse), (hover: none)').matches)return true
+  return false
+}
+
 export function Arena3DRoot({shell}:Props){
   const initial=useMemo(()=>readArena3DState(shell),[shell])
   const [state,setState]=useState<ArenaRenderState>(initial)
@@ -19,13 +27,7 @@ export function Arena3DRoot({shell}:Props){
   const [transitions,setTransitions]=useState<Arena3DTransition[]>([])
   const [impactToken,setImpactToken]=useState(0)
   const [quality,setQuality]=useState<Arena3DQualityName>(()=>chooseArena3DQuality())
-  const [touchCapable]=useState(()=>{
-    if(typeof navigator==='undefined')return false
-    if(navigator.maxTouchPoints>0)return true
-    if(typeof window!=='undefined'&&'ontouchstart' in window)return true
-    if(typeof window!=='undefined'&&window.matchMedia?.('(pointer: coarse), (hover: none)').matches)return true
-    return false
-  })
+  const [touchCapable,setTouchCapable]=useState(()=>detectTouchCapability())
   const profile=ARENA_3D_QUALITY[quality]
 
   useEffect(()=>subscribeArena3DState(shell,next=>{
@@ -38,6 +40,24 @@ export function Arena3DRoot({shell}:Props){
       window.setTimeout(()=>setTransitions([]),620)
     }
   }),[shell])
+
+  useEffect(()=>{
+    if(touchCapable||typeof window==='undefined')return
+    const refresh=()=>{if(detectTouchCapability())setTouchCapable(true)}
+    const onPointerDown=(event:PointerEvent)=>{if(event.pointerType==='touch')setTouchCapable(true)}
+    const onTouchStart=()=>setTouchCapable(true)
+    window.addEventListener('resize',refresh)
+    window.addEventListener('orientationchange',refresh)
+    window.addEventListener('pointerdown',onPointerDown,{passive:true})
+    window.addEventListener('touchstart',onTouchStart,{passive:true,once:true})
+    refresh()
+    return ()=>{
+      window.removeEventListener('resize',refresh)
+      window.removeEventListener('orientationchange',refresh)
+      window.removeEventListener('pointerdown',onPointerDown)
+      window.removeEventListener('touchstart',onTouchStart)
+    }
+  },[touchCapable])
 
   const dispatch=useMemo(()=>((id:string)=>dispatchArena3DAction(shell,id)),[shell])
   const handleSecondary=(card:ArenaCardRef)=>{

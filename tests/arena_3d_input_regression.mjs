@@ -12,6 +12,10 @@ must(!card.includes('onPointerOut={() => {\n          press.current = null'),'po
 must(root.includes('navigator.maxTouchPoints'),'3D root must prefer navigator touch capability when available')
 must(root.includes("'ontouchstart' in window"),'3D root must fall back to touch-event capability for WebKit emulation compatibility')
 must(root.includes("'(pointer: coarse), (hover: none)'"),'3D root must fall back to coarse/no-hover media signals when touch APIs are incomplete')
+must(root.includes("window.addEventListener('resize',refresh)"),'3D root must re-check touch capability after viewport changes')
+must(root.includes("window.addEventListener('orientationchange',refresh)"),'3D root must re-check touch capability after orientation changes')
+must(root.includes("event.pointerType==='touch'"),'3D root must promote touch capability when a real touch pointer is observed')
+must(root.includes("window.addEventListener('touchstart',onTouchStart"),'3D root must promote touch capability when a touch event is observed')
 must(root.includes("data-touch-capable={touchCapable?'true':'false'}"),'3D root must expose touch capability to responsive CSS')
 must(css.includes('[data-touch-capable="true"] .mx3d-mobile-hand'),'touch-capable devices must always expose the reliable DOM hand fallback')
 
