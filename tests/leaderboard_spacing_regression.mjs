@@ -1,11 +1,13 @@
 import fs from 'node:fs'
 
 const appPath = 'src/App.tsx'
-const cssPath = 'src/lobby-final.css'
+// The three-line stacking rule landed in lobby-last-fixes.css (loaded after
+// lobby-final.css, so it has final cascade authority), not lobby-final.css.
+const cssPath = 'src/lobby-last-fixes.css'
 const app = fs.readFileSync(appPath, 'utf8')
 const css = fs.readFileSync(cssPath, 'utf8')
 
-if (!css.includes('/* Ranking cards: rank, fighter, then points')) {
+if (!css.includes('/* React already renders Top 3 as b / strong / span. Force that exact markup into three rows. */')) {
   throw new Error('three-line ranking card contract missing')
 }
 if (!/\.mx-rank-card\{[^}]*flex-direction:column!important/s.test(css)) {

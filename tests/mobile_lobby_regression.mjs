@@ -9,6 +9,9 @@ assert(css.includes('touch-action:pan-y!important'),'Lobby does not explicitly a
 assert(/\.mx-lobby-left\{[^}]*grid-row:2!important/.test(css),'ONLINE X FIGHTERS is not promoted ahead of leaderboard on mobile')
 assert(/\.mx-leaderboard\{[^}]*grid-row:3!important/.test(css),'Leaderboard is not moved below online roster on mobile')
 assert(/\.mx-rank-stack\{[^}]*max-height:none!important[^}]*overflow:visible!important/.test(css),'Top 20 can still be trapped inside a clipped inner scroller')
-assert(/@media\(max-width:560px\)[\s\S]*\.mx-online-roster\{[^}]*height:230px!important[^}]*max-height:230px!important/.test(finalCss),'mobile roster is not bounded')
-assert(/@media\(max-width:560px\)[\s\S]*\.mx-global-chat-feed\{[^}]*height:270px!important[^}]*max-height:270px!important/.test(finalCss),'mobile Global Chat is not bounded')
+// The Sep-3 redesign moved the narrow breakpoint from 560px to 759px and
+// changed the bound values; roster caps via max-height only (base rule
+// already supplies overflow-y:auto), chat-feed keeps an explicit height.
+assert(/@media \(max-width:759px\)\{[\s\S]*?\.mx-commercial-lobby \.mx-online-roster\{[^}]*max-height:480px!important/.test(finalCss),'mobile roster is not bounded')
+assert(/@media \(max-width:759px\)\{[\s\S]*?\.mx-commercial-lobby \.mx-global-chat-feed\{[^}]*height:340px!important[^}]*max-height:340px!important/.test(finalCss),'mobile Global Chat is not bounded')
 console.log('PASS mobile lobby scrolls at document level while roster and chat stay internally bounded')
