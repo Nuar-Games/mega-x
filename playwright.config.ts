@@ -16,7 +16,7 @@ export default defineConfig({
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
   ],
   webServer: {
-    command: 'node scripts/build-clean.mjs --prepare-only && npx vite build && npm run preview -- --port 4173',
+    command: 'node scripts/build-clean.mjs --prepare-only && npx vite --host 127.0.0.1 --port 4173',
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: false,
     timeout: 120_000,
