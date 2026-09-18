@@ -85,6 +85,7 @@ jobs:
 
           async function clickCanonicalAction(page,label){
             const selectors=[
+              '.mx3d-chooser .mx3d-choice:not([disabled])',
               '.mx3-local-hand [data-arena-card-action]:not([disabled])',
               '.mx3d-mobile-card:not([disabled])',
               '.mx3d-command:not([disabled])',
@@ -97,7 +98,7 @@ jobs:
               '.choice-panel button:not([disabled])',
             ]
             for(const selector of selectors){
-              const target=page.locator(selector).filter({hasNotText:/QUIT|SURRENDER|AUDIO/i}).first()
+              const target=page.locator(selector).filter({hasNotText:/QUIT|SURRENDER|AUDIO|CLOSE/i}).first()
               if(await target.count()){
                 const text=((await target.textContent())||'').replace(/\s+/g,' ').trim()
                 records.push(`[${label}] action selector=${selector} text=${text}`)
