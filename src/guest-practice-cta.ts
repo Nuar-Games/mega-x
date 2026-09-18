@@ -22,8 +22,8 @@ function mountGuestFirstLanding(){
       if(isSignedIn())return
       event.preventDefault()
       event.stopImmediatePropagation()
-      console.log('[MX_QA] guest-practice-cta dispatch start-practice-match')
-      window.dispatchEvent(new CustomEvent('mega-x:start-practice-match'))
+      console.log('[MX_QA] guest-practice-cta dispatch enter-guest-lobby')
+      window.dispatchEvent(new CustomEvent('mega-x:enter-guest-lobby'))
     },true)
   }
 
