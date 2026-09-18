@@ -1,37 +1,18 @@
-name: One-off — commit generated source snapshot
-
-# Manual, one-time-use workflow to close out the P1 migration:
-# regenerates the authoritative source, commits ONLY the known
-# generated paths if they differ, pushes to arena-clean-rebuild,
-# then runs the full regression suite and reports pass/fail.
-#
-# Safe by construction:
-#   - workflow_dispatch still supported
-#   - this temporary push trigger only matches edits to THIS workflow file
-#   - generated-source commits therefore do not retrigger it
-#   - only ever stages the same fixed path list the drift check uses
-#   - runs on arena-clean-rebuild's own checkout; never touches main
-#   - delete this file once the branch is green
+name: One-off — diagnose generated source snapshot
 
 on:
   workflow_dispatch:
-    inputs:
-      confirm:
-        description: 'Type CONFIRM to commit + push the regenerated source'
-        required: true
-        default: ''
   push:
     branches: [arena-clean-rebuild]
     paths:
       - '.github/workflows/commit-generated-source-once.yml'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  commit-generated-source:
+  diagnose-generated-source:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event.inputs.confirm == 'CONFIRM'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -45,68 +26,30 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Status after dependency install
+        run: |
+          echo '===== STATUS AFTER NPM INSTALL ====='
+          git status --short
+
       - name: Regenerate authoritative source once
         run: node scripts/build-clean.mjs --prepare-only
 
-      - name: Show what changed
-        id: diff
+      - name: Show complete materialization delta
         run: |
-          paths=(src/App.tsx src/onlineAuth.ts src/index.css src/arena-blueprint.fragment public/cards public/ui)
-          echo "----- git status (generated paths) -----"
-          git status --short -- "${paths[@]}"
-          echo "----- git status (everything else, should be empty) -----"
-          git status --short | grep -v -F -f <(printf '%s\n' "${paths[@]}") || true
-          if [[ -z "$(git status --porcelain -- "${paths[@]}")" ]]; then
-            echo "NOTHING_TO_COMMIT=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "NOTHING_TO_COMMIT=false" >> "$GITHUB_OUTPUT"
-          fi
+          echo '===== STATUS AFTER PREPARE ====='
+          git status --short
+          echo '===== TRACKED DIFF NAME/STATUS ====='
+          git diff --name-status
+          echo '===== TRACKED DIFF STAT ====='
+          git diff --stat
+          echo '===== SELF-PATCH DIFF ====='
+          git diff -- scripts/patch-arena-ownership-choice.mjs
+          echo '===== SOURCE/TEST DIFFS ====='
+          git diff -- src/VsIntro.css src/VsIntro.tsx src/VsIntroHype.css src/arena-stage.css src/arena-stage.ts src/arena-usability.css src/audio.ts src/lobby-ui.ts src/main.tsx src/practice-match.ts supabase/functions/match-action/engine.ts tests/practice_real_exhaustion_lifecycle_regression.mjs
+          echo '===== UNTRACKED FILES ====='
+          git ls-files --others --exclude-standard
 
-      - name: Refuse to run if changes exist outside the known generated paths
+      - name: Stop without committing
         run: |
-          paths=(src/App.tsx src/onlineAuth.ts src/index.css src/arena-blueprint.fragment public/cards public/ui)
-          outside="$(git status --porcelain | grep -v -F -f <(printf '%s\n' "${paths[@]}") || true)"
-          if [[ -n "$outside" ]]; then
-            echo "Refusing to commit: unexpected changes outside the known generated paths:"
-            echo "$outside"
-            exit 1
-          fi
-          echo "OK: all changes are within the known generated paths."
-
-      - name: Commit and push generated source snapshot
-        if: steps.diff.outputs.NOTHING_TO_COMMIT == 'false'
-        run: |
-          paths=(src/App.tsx src/onlineAuth.ts src/index.css src/arena-blueprint.fragment public/cards public/ui)
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -- "${paths[@]}"
-          git commit -m "chore: commit authoritative generated source snapshot (one-off)"
-          git push origin HEAD:arena-clean-rebuild
-
-      - name: Report if nothing needed committing
-        if: steps.diff.outputs.NOTHING_TO_COMMIT == 'true'
-        run: echo "GENERATED_SOURCE_ALREADY_IN_SYNC — nothing to commit."
-
-      - name: Re-checkout latest (post-push) before verifying
-        run: git pull origin arena-clean-rebuild
-
-      - name: Re-run drift check to confirm it is now clean
-        run: |
-          paths=(src/App.tsx src/onlineAuth.ts src/index.css src/arena-blueprint.fragment public/cards public/ui)
-          if [[ -n "$(git status --porcelain -- "${paths[@]}")" ]]; then
-            echo "DRIFT_CHECK: FAIL — still dirty after commit"
-            git status --short -- "${paths[@]}"
-            exit 1
-          fi
-          echo "DRIFT_CHECK: PASS — GENERATED_SOURCE_IN_SYNC"
-
-      - name: Run full regression suite
-        run: npm test
-
-      - name: Final summary
-        if: always()
-        run: |
-          echo "======================================"
-          echo "  Branch head after this run:"
-          git rev-parse HEAD
-          echo "======================================"
+          echo 'DIAGNOSTIC_ONLY_NO_COMMIT'
+          exit 0
