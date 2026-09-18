@@ -1,6 +1,7 @@
 import { applyEngineAction, type EngineState } from './engine.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 const serviceHeaders = { apikey: SERVICE_ROLE, Authorization: `Bearer ${SERVICE_ROLE}`, 'Content-Type': 'application/json' }
@@ -10,16 +11,34 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-function actorFromJwt(req: Request) {
+function bearerToken(req: Request) {
   const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '')
   if (!token) throw new Error('AUTH_REQUIRED')
-  const payloadPart = token.split('.')[1]
-  if (!payloadPart) throw new Error('AUTH_REQUIRED')
-  const normalized = payloadPart.replace(/-/g, '+').replace(/_/g, '/')
-  const padded = normalized + '='.repeat((4 - normalized.length % 4) % 4)
-  const payload = JSON.parse(atob(padded))
-  if (!payload?.sub) throw new Error('AUTH_REQUIRED')
-  return String(payload.sub)
+  return token
+}
+
+async function actorFromJwt(req: Request) {
+  const token = bearerToken(req)
+  const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` },
+  })
+  const user = await response.json().catch(() => ({}))
+  if (!response.ok || !user?.id) throw new Error('AUTH_REQUIRED')
+  return String(user.id)
+}
+
+async function assertMatchPlayer(matchId: string, actorId: string) {
+  const params = new URLSearchParams({
+    select: 'id,player1_id,player2_id',
+    id: `eq.${matchId}`,
+    limit: '1',
+  })
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/matches?${params.toString()}`, { headers: serviceHeaders })
+  const rows = await response.json().catch(() => [])
+  if (!response.ok) throw new Error(rows?.message || rows?.hint || rows?.code || `MATCH_LOOKUP_${response.status}`)
+  const match = Array.isArray(rows) ? rows[0] : rows
+  if (!match) throw new Error('MATCH_NOT_FOUND')
+  if (actorId !== String(match.player1_id) && actorId !== String(match.player2_id)) throw new Error('NOT_MATCH_PLAYER')
 }
 
 async function rpc(name: string, body: Record<string, unknown>) {
@@ -82,13 +101,15 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders })
   if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405, headers: corsHeaders })
   try {
-    const actorId = actorFromJwt(req)
+    const actorId = await actorFromJwt(req)
     const body = await req.json()
     const matchId = String(body.matchId || '')
     const expectedVersion = Number(body.expectedVersion)
     const action = String(body.action || '')
     const payload = body.payload && typeof body.payload === 'object' ? body.payload : {}
     if (!matchId || !Number.isFinite(expectedVersion) || !action) throw new Error('INVALID_REQUEST')
+
+    await assertMatchPlayer(matchId, actorId)
 
     const rows = await rpc('get_match_engine_state', { p_match: matchId, p_actor: actorId })
     const match = Array.isArray(rows) ? rows[0] : rows
@@ -129,7 +150,7 @@ Deno.serve(async (req: Request) => {
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'MATCH_ACTION_FAILED'
-    const status = message.includes('STALE_MATCH_STATE') ? 409 : message.includes('AUTH_REQUIRED') ? 401 : 400
+    const status = message.includes('STALE_MATCH_STATE') ? 409 : message.includes('AUTH_REQUIRED') ? 401 : message.includes('NOT_MATCH_PLAYER') ? 403 : 400
     return new Response(JSON.stringify({ error: message }), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } })
   }
 })
