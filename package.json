@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "node scripts/build-clean.mjs",
+    "test:e2e": "playwright test",
     "preview": "vite preview",
     "build:verify": "node scripts/build-verify.mjs",
     "test": "node scripts/verify-all.mjs --tests-only",
@@ -27,6 +28,7 @@
     "@types/react-dom": "^19.1.7",
     "@types/three": "^0.186.0",
     "@vitejs/plugin-react": "^5.0.2",
+    "playwright": "^1.63.0",
     "typescript": "^5.9.2",
     "vite": "^7.1.3"
   }

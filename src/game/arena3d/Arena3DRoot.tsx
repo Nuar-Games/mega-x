@@ -64,6 +64,19 @@ export function Arena3DRoot({shell}:Props){
     if(card.actions?.length){setChooser(card);return}
     setChooser(null)
   }
+  // The chooser holds a snapshot of the card at the moment it was opened. If the
+  // authoritative DOM state moves on underneath it — the card leaves the hand, its
+  // action buttons are torn down by React reconciliation — the snapshot goes stale:
+  // its action ids no longer resolve to any live button, so dispatchArena3DAction
+  // silently no-ops on click (querySelector finds nothing) with no visible feedback.
+  // Close the chooser as soon as its card is no longer present with matching,
+  // dispatchable actions in the live state, so it can never show dead choices.
+  useEffect(()=>{
+    if(!chooser)return
+    const live=state.localHand.find(card=>card.src===chooser.src&&card.alt===chooser.alt)
+    const stillActionable=live?.actions?.length&&live.actions.every(action=>chooser.actions?.some(prior=>prior.id===action.id))
+    if(!live||!stillActionable)setChooser(null)
+  },[state,chooser])
   const changeQuality=(next:Arena3DQualityName)=>{saveArena3DQuality(next);setQuality(next)}
 
   return <div className="mx3d-root" data-arena-3d-root="true" data-touch-capable={touchCapable?'true':'false'}>
