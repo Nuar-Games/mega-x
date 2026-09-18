@@ -1,14 +1,14 @@
 import fs from 'node:fs'
 
-const pkg = JSON.parse(fs.readFileSync('package.json','utf8'))
+const buildClean = fs.readFileSync('scripts/build-clean.mjs','utf8')
 const css = fs.readFileSync('src/V24.css','utf8')
 const auditPatch = fs.readFileSync('scripts/patch-arena-mobile-audit.mjs','utf8')
 const must = (ok, msg) => { if (!ok) throw new Error(msg) }
 
-must(pkg.scripts.build.includes('patch-arena-responsive-system.mjs'), 'unified arena system is not in build chain')
-must(!pkg.scripts.build.includes('patch-responsive-arena-hook.mjs'), 'legacy responsive hook is still in build chain')
-must(!pkg.scripts.build.includes('patch-responsive-arena.mjs'), 'legacy responsive arena patch is still in build chain')
-must(!pkg.scripts.build.includes('patch-mobile-arena-v2.mjs'), 'legacy phone-only arena geometry is still in build chain')
+must(buildClean.includes('patch-arena-responsive-system.mjs'), 'unified arena system is not in build chain')
+must(!buildClean.includes('patch-responsive-arena-hook.mjs'), 'legacy responsive hook is still in build chain')
+must(!buildClean.includes('patch-responsive-arena.mjs'), 'legacy responsive arena patch is still in build chain')
+must(!buildClean.includes('patch-mobile-arena-v2.mjs'), 'legacy phone-only arena geometry is still in build chain')
 must(!auditPatch.includes('transform:scale(.72)'), 'arena interaction patch still contains phone-only HUD scaling')
 must(!auditPatch.includes('.duel-shell .battlefield{top:72px'), 'arena interaction patch still owns battlefield geometry')
 
