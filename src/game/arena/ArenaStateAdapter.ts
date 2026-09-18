@@ -27,6 +27,7 @@ export type ArenaRenderState={
   tieBreakerReveal:ArenaCardRef[]
   tieBreakerMessage:string
   pendingChoice:{kind:string;remaining:number;sourceCardName:string;hiddenSlots:ArenaCardRef[];visibleTargets:ArenaCardRef[]}|null
+  pendingSelfDiscard:{reason:string;mode:'ANY'|'EXACT';count:number;cards:(ArenaCardRef&{selected:boolean})[];confirmActionId?:string;confirmDisabled:boolean}|null
   phase:string
   prompt:string
   timer:string
@@ -78,7 +79,7 @@ const statsFrom=(root:ParentNode,side:LeftOrRight):ArenaStats=>({
 const positionFrom=(root:ParentNode,side:LeftOrRight)=>firstText(root,`.mx3-position-${side}`).replace(/^POSISI\s*/i,'').trim()||'—'
 
 export function readArenaRenderState(shell:HTMLElement):ArenaRenderState{
-  const allControls=Array.from(shell.querySelectorAll<HTMLButtonElement>('.mx3-phase-prompt button,.mx3-local-hand button,.mx3-position,.mx3-quit,.mx3-audio,.tie-breaker-choice-hand button,.board-target-card,.choice-overlay .card-back-button,.choice-overlay .target-effect:not(.board-target-card)')).filter(btn=>!btn.disabled)
+  const allControls=Array.from(shell.querySelectorAll<HTMLButtonElement>('.mx3-phase-prompt button,.mx3-local-hand button,.mx3-position,.mx3-quit,.mx3-audio,.tie-breaker-choice-hand button,.board-target-card,.choice-overlay .card-back-button,.choice-overlay .target-effect:not(.board-target-card),.choice-overlay .discard-card-choice,.choice-overlay .discard-confirm')).filter(btn=>!btn.disabled)
   allControls.forEach((button,index)=>actionIdFor(button,index))
 
   const boardTargets=Array.from(shell.querySelectorAll<HTMLButtonElement>('.board-target-card[data-arena-action-id]')).map(button=>{
@@ -101,6 +102,27 @@ export function readArenaRenderState(shell:HTMLElement):ArenaRenderState{
     sourceCardName:pendingChoicePanel.dataset.pendingChoiceSource||'',
     hiddenSlots,
     visibleTargets,
+  }:null
+  const pendingDiscardPanel=shell.querySelector<HTMLElement>('.choice-overlay .discard-panel[data-pending-discard-reason]')
+  const discardCards=pendingDiscardPanel?Array.from(pendingDiscardPanel.querySelectorAll<HTMLButtonElement>('.discard-card-choice')).flatMap(button=>{
+    const img=button.querySelector<HTMLImageElement>('img')
+    if(!img?.src)return []
+    return [{
+      src:srcPath(img.src),
+      alt:img.alt||button.textContent?.trim()||'CARD',
+      actionId:button.dataset.arenaActionId,
+      selected:button.classList.contains('is-selected'),
+    }]
+  }): []
+  const discardConfirm=pendingDiscardPanel?.querySelector<HTMLButtonElement>('.discard-confirm')
+  const confirmActionId=discardConfirm?.dataset.arenaActionId
+  const pendingSelfDiscard=pendingDiscardPanel?{
+    reason:pendingDiscardPanel.dataset.pendingDiscardReason||'',
+    mode:pendingDiscardPanel.dataset.pendingDiscardMode==='EXACT'?'EXACT' as const:'ANY' as const,
+    count:Number(pendingDiscardPanel.dataset.pendingDiscardCount||0),
+    cards:discardCards,
+    confirmActionId,
+    confirmDisabled:!confirmActionId,
   }:null
   const withBoardTarget=(card:ArenaCardRef|null):ArenaCardRef|null=>{
     if(!card)return null
@@ -131,7 +153,7 @@ export function readArenaRenderState(shell:HTMLElement):ArenaRenderState{
   const phaseClass=Array.from(shell.querySelector('.mx3-canvas')?.classList||[]).find(v=>v.startsWith('phase-'))
   const phase=(phaseClass?.slice(6)||firstText(shell,'.mx3-phase-prompt strong')||'WAIT').toUpperCase()
   const phaseControls=allControls.filter(button=>{
-    if(button.closest('.mx3-local-hand')||button.closest('.tie-breaker-choice-hand')||button.matches('.board-target-card,.card-back-button,.target-effect:not(.board-target-card)'))return false
+    if(button.closest('.mx3-local-hand')||button.closest('.tie-breaker-choice-hand')||button.matches('.board-target-card,.card-back-button,.target-effect:not(.board-target-card),.discard-card-choice,.discard-confirm'))return false
     if(button.matches('.mx3-position')){
       const label=(button.textContent||'').replace(/\s+/g,' ').trim()
       const isLocalPosition=button.classList.contains(`mx3-position-${localSide}`)
@@ -173,6 +195,7 @@ export function readArenaRenderState(shell:HTMLElement):ArenaRenderState{
     tieBreakerReveal:cardsFrom(shell,'.tie-breaker-last-reveal img,.tie-breaker-pair img'),
     tieBreakerMessage:firstText(shell,'.tie-breaker-choice-copy em')||firstText(shell,'.tie-breaker-tied')||'',
     pendingChoice,
+    pendingSelfDiscard,
     phase,
     prompt:firstText(shell,'.mx3-phase-prompt strong'),
     timer:firstText(shell,'.mx3-timer strong')||'—',

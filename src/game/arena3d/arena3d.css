@@ -6,5 +6,7 @@
 @media(prefers-reduced-motion:reduce){.mx3d-root *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 
 /* 3D authoritative choice overlays */
-body.mx-arena-3d-enabled .choice-overlay:has(.choice-panel[data-pending-choice-kind]),body.mx-arena-3d-enabled .choice-overlay:has(.board-choice-panel){opacity:0!important;pointer-events:none!important}
+body.mx-arena-3d-enabled .choice-overlay:has(.choice-panel[data-pending-choice-kind]),body.mx-arena-3d-enabled .choice-overlay:has(.board-choice-panel),body.mx-arena-3d-enabled .choice-overlay:has(.discard-panel[data-pending-discard-reason]){opacity:0!important;pointer-events:none!important}
+.mx3d-choice.is-selected{border-color:rgba(242,202,92,.9);box-shadow:0 0 0 1px rgba(242,202,92,.38),0 8px 22px rgba(0,0,0,.32)}
+.mx3d-discard-copy{font:800 11px/1.2 Oxanium,sans-serif;letter-spacing:.035em;white-space:nowrap}
 .mx3d-choice-waiting{padding:8px 12px;font:800 12px/1.2 Oxanium,sans-serif;letter-spacing:.04em;white-space:nowrap}

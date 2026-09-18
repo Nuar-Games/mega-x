@@ -8,6 +8,7 @@ const steps = testsOnly
       ['node', ['tests/arena_clean_asset_manifest_regression.mjs']],
       ['node', ['tests/arena_3d_input_regression.mjs']],
       ['node', ['tests/arena_3d_hidden_choice_regression.mjs']],
+      ['node', ['tests/arena_3d_self_discard_regression.mjs']],
       ['node', ['tests/arena_performance_fullscreen_regression.mjs']],
     ]
   : [

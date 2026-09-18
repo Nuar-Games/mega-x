@@ -31,6 +31,7 @@ export function Arena3DHUD({state,onAction,onCardSelect,chooser,onCloseChooser,q
     if(card.actionId){onAction(card.actionId);return}
     if(card.actions?.length)onCardSelect(card)
   }
+  const discardSelectedCount=state.pendingSelfDiscard?.cards.filter(card=>card.selected).length||0
   return <div className="mx3d-hud">
     <div className="mx3d-meta">
       <button type="button" onClick={()=>{const quit=state.legalActions.find(action=>/quit/i.test(action.label));if(quit)onAction(quit.id)}}>QUIT</button>
@@ -53,7 +54,13 @@ export function Arena3DHUD({state,onAction,onCardSelect,chooser,onCloseChooser,q
         </button>
       })}
     </div>:null}
-    {state.pendingChoice?<div className="mx3d-chooser" data-pending-choice-3d>
+    {state.pendingSelfDiscard?<div className="mx3d-chooser" data-pending-self-discard-3d>
+      <strong>{state.pendingSelfDiscard.reason||'BUANG KAD'}</strong>
+      <div className="mx3d-discard-copy">{state.pendingSelfDiscard.mode==='EXACT'?`PILIH ${state.pendingSelfDiscard.count} · ${discardSelectedCount}/${state.pendingSelfDiscard.count}`:`PILIH 0+ · ${discardSelectedCount} DIPILIH`}</div>
+      {state.pendingSelfDiscard.cards.map((card,index)=><button key={card.actionId||`discard-${index}`} type="button" className={`mx3d-choice ${card.selected?'is-selected':''}`.trim()} disabled={!card.actionId} onClick={()=>{if(card.actionId)onAction(card.actionId)}}>{card.alt||`KAD ${index+1}`}{card.selected?' · DIPILIH':''}</button>)}
+      <button type="button" className="mx3d-choice" disabled={state.pendingSelfDiscard.confirmDisabled||!state.pendingSelfDiscard.confirmActionId} onClick={()=>{if(state.pendingSelfDiscard?.confirmActionId)onAction(state.pendingSelfDiscard.confirmActionId)}}>SAHKAN BUANG</button>
+      {!state.pendingSelfDiscard.cards.length?<div className="mx3d-choice-waiting">WAITING · {state.pendingSelfDiscard.reason||'SELF DISCARD'}</div>:null}
+    </div>:state.pendingChoice?<div className="mx3d-chooser" data-pending-choice-3d>
       <strong>{state.pendingChoice.sourceCardName||state.pendingChoice.kind||'PILIH SASARAN'}</strong>
       {state.pendingChoice.visibleTargets.map((card,index)=><button key={card.actionId||`visible-${index}`} type="button" className="mx3d-choice" onClick={()=>{if(card.actionId)onAction(card.actionId)}}>{card.alt||`KAD ${index+1}`}</button>)}
       {state.pendingChoice.hiddenSlots.map((card,index)=><button key={card.actionId||`hidden-${index}`} type="button" className="mx3d-choice" onClick={()=>{if(card.actionId)onAction(card.actionId)}}>{`KAD ${index+1}`}</button>)}
