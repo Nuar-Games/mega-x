@@ -3,7 +3,8 @@ import type { ArenaState } from '../ArenaState'
 import { ArenaPrototypeScene } from './ArenaPrototypeScene'
 
 export function createArenaPrototypeGame(parent:string,initialState:ArenaState){
-  return new Phaser.Game({
+  const scene=new ArenaPrototypeScene()
+  const game=new Phaser.Game({
     type:Phaser.WEBGL,
     parent,
     backgroundColor:'#111317',
@@ -21,6 +22,7 @@ export function createArenaPrototypeGame(parent:string,initialState:ArenaState){
         game.registry.set('arena-prototype-initial-state',initialState)
       },
     },
-    scene:[ArenaPrototypeScene],
+    scene:[scene],
   })
+  return {game,scene}
 }
