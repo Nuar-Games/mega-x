@@ -14,6 +14,9 @@ const status=requiredElement('arena-next-live-status')
 const controls=requiredElement('arena-next-live-controls')
 void host
 
+const params=new URLSearchParams(window.location.search)
+const onlineTestMode=params.get('mode')==='online'
+
 let game:ReturnType<typeof createArenaPrototypeGame>|null=null
 let transition=Promise.resolve()
 
@@ -34,7 +37,7 @@ const labelFor=(state:ArenaState,command:ArenaLegalCommand)=>{
 }
 
 const controller=new ArenaLiveController({
-  allowPracticeBootstrap:true,
+  allowPracticeBootstrap:!onlineTestMode,
   onUpdate:({state,events})=>{
     renderStatus(state)
     renderControls(state)
@@ -76,6 +79,14 @@ function renderControls(state:ArenaState){
 }
 
 function showError(message:string){
+  if(onlineTestMode&&message==='NO_SAVED_SESSION'){
+    status.textContent='ONLINE TEST · SIGN IN ON THIS PREVIEW ORIGIN FIRST'
+    return
+  }
+  if(onlineTestMode&&message==='NO_ACTIVE_MATCH'){
+    status.textContent='ONLINE TEST · START OR RESUME AN ONLINE MATCH FIRST'
+    return
+  }
   status.textContent=`ARENA LIVE · ${message.replaceAll('_',' ')}`
 }
 
