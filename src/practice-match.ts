@@ -155,7 +155,7 @@ function resolveVisibleEffectChoice(cardId: number) {
 }
 
 function advanceBot(maxSteps = 24) {
-  if (!store || store.match.state.phase === 'GAME_OVER') return
+  if (!store || store.match.state.phase === 'GAME_OVER' || maxSteps <= 0) return
   ensureTieHands(store.match.state)
   if (store.match.state.phase === 'TIE_BREAKER') return
   const result = runBeginnerBotActions(
