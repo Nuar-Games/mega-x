@@ -154,7 +154,7 @@ function resolveVisibleEffectChoice(cardId: number) {
   }
 }
 
-function advanceBot() {
+function advanceBot(maxSteps = 24) {
   if (!store || store.match.state.phase === 'GAME_OVER') return
   ensureTieHands(store.match.state)
   if (store.match.state.phase === 'TIE_BREAKER') return
@@ -163,9 +163,22 @@ function advanceBot() {
     meta(),
     PRACTICE_BOT_ID,
     (state, actorId, candidate) => applyEngineAction({ state, meta: meta(), actorId, action: candidate as EngineAction }),
-    24,
+    maxSteps,
   )
   store.match.state = result.state
+
+  if (
+    store.match.state.phase === 'SET_VS' &&
+    !store.match.state.needsVS[0] &&
+    !store.match.state.needsVS[1] &&
+    !store.match.state.pendingSelfDiscard &&
+    !store.match.state.pendingBoardChoice &&
+    !store.match.state.pendingChoice &&
+    store.match.state.firstPlayer === store.match.player1_id
+  ) {
+    apply(store.match.player1_id, 'BEGIN_ROUND')
+  }
+
   ensureTieHands(store.match.state)
 }
 
@@ -197,7 +210,7 @@ function redactForHuman(state: EngineState) {
       opponentPicked: tie.picks?.[1] != null,
       pair: Math.max(1, Number(tie.pair || 1)),
     }
-    delete visible.tieBreaker
+    visible.tieBreaker = { status: tie.status || 'CHOOSING', pair: Math.max(1, Number(tie.pair || 1)) }
   }
   return visible
 }
@@ -244,7 +257,7 @@ export function submitPracticeAction(userId: string, matchId: string, expectedVe
   if (!store || store.match.id !== matchId || store.match.player1_id !== userId) throw new Error('PRACTICE_MATCH_NOT_FOUND')
   if (store.match.state_version !== expectedVersion) throw new Error('STALE_MATCH_STATE')
   apply(userId, action, payload)
-  advanceBot()
+  advanceBot(0)
   store.match.state_version += 1
   const current = publicMatch()!
   return { state: current.state, state_version: current.state_version, phase: current.phase, status: current.status }
@@ -257,10 +270,20 @@ export function submitPracticeSpecialAction(userId: string, matchId: string, exp
   if (normalized === 'TIE_PICK') resolveTiePick(Number(payload.cardId))
   else if (normalized === 'RESOLVE_VISIBLE_EFFECT_CHOICE') resolveVisibleEffectChoice(Number(payload.cardId))
   else apply(userId, normalized, payload)
-  advanceBot()
+  advanceBot(0)
   store.match.state_version += 1
   const current = publicMatch()!
   return { state: current.state, state_version: current.state_version, phase: current.phase, status: current.status }
+}
+
+export function tickPracticeBot(userId: string, matchId: string) {
+  if (!store || store.match.id !== matchId || store.match.player1_id !== userId) return null
+  if (store.match.state.phase === 'GAME_OVER' || store.match.state.phase === 'TIE_BREAKER') return null
+  const before = structuredClone(store.match.state)
+  advanceBot(1)
+  if (JSON.stringify(store.match.state) === JSON.stringify(before)) return null
+  store.match.state_version += 1
+  return publicMatch()
 }
 
 export function surrenderPracticeMatch(userId: string, matchId: string) {
