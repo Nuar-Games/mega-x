@@ -24,8 +24,8 @@ jobs:
         run: npm install
       - name: Guard arena-next from patch-chain codegen
         run: |
-          if grep -R --line-number --include='patch-*.mjs' --include='build-clean.mjs' 'src/game/arena-next/' scripts; then
-            echo 'arena-next must remain normal hand-authored source and may not be targeted by build-clean or patch scripts.'
+          if grep -R --line-number --include='patch-*.mjs' --include='build-clean.mjs' 'arena-next' scripts; then
+            echo 'arena-next must remain normal hand-authored source and may not be referenced by build-clean or patch scripts.'
             exit 1
           fi
           echo 'ARENA_NEXT_PATCH_CHAIN_GUARD_OK'
@@ -54,3 +54,4 @@ jobs:
           node tests/arena_next_event_pipeline_regression.mjs
           node tests/arena_next_prototype_regression.mjs
           node tests/arena_next_live_match_regression.mjs
+          node tests/arena_next_pipeline_guard_regression.mjs
