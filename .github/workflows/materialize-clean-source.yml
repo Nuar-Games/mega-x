@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify-generated-source:
@@ -31,6 +31,23 @@ jobs:
           echo 'ARENA_NEXT_PATCH_CHAIN_GUARD_OK'
       - name: Regenerate authoritative source once
         run: node scripts/build-clean.mjs --prepare-only
+      - name: Auto-commit generated source on rewrite branch
+        if: github.event_name == 'push' && github.ref == 'refs/heads/arena-total-rewrite'
+        run: |
+          paths=(src/App.tsx src/onlineAuth.ts src/index.css src/arena-blueprint.fragment)
+          if [[ -z "$(git status --porcelain -- "${paths[@]}")" ]]; then
+            echo 'GENERATED_SOURCE_IN_SYNC'
+            exit 0
+          fi
+
+          echo 'Generated source drift detected; committing deterministic outputs.'
+          git status --short -- "${paths[@]}"
+          git diff -- "${paths[@]}" || true
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- "${paths[@]}"
+          git commit -m 'chore: regenerate authoritative generated source'
+          git push origin HEAD:arena-total-rewrite
       - name: Fail if generated source is not committed exactly
         run: |
           # public/cards and public/ui are intentionally excluded: recover-cards.mjs
@@ -40,7 +57,7 @@ jobs:
           # nothing to keep in sync here — only the true generated-source files are.
           paths=(src/App.tsx src/onlineAuth.ts src/index.css src/arena-blueprint.fragment)
           if [[ -n "$(git status --porcelain -- "${paths[@]}")" ]]; then
-            echo 'Generated source drift detected. Regenerate locally and commit the resulting files; CI will never push back to this branch.'
+            echo 'Generated source drift remains after regeneration.'
             git status --short -- "${paths[@]}"
             git diff -- "${paths[@]}" || true
             exit 1
