@@ -5,7 +5,16 @@ let source = fs.readFileSync(target, 'utf8')
 
 const counterStart = source.indexOf('// Add one live counter to the authoritative discard panel. Do not duplicate the discard UI.')
 const counterEnd = source.indexOf('// Remove the older V24 tray authority if it ever exists.', counterStart)
-if (counterStart < 0 || counterEnd < 0) throw new Error('Discard build hotfix target block missing')
+if (counterStart < 0 || counterEnd < 0) {
+  const alreadyApplied =
+    source.includes('Discard counter intentionally omitted: authoritative recovered markup already shows selected count.') &&
+    source.includes('repeat(3,minmax(0,1fr))') &&
+    source.includes('.discard-card-choice .digital-card>img') &&
+    source.includes('Android discard visible three-column card authority missing')
+  if (!alreadyApplied) throw new Error('Discard build hotfix target block missing')
+  console.log('Android discard build hotfix already applied')
+  process.exit(0)
+}
 source = source.slice(0, counterStart)
   + '// Discard counter intentionally omitted: authoritative recovered markup already shows selected count.\n\n'
   + source.slice(counterEnd)
