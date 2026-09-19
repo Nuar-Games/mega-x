@@ -29,6 +29,17 @@ jobs:
             exit 1
           fi
           echo 'ARENA_NEXT_PATCH_CHAIN_GUARD_OK'
+      - name: Legacy arena must stay deleted
+        run: |
+          if find src/game/arena src/game/arena3d -type f 2>/dev/null | grep -q .; then
+            echo "Legacy arena directory reintroduced — this branch has deleted it for good."
+            exit 1
+          fi
+          if grep -rn "game/arena3d\|game/arena/" src scripts 2>/dev/null | grep -v 'game/arena-next'; then
+            echo "Legacy arena reference reintroduced in source or generator scripts."
+            exit 1
+          fi
+          echo 'LEGACY_ARENA_DELETION_GUARD_OK'
       - name: Regenerate authoritative source once
         run: node scripts/build-clean.mjs --prepare-only
       - name: Auto-commit generated source on rewrite branch
