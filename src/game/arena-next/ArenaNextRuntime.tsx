@@ -16,7 +16,8 @@ type ArenaNextRuntimeProps={
 export function ArenaNextRuntime({allowPracticeBootstrap=true,session=null,match=null}:ArenaNextRuntimeProps){
   const hostRef=useRef<HTMLDivElement|null>(null)
   const controllerRef=useRef<ArenaLiveController|null>(null)
-  const gameRef=useRef<ReturnType<typeof createArenaPrototypeGame>|null>(null)
+  const gameRef=useRef<ReturnType<typeof createArenaPrototypeGame>['game']|null>(null)
+  const sceneRef=useRef<ArenaPrototypeScene|null>(null)
   const transitionRef=useRef(Promise.resolve())
   const [state,setState]=useState<ArenaState|null>(null)
   const [error,setError]=useState('')
@@ -30,11 +31,10 @@ export function ArenaNextRuntime({allowPracticeBootstrap=true,session=null,match
       onUpdate:({state:next,events})=>{
         if(cancelled)return
         setState(next)
-        const game=gameRef.current
-        if(!game)return
+        const scene=sceneRef.current
+        if(!scene)return
         transitionRef.current=transitionRef.current.then(async()=>{
-          if(cancelled||!gameRef.current)return
-          const scene=game.scene.getScene('arena-prototype') as ArenaPrototypeScene
+          if(cancelled||sceneRef.current!==scene)return
           if(events.length===0){scene.rebuildFromState(next);return}
           for(const event of events)await scene.consumeEvent(event,next)
         }).catch((e)=>setError(e instanceof Error?e.message:'ARENA_TRANSITION_FAILED'))
@@ -45,15 +45,16 @@ export function ArenaNextRuntime({allowPracticeBootstrap=true,session=null,match
     void controller.start().then((initial)=>{
       if(cancelled||!hostRef.current)return
       setState(initial)
-      const game=createArenaPrototypeGame(RUNTIME_HOST_ID,initial)
+      const {game,scene}=createArenaPrototypeGame(RUNTIME_HOST_ID,initial)
       gameRef.current=game
-      const scene=game.scene.getScene('arena-prototype') as ArenaPrototypeScene
+      sceneRef.current=scene
       scene.setCommandDispatcher((command)=>{void controller.dispatch(command).catch(()=>undefined)})
     }).catch((e)=>{if(!cancelled)setError(e instanceof Error?e.message:'ARENA_START_FAILED')})
     return()=>{
       cancelled=true
       controller.stop()
       controllerRef.current=null
+      sceneRef.current=null
       gameRef.current?.destroy(true)
       gameRef.current=null
     }
