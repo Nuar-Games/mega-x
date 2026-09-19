@@ -14,6 +14,8 @@ export class ArenaPrototypeScene extends Phaser.Scene {
   private currentState:ArenaState|null=null
   private arenaRoot:Phaser.GameObjects.Container|null=null
   private commandDispatcher:((command:ArenaLegalCommand)=>void)|null=null
+  private selectedSelfDiscardIds=new Set<number>()
+  private selfDiscardChoiceKey=''
 
   constructor(){super('arena-prototype')}
 
@@ -37,6 +39,7 @@ export class ArenaPrototypeScene extends Phaser.Scene {
 
   rebuildFromState(state:ArenaState){
     this.currentState=state
+    this.syncSelfDiscardSelection(state)
     this.arenaRoot?.destroy(true)
     const root=this.add.container(0,0)
     this.arenaRoot=root
@@ -61,7 +64,8 @@ export class ArenaPrototypeScene extends Phaser.Scene {
       })
     }
 
-    this.drawHand(root,layout,state)
+    if(state.pendingChoice?.kind==='TIE')this.drawTieBreakerHand(root,layout,state)
+    else this.drawHand(root,layout,state)
     this.drawCommandSurface(root,layout,state)
     const phase=this.add.text(layout.viewport.width/2,layout.viewport.height*0.19,`ROUND ${state.round} · ${state.phase}`,{fontFamily:'Arial, sans-serif',fontSize:'22px',color:TEXT,fontStyle:'bold'}).setOrigin(0.5)
     root.add(phase)
@@ -226,6 +230,10 @@ export class ArenaPrototypeScene extends Phaser.Scene {
       const found=candidates.find(card=>card.id===cardId)
       if(found)return found.name
     }
+    if(state.pendingChoice?.kind==='TIE'){
+      const found=state.pendingChoice.value.hand.find(card=>card.id===cardId)
+      if(found)return found.name
+    }
     return `CARD ${cardId}`
   }
 
@@ -243,11 +251,52 @@ export class ArenaPrototypeScene extends Phaser.Scene {
     root.add(caption)
   }
 
+  private drawTieBreakerHand(root:Phaser.GameObjects.Container,layout:ArenaPrototypeLayout,state:ArenaState){
+    if(state.pendingChoice?.kind!=='TIE')return
+    const tie=state.pendingChoice.value
+    tie.hand.forEach((card,index)=>{
+      const point=this.handPoint(index,Math.max(1,tie.hand.length),layout)
+      const width=Math.max(72,Math.min(112,layout.handBand.width/5.6))
+      const height=width*1.42
+      this.drawCardSlot(root,{x:point.x,y:point.y,width,height},card.name)
+    })
+    const status=tie.picked?'CHOICE LOCKED — WAITING FOR OPPONENT':`TIE BREAKER · CHOOSE 1 OF ${tie.hand.length}`
+    const caption=this.add.text(layout.handBand.x,layout.handBand.y-layout.handBand.height*0.65,status,{fontFamily:'Arial, sans-serif',fontSize:'18px',color:TEXT,fontStyle:'bold'}).setOrigin(0.5)
+    root.add(caption)
+  }
+
+  private syncSelfDiscardSelection(state:ArenaState){
+    const pending=state.pendingChoice?.kind==='SELF_DISCARD'?state.pendingChoice.value:null
+    const key=pending?`${state.identity.matchId}:${state.stateVersion}:${pending.player}:${pending.count}:${pending.mode}:${pending.reason}`:''
+    if(key!==this.selfDiscardChoiceKey){
+      this.selfDiscardChoiceKey=key
+      this.selectedSelfDiscardIds.clear()
+    }
+  }
+
+  private selfDiscardCanConfirm(state:ArenaState){
+    if(state.pendingChoice?.kind!=='SELF_DISCARD')return false
+    const pending=state.pendingChoice.value
+    if(pending.player!==state.identity.localPlayerIndex)return false
+    if(pending.mode==='EXACT')return this.selectedSelfDiscardIds.size===pending.count
+    return true
+  }
+
+  private boardSlotForCard(state:ArenaState,layout:ArenaPrototypeLayout,cardId:number):ArenaPrototypeRect|null{
+    if(state.pendingChoice?.kind!=='BOARD')return null
+    const target=state.pendingChoice.value.target
+    if(state.players[target].vs?.card.id===cardId)return layout.vs[target]
+    const effectIndex=state.players[target].effects.findIndex(effect=>effect?.card.id===cardId)
+    if(effectIndex>=0)return layout.effectSlots[target][effectIndex]??null
+    return null
+  }
+
   private drawCommandSurface(root:Phaser.GameObjects.Container,layout:ArenaPrototypeLayout,state:ArenaState){
     if(state.phase==='GAME_OVER'||!this.commandDispatcher||state.connection.networkBusy)return
     const targets=deriveArenaCommandTargets(state)
     const local=state.identity.localPlayerIndex
     const hand=state.players[local].hand??[]
+    const tieHand=state.pendingChoice?.kind==='TIE'?state.pendingChoice.value.hand:[]
     let actionIndex=0
 
     for(const target of targets){
@@ -265,17 +314,67 @@ export class ArenaPrototypeScene extends Phaser.Scene {
           body.on('pointerdown',()=>this.commandDispatcher?.(command))
           root.add([body,text])
         })
+      }else if(target.kind==='TIE_CARD'){
+        const cardIndex=tieHand.findIndex(card=>card.id===target.cardId)
+        const command=target.commands.find(candidate=>candidate.action==='TIE_PICK')
+        if(cardIndex<0||!command)continue
+        const point=this.handPoint(cardIndex,Math.max(1,tieHand.length),layout)
+        const width=Math.max(72,Math.min(112,layout.handBand.width/5.6))
+        const height=width*1.42
+        const hit=this.add.rectangle(point.x,point.y,width,height,FLASH,0.08).setStrokeStyle(4,FLASH).setInteractive({useHandCursor:true})
+        hit.on('pointerdown',()=>this.commandDispatcher?.(command))
+        root.add(hit)
+      }else if(target.kind==='BOARD_CARD'){
+        if(target.cardId===undefined)continue
+        const command=target.commands.find(candidate=>candidate.action==='RESOLVE_BOARD_CHOICE')
+        const slot=this.boardSlotForCard(state,layout,target.cardId)
+        if(!command||!slot)continue
+        const hit=this.add.rectangle(slot.x,slot.y,slot.width,slot.height,FLASH,0.08).setStrokeStyle(4,FLASH).setInteractive({useHandCursor:true})
+        hit.on('pointerdown',()=>this.commandDispatcher?.(command))
+        root.add(hit)
+      }else if(target.kind==='SELF_DISCARD_CARD'){
+        if(target.cardId===undefined)continue
+        const cardIndex=hand.findIndex(card=>card.id===target.cardId)
+        if(cardIndex<0)continue
+        const point=this.handPoint(cardIndex,Math.max(1,hand.length),layout)
+        const width=Math.max(72,Math.min(112,layout.handBand.width/5.6))
+        const height=width*1.42
+        const selected=this.selectedSelfDiscardIds.has(target.cardId)
+        const hit=this.add.rectangle(point.x,point.y,width,height,FLASH,selected?0.18:0.04).setStrokeStyle(selected?4:2,FLASH).setInteractive({useHandCursor:true})
+        hit.on('pointerdown',()=>{
+          if(this.selectedSelfDiscardIds.has(target.cardId!))this.selectedSelfDiscardIds.delete(target.cardId!)
+          else this.selectedSelfDiscardIds.add(target.cardId!)
+          this.rebuildFromState(state)
+        })
+        root.add(hit)
       }else if(target.kind==='ACTION'){
         const command=target.commands[0]
         if(!command)continue
+        if(command.action==='RESOLVE_SELF_DISCARD'&&!this.selfDiscardCanConfirm(state))continue
         const x=layout.viewport.width/2+(actionIndex-0.5)*118
         const y=layout.viewport.height*0.72
         actionIndex+=1
         const body=this.add.rectangle(x,y,108,42,PANEL,0.98).setStrokeStyle(2,FLASH).setInteractive({useHandCursor:true})
         const text=this.add.text(x,y,target.label,{fontFamily:'Arial, sans-serif',fontSize:'14px',color:TEXT,fontStyle:'bold'}).setOrigin(0.5)
-        body.on('pointerdown',()=>this.commandDispatcher?.(command))
+        body.on('pointerdown',()=>{
+          if(command.action==='RESOLVE_SELF_DISCARD'){
+            this.commandDispatcher?.({...command,cardIds:[...this.selectedSelfDiscardIds]})
+            return
+          }
+          this.commandDispatcher?.(command)
+        })
         root.add([body,text])
       }
+    }
+
+    if(state.pendingChoice?.kind==='BOARD'){
+      const prompt=this.add.text(layout.viewport.width/2,layout.viewport.height*0.28,state.pendingChoice.value.title,{fontFamily:'Arial, sans-serif',fontSize:'18px',color:TEXT,fontStyle:'bold',align:'center',wordWrap:{width:layout.viewport.width*0.62}}).setOrigin(0.5)
+      root.add(prompt)
+    }else if(state.pendingChoice?.kind==='SELF_DISCARD'){
+      const pending=state.pendingChoice.value
+      const count=pending.mode==='EXACT'?`${this.selectedSelfDiscardIds.size}/${pending.count}`:`${this.selectedSelfDiscardIds.size}`
+      const prompt=this.add.text(layout.viewport.width/2,layout.viewport.height*0.28,`SELECT CARDS TO DISCARD · ${count}`,{fontFamily:'Arial, sans-serif',fontSize:'18px',color:TEXT,fontStyle:'bold'}).setOrigin(0.5)
+      root.add(prompt)
     }
   }
 
