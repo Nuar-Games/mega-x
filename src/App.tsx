@@ -2,7 +2,7 @@
 import { getMyAdminStatus, adminListPlayers, adminSetSilenced, adminSetSuspended } from './onlineAuth'
 import { CARD_INFO } from './arena-card-info.ts'
 import { requestPasswordReset } from './onlineAuth'
-import { startPracticeMatch } from './practice-match'
+import { startPracticeMatch, tickPracticeBot } from './practice-match'
 import { VsIntroScreen, getMyActiveMatchVsIntro, joinMatchmakingVsIntro, respondToChallengeVsIntro } from './VsIntro'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { AppOpenHook, shouldShowAppOpenHook } from './AppOpenHook'
@@ -745,6 +745,21 @@ function App() {
     window.addEventListener('mega-x:start-practice-match', startPractice)
     return () => { window.removeEventListener('mega-x:open-sign-in', openGuestSignIn); window.removeEventListener('mega-x:enter-guest-lobby', enterGuestLobby); window.removeEventListener('mega-x:start-practice-match', startPractice) }
   }, [onlineSession?.userId, fighterProfile?.fighter_handle])
+
+  useEffect(() => {
+    if (!onlineSession || !activeOnlineMatch?.id?.startsWith('practice-local:')) return
+    let cancelled = false
+    const phase = activeOnlineMatch.state?.phase
+    const baseDelay = phase === 'ATTACK' ? 1600 : phase === 'EFFECT' ? 1500 : 1300
+    const delay = baseDelay + Math.floor(Math.random() * 500)
+    const timer = window.setTimeout(() => {
+      if (cancelled) return
+      const next = tickPracticeBot(onlineSession.userId, activeOnlineMatch.id)
+      if (next && !cancelled) applyOnlineMatchView(next as any)
+    }, delay)
+    return () => { cancelled = true; window.clearTimeout(timer) }
+  // mega-x:practice-bot-paced-turn
+  }, [onlineSession?.userId, activeOnlineMatch?.id, activeOnlineMatch?.state_version])
 
   useEffect(() => {
     const exitPractice = () => {
