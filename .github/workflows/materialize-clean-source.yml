@@ -72,9 +72,21 @@ jobs:
         run: |
           set -o pipefail
           npm run build 2>&1 | tee build.log
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Arena-next full practice browser E2E
+        run: npx playwright test
       - name: Upload production build failure log
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: production-build-failure-log
           path: build.log
+      - name: Upload Playwright trace on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arena-next-playwright-failure
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
