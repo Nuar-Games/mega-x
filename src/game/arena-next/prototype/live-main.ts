@@ -1,4 +1,3 @@
-import type Phaser from 'phaser'
 import type { ArenaLegalCommand, ArenaState } from '../ArenaState'
 import { ArenaLiveController } from '../live/ArenaLiveController'
 import { createArenaPrototypeGame } from './ArenaPrototypeGame'
@@ -9,8 +8,7 @@ const status=document.getElementById('arena-next-live-status')
 const controls=document.getElementById('arena-next-live-controls')
 if(!host||!status||!controls)throw new Error('ARENA_LIVE_HOST_MISSING')
 
-let game:Phaser.Game|null=null
-let latestState:ArenaState|null=null
+let game:ReturnType<typeof createArenaPrototypeGame>|null=null
 let transition=Promise.resolve()
 
 const cardName=(state:ArenaState,cardId:number|undefined)=>{
@@ -31,7 +29,6 @@ const labelFor=(state:ArenaState,command:ArenaLegalCommand)=>{
 
 const controller=new ArenaLiveController({
   onUpdate:({state,events})=>{
-    latestState=state
     renderStatus(state)
     renderControls(state)
     if(!game)return
@@ -53,9 +50,8 @@ function renderStatus(state:ArenaState){
 
 function renderControls(state:ArenaState){
   controls.replaceChildren()
-  const commands=state.legalCommands
-  if(commands.length===0)return
-  for(const command of commands){
+  if(state.legalCommands.length===0)return
+  for(const command of state.legalCommands){
     const button=document.createElement('button')
     button.type='button'
     button.textContent=labelFor(state,command)
@@ -78,7 +74,6 @@ function showError(message:string){
 async function boot(){
   try{
     const initial=await controller.start()
-    latestState=initial
     game=createArenaPrototypeGame('arena-next-live',initial)
     renderStatus(initial)
     renderControls(initial)
@@ -93,5 +88,4 @@ window.addEventListener('beforeunload',()=>{
   controller.stop()
   game?.destroy(true)
   game=null
-  latestState=null
 })
