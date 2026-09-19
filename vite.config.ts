@@ -9,6 +9,7 @@ export default defineConfig({
       input:{
         main:resolve(process.cwd(),'index.html'),
         arenaNextPrototype:resolve(process.cwd(),'arena-next-prototype.html'),
+        arenaNextLive:resolve(process.cwd(),'arena-next-live.html'),
       },
     },
   },
