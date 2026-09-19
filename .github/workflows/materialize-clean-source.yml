@@ -50,11 +50,6 @@ jobs:
           git push origin HEAD:arena-total-rewrite
       - name: Fail if generated source is not committed exactly
         run: |
-          # public/cards and public/ui are intentionally excluded: recover-cards.mjs
-          # and recover-landing-assets.mjs deterministically rebuild them every run
-          # from committed recovery/cards and recovery/landing-assets source chunks.
-          # They're regenerated build outputs, not authoritative source, so there's
-          # nothing to keep in sync here — only the true generated-source files are.
           paths=(src/App.tsx src/onlineAuth.ts src/index.css src/arena-blueprint.fragment)
           if [[ -n "$(git status --porcelain -- "${paths[@]}")" ]]; then
             echo 'Generated source drift remains after regeneration.'
@@ -72,3 +67,4 @@ jobs:
           node tests/arena_next_prototype_regression.mjs
           node tests/arena_next_live_match_regression.mjs
           node tests/arena_next_pipeline_guard_regression.mjs
+          node tests/arena_next_command_surface_regression.mjs
