@@ -31,9 +31,10 @@ must(events.includes('toVersion'),'arena events must record toVersion')
 must(events.includes('sequence'),'arena events must record ordered sequence')
 must(events.includes('matchId'),'arena events must be scoped to a match')
 
-must(state.includes('opponentHandCount'),'opponent hidden hand must be represented as a count')
+must(state.includes('handCount'),'hidden opponent hand identities must be representable as a count')
 must(state.includes('deckCount'),'Master Deck hidden identities must be represented as a count')
 must(state.includes("localPlayerIndex: 0 | 1"),'arena state must identify local player without DOM inference')
+must(state.includes('ArenaEffectSlots'),'arena state must expose fixed five-slot Effect rails')
 
 for(const forbidden of ['MutationObserver','querySelector','document.','.click()'])
   must(!all.includes(forbidden),`new arena contract must not depend on DOM bridge primitive: ${forbidden}`)
