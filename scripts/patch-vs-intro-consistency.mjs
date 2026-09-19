@@ -12,8 +12,11 @@ const replacements = [
 ]
 
 for (const [label, from, to] of replacements) {
-  if (!css.includes(from)) throw new Error(`VS intro consistency patch missing: ${label}`)
-  css = css.replace(from, to)
+  if (css.includes(from)) {
+    css = css.replace(from, to)
+    continue
+  }
+  if (to && !css.includes(to)) throw new Error(`VS intro consistency patch missing both source and applied form: ${label}`)
 }
 
 const brightnessMarker = '/* VS seam brightness lock */'
