@@ -162,8 +162,7 @@ function maybeBeginRound() {
     !store.match.state.needsVS[1] &&
     !store.match.state.pendingSelfDiscard &&
     !store.match.state.pendingBoardChoice &&
-    !store.match.state.pendingChoice &&
-    store.match.state.firstPlayer === store.match.player1_id
+    !store.match.state.pendingChoice
   ) {
     apply(store.match.player1_id, 'BEGIN_ROUND')
   }
