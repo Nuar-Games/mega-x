@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 
 const guestEntry=fs.readFileSync('src/guest-practice-cta.ts','utf8')
-const hud=fs.readFileSync('src/game/arena3d/Arena3DHUD.tsx','utf8')
+const arenaRuntime=fs.readFileSync('src/game/arena-next/ArenaNextRuntime.tsx','utf8')
 const guestPatch=fs.readFileSync('scripts/patch-guest-lobby-vs-race.mjs','utf8')
 
 for(const marker of ['getSavedSession','mega-x:enter-guest-lobby','mega-x:open-sign-in','mx-main-cta','SIGN IN']){
@@ -11,14 +11,14 @@ if(guestEntry.includes("new CustomEvent('mega-x:start-practice-match')"))throw n
 if(guestEntry.includes('PRACTICE — PLAY AS GUEST'))throw new Error('separate guest Practice CTA must be removed')
 
 for(const marker of [
+  "state.identity.mode==='practice'",
   'LEADERBOARD POINTS WERE NOT RECORDED',
   'SIGN IN',
   'PLAY AGAIN AS GUEST',
   'mega-x:open-sign-in',
   'mega-x:start-practice-match',
-  'getSavedSession',
 ]){
-  if(!hud.includes(marker))throw new Error(`3D guest result reminder missing: ${marker}`)
+  if(!arenaRuntime.includes(marker))throw new Error(`arena-next guest result reminder missing: ${marker}`)
 }
 
 if(!guestPatch.includes("mega-x:enter-guest-lobby"))throw new Error('App patch does not expose the guest lobby event')
