@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import type { ActiveOnlineMatch, OnlineSession } from '../../onlineAuth'
 import type { ArenaState } from './ArenaState'
 import { ArenaLiveController } from './live/ArenaLiveController'
 import { createArenaPrototypeGame } from './prototype/ArenaPrototypeGame'
@@ -6,7 +7,13 @@ import { ArenaPrototypeScene } from './prototype/ArenaPrototypeScene'
 
 const RUNTIME_HOST_ID='arena-next-runtime-host'
 
-export function ArenaNextRuntime({allowPracticeBootstrap=true}:{allowPracticeBootstrap?:boolean}){
+type ArenaNextRuntimeProps={
+  allowPracticeBootstrap?:boolean
+  session?:OnlineSession|null
+  match?:ActiveOnlineMatch|null
+}
+
+export function ArenaNextRuntime({allowPracticeBootstrap=true,session=null,match=null}:ArenaNextRuntimeProps){
   const hostRef=useRef<HTMLDivElement|null>(null)
   const controllerRef=useRef<ArenaLiveController|null>(null)
   const gameRef=useRef<ReturnType<typeof createArenaPrototypeGame>|null>(null)
@@ -18,6 +25,8 @@ export function ArenaNextRuntime({allowPracticeBootstrap=true}:{allowPracticeBoo
     let cancelled=false
     const controller=new ArenaLiveController({
       allowPracticeBootstrap,
+      sessionOverride:session,
+      matchOverride:match,
       onUpdate:({state:next,events})=>{
         if(cancelled)return
         setState(next)
@@ -48,7 +57,7 @@ export function ArenaNextRuntime({allowPracticeBootstrap=true}:{allowPracticeBoo
       gameRef.current?.destroy(true)
       gameRef.current=null
     }
-  },[allowPracticeBootstrap])
+  },[allowPracticeBootstrap,session?.accessToken,session?.userId,match?.id])
 
   return <main style={{position:'fixed',inset:0,overflow:'hidden',background:'#101216',zIndex:99999}}>
     <div id={RUNTIME_HOST_ID} ref={hostRef} style={{position:'absolute',inset:0}} />
