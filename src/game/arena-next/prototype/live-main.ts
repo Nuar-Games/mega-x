@@ -1,7 +1,6 @@
 import type { ArenaState } from '../ArenaState'
 import { ArenaLiveController } from '../live/ArenaLiveController'
 import { createArenaPrototypeGame } from './ArenaPrototypeGame'
-import { ArenaPrototypeScene } from './ArenaPrototypeScene'
 import { signInWithEmail } from '../../../onlineAuth'
 
 function requiredElement(id:string){
@@ -24,10 +23,10 @@ const controller=new ArenaLiveController({
   onUpdate:({state,events})=>{
     clearAuthPanel()
     renderStatus(state)
-    if(!game)return
+    const scene=game?.scene
+    if(!scene)return
     transition=transition.then(async()=>{
-      if(!game)return
-      const scene=game.scene.getScene('arena-prototype') as ArenaPrototypeScene
+      if(game?.scene!==scene)return
       if(events.length===0){scene.rebuildFromState(state);return}
       for(const event of events)await scene.consumeEvent(event,state)
     }).catch((error)=>showError(error instanceof Error?error.message:'ARENA_TRANSITION_FAILED'))
@@ -43,8 +42,8 @@ function renderStatus(state:ArenaState){
 }
 
 function wireCommandSurface(){
-  if(!game)return
-  const scene=game.scene.getScene('arena-prototype') as ArenaPrototypeScene
+  const scene=game?.scene
+  if(!scene)return
   scene.setCommandDispatcher((command)=>{void controller.dispatch(command).catch(()=>undefined)})
 }
 
@@ -112,7 +111,7 @@ async function boot(){
     clearAuthPanel()
     controls.replaceChildren()
     if(!game)game=createArenaPrototypeGame('arena-next-live',initial)
-    else (game.scene.getScene('arena-prototype') as ArenaPrototypeScene).rebuildFromState(initial)
+    else game.scene.rebuildFromState(initial)
     wireCommandSurface()
     renderStatus(initial)
   }catch(error){
@@ -124,6 +123,6 @@ void boot()
 
 window.addEventListener('beforeunload',()=>{
   controller.stop()
-  game?.destroy(true)
+  game?.game.destroy(true)
   game=null
 })
