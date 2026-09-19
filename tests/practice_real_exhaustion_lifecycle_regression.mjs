@@ -132,12 +132,15 @@ if (!baseline.match.state.deckExhausted) {
   throw new Error('Practice aggressive lifecycle concluded before exercising Master Deck exhaustion')
 }
 
-const arena = fs.readFileSync('src/App.tsx', 'utf8')
-if (!arena.includes("activeOnlineMatch?.state?.effectTurn === onlineSession?.userId")) {
-  throw new Error('Practice human Effect turn has no UUID Arena fallback')
+const projection = fs.readFileSync('src/game/arena-next/live/ArenaStateProjection.ts', 'utf8')
+if (!projection.includes("value===match.player1_id")) {
+  throw new Error('Arena Next projection no longer accepts UUID Effect-turn ownership for the local player')
 }
-if (!arena.includes("activeOnlineMatch?.state?.effectTurn === 0")) {
-  throw new Error('Practice local Effect control can disappear when the displayed match has already normalized effectTurn to player index 0')
+if (!projection.includes("value===0||value==='0'")) {
+  throw new Error('Arena Next projection no longer accepts normalized player-index 0 Effect-turn ownership')
+}
+if (!projection.includes("state.phase==='EFFECT'&&state.effectTurnIndex===me")) {
+  throw new Error('Arena Next no longer exposes local Effect controls from the normalized Effect-turn owner')
 }
 
 let terminal = 0
@@ -167,5 +170,5 @@ if (humanFirst === 0 || botFirst === 0) throw new Error(`Practice stress did not
 if (effectCoverage.size < 10) throw new Error(`Practice stress under-covered Effect cards: ${effectCoverage.size} unique cards`)
 if (terminal < Math.floor(STRESS_MATCHES * 0.85)) throw new Error(`Practice stress left too many non-terminal samples: ${terminal}/${STRESS_MATCHES}`)
 
-console.log(`PASS real Practice aggressive lifecycle concludes via ${baseline.match.phase} after Master Deck exhaustion and Arena accepts both UUID and normalized player-index Effect ownership`)
+console.log(`PASS real Practice aggressive lifecycle concludes via ${baseline.match.phase} after Master Deck exhaustion and Arena Next accepts both UUID and normalized player-index Effect ownership`)
 console.log(`PRACTICE_STRESS_PASS ${STRESS_MATCHES} seeded matches sampled; transitions=${sampledSteps} terminal=${terminal} GAME_OVER=${gameOver} TIE_BREAKER=${tieBreaker} deckExhausted=${exhausted} humanFirst=${humanFirst} botFirst=${botFirst} effects=${effectCoverage.size}`)
