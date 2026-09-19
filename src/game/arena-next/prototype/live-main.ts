@@ -3,10 +3,16 @@ import { ArenaLiveController } from '../live/ArenaLiveController'
 import { createArenaPrototypeGame } from './ArenaPrototypeGame'
 import { ArenaPrototypeScene } from './ArenaPrototypeScene'
 
-const host=document.getElementById('arena-next-live')
-const status=document.getElementById('arena-next-live-status')
-const controls=document.getElementById('arena-next-live-controls')
-if(!host||!status||!controls)throw new Error('ARENA_LIVE_HOST_MISSING')
+function requiredElement(id:string){
+  const element=document.getElementById(id)
+  if(!element)throw new Error(`ARENA_LIVE_HOST_MISSING:${id}`)
+  return element
+}
+
+const host=requiredElement('arena-next-live')
+const status=requiredElement('arena-next-live-status')
+const controls=requiredElement('arena-next-live-controls')
+void host
 
 let game:ReturnType<typeof createArenaPrototypeGame>|null=null
 let transition=Promise.resolve()
