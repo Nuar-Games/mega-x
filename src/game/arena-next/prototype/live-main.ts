@@ -2,6 +2,7 @@ import type { ArenaLegalCommand, ArenaState } from '../ArenaState'
 import { ArenaLiveController } from '../live/ArenaLiveController'
 import { createArenaPrototypeGame } from './ArenaPrototypeGame'
 import { ArenaPrototypeScene } from './ArenaPrototypeScene'
+import { signInWithEmail } from '../../../onlineAuth'
 
 function requiredElement(id:string){
   const element=document.getElementById(id)
@@ -14,9 +15,7 @@ const status=requiredElement('arena-next-live-status')
 const controls=requiredElement('arena-next-live-controls')
 void host
 
-const params=new URLSearchParams(window.location.search)
-const onlineTestMode=params.get('mode')==='online'
-
+const onlineOnly=new URLSearchParams(location.search).get('mode')==='online'
 let game:ReturnType<typeof createArenaPrototypeGame>|null=null
 let transition=Promise.resolve()
 
@@ -37,8 +36,9 @@ const labelFor=(state:ArenaState,command:ArenaLegalCommand)=>{
 }
 
 const controller=new ArenaLiveController({
-  allowPracticeBootstrap:!onlineTestMode,
+  allowPracticeBootstrap:!onlineOnly,
   onUpdate:({state,events})=>{
+    clearAuthPanel()
     renderStatus(state)
     renderControls(state)
     if(!game)return
@@ -78,22 +78,70 @@ function renderControls(state:ArenaState){
   }
 }
 
+function clearAuthPanel(){
+  document.getElementById('arena-next-auth-panel')?.remove()
+}
+
+function showOnlineSignIn(){
+  clearAuthPanel()
+  controls.replaceChildren()
+  status.textContent='ONLINE TEST · SIGN IN TO MEGA X'
+  const panel=document.createElement('div')
+  panel.id='arena-next-auth-panel'
+  panel.style.cssText='position:fixed;left:24px;top:90px;z-index:20;display:grid;gap:10px;width:min(360px,calc(100vw - 48px));padding:16px;background:#15181d;border:1px solid #59616c;color:white;font-family:Arial,sans-serif'
+  const email=document.createElement('input')
+  email.type='email'; email.placeholder='EMAIL'; email.autocomplete='email'; email.style.cssText='padding:12px;background:#0d0f12;color:white;border:1px solid #59616c'
+  const password=document.createElement('input')
+  password.type='password'; password.placeholder='PASSWORD'; password.autocomplete='current-password'; password.style.cssText='padding:12px;background:#0d0f12;color:white;border:1px solid #59616c'
+  const button=document.createElement('button')
+  button.type='button'; button.textContent='SIGN IN'; button.style.cssText='padding:12px;font-weight:700'
+  const message=document.createElement('div')
+  message.style.cssText='min-height:20px;font-size:12px;opacity:.8'
+  button.addEventListener('click',async()=>{
+    if(!email.value.trim()||password.value.length<6)return
+    button.disabled=true; message.textContent='SIGNING IN…'
+    try{
+      await signInWithEmail(email.value.trim(),password.value)
+      message.textContent='SIGNED IN. LOADING MATCH…'
+      await boot()
+    }catch(error){
+      message.textContent=(error instanceof Error?error.message:'SIGN_IN_FAILED').replaceAll('_',' ')
+      button.disabled=false
+    }
+  })
+  panel.append(email,password,button,message)
+  document.body.append(panel)
+}
+
+function showOpenLobby(){
+  clearAuthPanel()
+  controls.replaceChildren()
+  status.textContent='ONLINE TEST · NO ACTIVE MATCH'
+  const panel=document.createElement('div')
+  panel.id='arena-next-auth-panel'
+  panel.style.cssText='position:fixed;left:24px;top:90px;z-index:20;display:grid;gap:10px;width:min(360px,calc(100vw - 48px));padding:16px;background:#15181d;border:1px solid #59616c;color:white;font-family:Arial,sans-serif'
+  const copy=document.createElement('div')
+  copy.textContent='You are signed in on this preview. Start or join an online match in the Mega X lobby, then return here.'
+  const button=document.createElement('button')
+  button.type='button'; button.textContent='OPEN MEGA X LOBBY'; button.style.cssText='padding:12px;font-weight:700'
+  button.addEventListener('click',()=>{location.href='/'})
+  panel.append(copy,button)
+  document.body.append(panel)
+}
+
 function showError(message:string){
-  if(onlineTestMode&&message==='NO_SAVED_SESSION'){
-    status.textContent='ONLINE TEST · SIGN IN ON THIS PREVIEW ORIGIN FIRST'
-    return
-  }
-  if(onlineTestMode&&message==='NO_ACTIVE_MATCH'){
-    status.textContent='ONLINE TEST · START OR RESUME AN ONLINE MATCH FIRST'
-    return
-  }
-  status.textContent=`ARENA LIVE · ${message.replaceAll('_',' ')}`
+  const normalized=message.replaceAll('_',' ')
+  if(onlineOnly&&message.includes('NO_SAVED_SESSION')){showOnlineSignIn();return}
+  if(onlineOnly&&message.includes('NO_ACTIVE_MATCH')){showOpenLobby();return}
+  status.textContent=`ARENA LIVE · ${normalized}`
 }
 
 async function boot(){
   try{
     const initial=await controller.start()
-    game=createArenaPrototypeGame('arena-next-live',initial)
+    clearAuthPanel()
+    if(!game)game=createArenaPrototypeGame('arena-next-live',initial)
+    else (game.scene.getScene('arena-prototype') as ArenaPrototypeScene).rebuildFromState(initial)
     renderStatus(initial)
     renderControls(initial)
   }catch(error){
