@@ -164,7 +164,7 @@ function maybeBeginRound() {
     !store.match.state.pendingBoardChoice &&
     !store.match.state.pendingChoice
   ) {
-    apply(store.match.player1_id, 'BEGIN_ROUND')
+    apply(store.match.state.firstPlayer, 'BEGIN_ROUND')
   }
 }
 
