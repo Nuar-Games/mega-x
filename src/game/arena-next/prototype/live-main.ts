@@ -34,6 +34,7 @@ const labelFor=(state:ArenaState,command:ArenaLegalCommand)=>{
 }
 
 const controller=new ArenaLiveController({
+  allowPracticeBootstrap:true,
   onUpdate:({state,events})=>{
     renderStatus(state)
     renderControls(state)
@@ -51,7 +52,8 @@ const controller=new ArenaLiveController({
 function renderStatus(state:ArenaState){
   const busy=state.connection.networkBusy?' · SENDING':''
   const connection=state.connection.status.toUpperCase()
-  status.textContent=`LIVE MATCH · ${connection} · V${state.stateVersion} · ROUND ${state.round} · ${state.phase}${busy}`
+  const mode=state.identity.mode==='practice'?'PRACTICE ENGINE':'LIVE MATCH'
+  status.textContent=`${mode} · ${connection} · V${state.stateVersion} · ROUND ${state.round} · ${state.phase}${busy}`
 }
 
 function renderControls(state:ArenaState){
