@@ -17,8 +17,8 @@ const all=`${projection}\n${diff}\n${controller}\n${liveMain}`
 
 must(projection.includes('projectActiveMatchToArenaState'),'real match projector missing')
 must(projection.includes('computeArenaStats'),'authoritative arena stat projection missing')
-must(projection.includes('hand: isLocal ?'),'local hand identities must be viewer-relative')
-must(projection.includes('hand: null'),'opponent hand identities must stay hidden')
+must(projection.includes('hand:isLocal ? visibleHand : null'),'local hand identities must be viewer-relative and opponent identities hidden')
+must(projection.includes('handCount:isLocal?visibleHand.length:Number(p.handCount'),'opponent hidden hand must use server count')
 must(projection.includes('deckCount'),'Master Deck must remain count-only')
 must(diff.includes('deriveArenaEvents'),'state-to-event derivation missing')
 must(diff.includes('STATE_RECONCILED'),'unsafe diffs must have reconciliation fallback')
