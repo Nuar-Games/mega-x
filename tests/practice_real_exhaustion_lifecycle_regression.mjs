@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import {
   startPracticeMatch,
   submitPracticeAction,
+  tickPracticeBot,
 } from '../src/practice-match.ts'
 
 const HUMAN = 'practice-regression-human'
@@ -101,6 +102,15 @@ function drivePracticeMatch(seed, options = {}) {
       if (!hasPending && s.phase === 'ATTACK' && (s.attackTurn === HUMAN || s.attackTurn === 0)) {
         const canAttack = s.player1.vs?.position === 'ATK'
         step(canAttack && (forceAggressive || random() < 0.82) ? 'ATTACK' : 'PASS_ATTACK')
+        continue
+      }
+
+      // Production deliberately paces the beginner bot one action at a time from
+      // the Arena UI timer. Drive that same public tick here instead of assuming
+      // submitPracticeAction immediately resolves every bot turn.
+      const botTick = tickPracticeBot(HUMAN, match.id)
+      if (botTick) {
+        match = botTick
         continue
       }
 
