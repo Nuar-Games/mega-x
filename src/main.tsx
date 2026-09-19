@@ -6,7 +6,7 @@ import './guest-practice-cta.ts'
 import './landing-activation-fix.ts'
 import './landing-polish.css'
 import './lobby-ui.ts'
-import App from './App.tsx'
+import Root from './root.tsx'
 import './arena-stage.css'
 import './arena-premium.css'
 import './arena-mobile-priority.css'
@@ -24,7 +24,7 @@ import './landing-background-visible.css'
 import './landing-cta-fighting.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <App />,
+  <Root />,
 )
 
 
