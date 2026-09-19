@@ -154,19 +154,8 @@ function resolveVisibleEffectChoice(cardId: number) {
   }
 }
 
-function advanceBot(maxSteps = 24) {
-  if (!store || store.match.state.phase === 'GAME_OVER' || maxSteps <= 0) return
-  ensureTieHands(store.match.state)
-  if (store.match.state.phase === 'TIE_BREAKER') return
-  const result = runBeginnerBotActions(
-    store.match.state,
-    meta(),
-    PRACTICE_BOT_ID,
-    (state, actorId, candidate) => applyEngineAction({ state, meta: meta(), actorId, action: candidate as EngineAction }),
-    maxSteps,
-  )
-  store.match.state = result.state
-
+function maybeBeginRound() {
+  if (!store) return
   if (
     store.match.state.phase === 'SET_VS' &&
     !store.match.state.needsVS[0] &&
@@ -178,7 +167,22 @@ function advanceBot(maxSteps = 24) {
   ) {
     apply(store.match.player1_id, 'BEGIN_ROUND')
   }
+}
 
+function advanceBot(maxSteps = 24) {
+  if (!store || store.match.state.phase === 'GAME_OVER') return
+  ensureTieHands(store.match.state)
+  maybeBeginRound()
+  if (store.match.state.phase === 'TIE_BREAKER' || maxSteps <= 0) return
+  const result = runBeginnerBotActions(
+    store.match.state,
+    meta(),
+    PRACTICE_BOT_ID,
+    (state, actorId, candidate) => applyEngineAction({ state, meta: meta(), actorId, action: candidate as EngineAction }),
+    maxSteps,
+  )
+  store.match.state = result.state
+  maybeBeginRound()
   ensureTieHands(store.match.state)
 }
 
