@@ -32,6 +32,17 @@ export function deriveArenaCommandTargets(state:ArenaState):ArenaCommandTarget[]
         })
         break
       }
+      case 'ATTACK':
+      case 'PASS_ATTACK': {
+        const key=`action:${command.action}`
+        targets.set(key,{
+          kind:'ACTION',
+          key,
+          label:command.action==='ATTACK'?'ATTACK':'PASS',
+          commands:[command],
+        })
+        break
+      }
       default:
         break
     }
