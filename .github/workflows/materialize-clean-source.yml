@@ -2,9 +2,9 @@ name: Verify generated clean source
 
 on:
   push:
-    branches: [arena-clean-rebuild]
+    branches: [arena-clean-rebuild, arena-total-rewrite]
   pull_request:
-    branches: [arena-clean-rebuild]
+    branches: [arena-clean-rebuild, arena-total-rewrite]
   workflow_dispatch:
 
 permissions:
@@ -22,6 +22,13 @@ jobs:
           node-version: 24
       - name: Install dependencies
         run: npm install
+      - name: Guard arena-next from patch-chain codegen
+        run: |
+          if grep -R --line-number --include='patch-*.mjs' --include='build-clean.mjs' 'src/game/arena-next/' scripts; then
+            echo 'arena-next must remain normal hand-authored source and may not be targeted by build-clean or patch scripts.'
+            exit 1
+          fi
+          echo 'ARENA_NEXT_PATCH_CHAIN_GUARD_OK'
       - name: Regenerate authoritative source once
         run: node scripts/build-clean.mjs --prepare-only
       - name: Fail if generated source is not committed exactly
@@ -39,3 +46,11 @@ jobs:
             exit 1
           fi
           echo 'GENERATED_SOURCE_IN_SYNC'
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - name: Arena-next regression tests
+        run: |
+          node tests/arena_next_contract_regression.mjs
+          node tests/arena_next_event_pipeline_regression.mjs
+          node tests/arena_next_prototype_regression.mjs
+          node tests/arena_next_live_match_regression.mjs
