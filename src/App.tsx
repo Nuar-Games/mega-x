@@ -1,6 +1,5 @@
 // GENERATED FILE — produced by scripts/build-clean.mjs; do not hand-edit.
 import { getMyAdminStatus, adminListPlayers, adminSetSilenced, adminSetSuspended } from './onlineAuth'
-import { CARD_INFO } from './arena-card-info.ts'
 import { requestPasswordReset } from './onlineAuth'
 import { startPracticeMatch, tickPracticeBot } from './practice-match'
 import { VsIntroScreen, getMyActiveMatchVsIntro, joinMatchmakingVsIntro, respondToChallengeVsIntro } from './VsIntro'
@@ -964,25 +963,26 @@ function App() {
     setOnlineScreen('LANDING')
   }
 
-  async function chooseTieBreakerCard(cardId: number) {
-    if (!activeOnlineMatch || !onlineSession || game.phase !== 'TIE_BREAKER' || matchNetworkBusyRef.current) return
-    const tieChoice = activeOnlineMatch.state?.tieChoice
-    if (!tieChoice || tieChoice.picked || !Array.isArray(tieChoice.hand) || !tieChoice.hand.map(Number).includes(cardId)) return
-    matchNetworkBusyRef.current = true
-    setMatchNetworkBusy(true)
-    try {
-      const result = await submitMatchSpecialAction(onlineSession, activeOnlineMatch.id, activeOnlineMatch.state_version, 'TIE_PICK', { cardId })
-      applyOnlineMatchView({ ...activeOnlineMatch, state: result.state, state_version: Number(result.state_version), phase: result.phase, status: result.status })
-      setOnlineMessage('')
-    } catch (e) {
-      const message = e instanceof Error ? e.message : 'TIE BREAKER FAILED'
-      setOnlineMessage(message.replaceAll('_',' '))
-      if (message.includes('STALE_MATCH_STATE')) await refreshActiveMatch().catch(() => undefined)
-    } finally {
-      matchNetworkBusyRef.current = false
-      setMatchNetworkBusy(false)
-    }
-  }
+  useEffect(() => {
+    if (!activeOnlineMatch || !onlineSession || game.phase !== 'TIE_BREAKER' || localViewer !== 0 || matchNetworkBusy) return
+    const status = game.tieBreaker?.status ?? 'WAITING'
+    if (!['WAITING','TIED'].includes(status)) return
+    const timer = window.setTimeout(() => {
+      setMatchNetworkBusy(true)
+      void submitMatchSpecialAction(onlineSession, activeOnlineMatch.id, activeOnlineMatch.state_version, 'TIE_REVEAL', {})
+        .then((result) => {
+          applyOnlineMatchView({ ...activeOnlineMatch, state: result.state, state_version: Number(result.state_version), phase: result.phase, status: result.status })
+          setOnlineMessage('')
+        })
+        .catch(async (e) => {
+          const message = e instanceof Error ? e.message : 'TIE BREAKER FAILED'
+          setOnlineMessage(message.replaceAll('_',' '))
+          if (message.includes('STALE_MATCH_STATE')) await refreshActiveMatch().catch(() => undefined)
+        })
+        .finally(() => setMatchNetworkBusy(false))
+    }, 1100)
+    return () => window.clearTimeout(timer)
+  }, [activeOnlineMatch?.id, activeOnlineMatch?.state_version, game.phase, game.tieBreaker?.status, localViewer])
 
   useEffect(() => {
     if (activeOnlineMatch) return
@@ -2032,42 +2032,43 @@ function App() {
       {activeOnlineMatch?.status === 'PAUSED' && <div className="mx-reconnect-overlay"><section><span>CONNECTION INTERRUPTED</span><h2>{activeOnlineMatch.disconnected_player === onlineSession?.userId ? 'RECONNECTING…' : 'OPPONENT DISCONNECTED'}</h2><p>Match paused. Reconnect protection: <strong>{reconnectSecondsLeft}s</strong></p></section></div>}
       {started && (
         <section className="duel-shell">
-            {game.phase === 'TIE_BREAKER' && game.tieBreaker && (
-              <div className="tie-breaker-stage tie-breaker-choice-stage" role="status" aria-live="polite">
-                <div className="tie-breaker-stage-energy" aria-hidden="true" />
-                <div className="tie-breaker-stage-title">PENENTUAN SERI</div>
-                {activeOnlineMatch ? (() => {
-                  const tieChoice = activeOnlineMatch.state?.tieChoice as { hand?: number[]; picked?: boolean; opponentPicked?: boolean; pair?: number } | undefined
-                  const tiePublic = activeOnlineMatch.state?.tiePublic as { left?: number; right?: number; pair?: number; status?: string } | undefined
-                  const hand = Array.isArray(tieChoice?.hand) ? tieChoice!.hand!.map(Number) : []
-                  const locked = Boolean(tieChoice?.picked)
-                  return <>
-                    {tiePublic?.left && tiePublic?.right && <div className="tie-breaker-last-reveal">
-                      <div><CardView card={cardById(Number(tiePublic.left))}/><strong>ATK {cardById(Number(tiePublic.left)).atk}</strong></div>
-                      <b>{tiePublic.status === 'TIED' ? 'SERI' : 'VS'}</b>
-                      <div><CardView card={cardById(Number(tiePublic.right))}/><strong>ATK {cardById(Number(tiePublic.right)).atk}</strong></div>
-                    </div>}
-                    <div className="tie-breaker-choice-copy">
-                      <strong>PILIH 1 KAD ANDA</strong>
-                      <span>PUSINGAN PENENTUAN {Number(tieChoice?.pair ?? 1)}</span>
-                      <em>{locked ? (tieChoice?.opponentPicked ? 'KEDUA-DUA KAD DIKUNCI — MEMBUKA…' : 'KAD ANDA DIKUNCI · MENUNGGU LAWAN') : 'LAWAN TIDAK DAPAT MELIHAT PILIHAN ANDA'}</em>
-                    </div>
-                    <div className="tie-breaker-choice-hand">
-                      {hand.map((id) => <button key={id} type="button" disabled={locked || matchNetworkBusy} onClick={() => { void chooseTieBreakerCard(id) }} aria-label={`Pilih ${cardById(id).name}`}><CardView card={cardById(id)}/><span>ATK {cardById(id).atk}</span></button>)}
-                    </div>
-                    {hand.length === 0 && <div className="tie-breaker-choice-wait">MENYEDIAKAN 5 KAD PENENTUAN…</div>}
-                  </>
-                })() : <>
-                  <div className="tie-breaker-pair" key={`tie-pair-${game.tieBreaker.pair}-${game.tieBreaker.index}`}>
-                    <div className="tie-breaker-card tie-breaker-card-left"><span>X Fighter 1</span>{game.tieBreaker.left ? <CardView card={game.tieBreaker.left} /> : <div className="tie-breaker-card-back"><img src="/cards/back-game.webp" alt="" /></div>}{game.tieBreaker.left && <strong>ATK {game.tieBreaker.left.atk}</strong>}</div>
-                    <div className="tie-breaker-vs">VS</div>
-                    <div className="tie-breaker-card tie-breaker-card-right"><span>X Fighter 2</span>{game.tieBreaker.right ? <CardView card={game.tieBreaker.right} /> : <div className="tie-breaker-card-back"><img src="/cards/back-game.webp" alt="" /></div>}{game.tieBreaker.right && <strong>ATK {game.tieBreaker.right.atk}</strong>}</div>
-                  </div>
-                  {game.tieBreaker.status === 'TIED' && <div className="tie-breaker-tied">SERI</div>}
-                </>}
+            {game.pendingSelfDiscard && game.pendingSelfDiscard.player === localViewer && (
+              <div className="mx-discard-confirm-sheet" role="dialog" aria-modal="true" aria-label="Confirm cards to discard">
+                <div className="mx-discard-confirm-head">
+                  <strong className="mx-responsive-discard-title">{game.pendingSelfDiscard.reason.startsWith('SPUDUR') ? 'SPUDUR — PILIH KAD UNTUK DIBUANG' : 'PILIH KAD UNTUK DIBUANG'}</strong>
+                  <span>{selectedDiscardIds.length} / {game.pendingSelfDiscard.count}</span>
+                </div>
+                <div className="mx-discard-confirm-cards">
+                  {game.players[localViewer].hand.map((card) => {
+                    const selected = selectedDiscardIds.includes(card.id)
+                    return <button key={card.id} type="button" className={`mx-discard-card ${selected ? 'is-selected' : ''}`} aria-pressed={selected} onClick={() => toggleDiscardCard(card.id)}><CardView card={card} /></button>
+                  })}
+                </div>
+                <button type="button" className="mx-confirm-discard" disabled={game.pendingSelfDiscard.mode === 'EXACT' ? selectedDiscardIds.length !== game.pendingSelfDiscard.count : selectedDiscardIds.length === 0} onClick={confirmSelfDiscard}>CONFIRM DISCARD</button>
               </div>
             )}
-            {game.phase === 'GAME_OVER' && (
+          {arenaIntro && <div className="arena-transition-final" aria-hidden="true"><div className="arena-door arena-door-left"></div><div className="arena-door arena-door-right"></div><div className="arena-transition-flash"></div><div className="arena-transition-fight">FIGHT!</div></div>}
+          {game.phase === 'TIE_BREAKER' && game.tieBreaker && (
+            <div className="tie-breaker-stage" role="status" aria-live="polite">
+              <div className="tie-breaker-stage-energy" aria-hidden="true" />
+              <div className="tie-breaker-stage-title">PENENTUAN SERI</div>
+              <div className="tie-breaker-pair" key={`tie-pair-${game.tieBreaker.pair}-${game.tieBreaker.index}`}>
+                <div className="tie-breaker-card tie-breaker-card-left">
+                  <span>X Fighter 1</span>
+                  {game.tieBreaker.left ? <CardView card={game.tieBreaker.left} /> : <div className="tie-breaker-card-back"><img src="/cards/back-game.webp" alt="" /></div>}
+                  {game.tieBreaker.left && <strong>ATK {game.tieBreaker.left.atk}</strong>}
+                </div>
+                <div className="tie-breaker-vs">VS</div>
+                <div className="tie-breaker-card tie-breaker-card-right">
+                  <span>X Fighter 2</span>
+                  {game.tieBreaker.right ? <CardView card={game.tieBreaker.right} /> : <div className="tie-breaker-card-back"><img src="/cards/back-game.webp" alt="" /></div>}
+                  {game.tieBreaker.right && <strong>ATK {game.tieBreaker.right.atk}</strong>}
+                </div>
+              </div>
+              {game.tieBreaker.status === 'TIED' && <div className="tie-breaker-tied">SERI</div>}
+            </div>
+          )}
+          {game.phase === 'GAME_OVER' && (
             <div className="match-result-splash" role="dialog" aria-modal="true" aria-labelledby="match-result-title">
               <div className="winner-energy winner-energy-left" aria-hidden="true" />
               <div className="winner-energy winner-energy-right" aria-hidden="true" />
@@ -2087,117 +2088,217 @@ function App() {
               </div>
             </div>
           )}
-          
-          <>
-  <div className={`mx3-canvas phase-${game.phase.toLowerCase()} ${impactFx ? 'is-combat-live' : ''}`}>
-    <div className="mx3-particles" aria-hidden="true">
-      {Array.from({ length: 18 }, (_, i) => <span key={`mx3-particle-${i}`} />)}
-    </div>
+          {activeOnlineMatch && onlineMessage && <div className="mx-live-status mx-arena-status" role="status">{onlineMessage}</div>}
+          <header className="fighter-hud">
+            {activeOnlineMatch && game.phase !== 'GAME_OVER' && <button className="mx-quit-match" disabled={matchNetworkBusy} onClick={quitOnlineMatch}>QUIT MATCH</button>}
+            <div className="arcade-center-hud">
+              <div className="round-slam" key={`round-${game.round}`}>PUSINGAN {game.round}</div>
+              {game.message.includes('peluang serangan') && game.message.includes('disekat') && (
+                <div className="mx-attack-blocked-slam" role="status" aria-live="assertive">
+                  <strong>SERANGAN DISEKAT</strong>
+                  <span>EFFECT AKTIF — GILIRAN SERANGAN DILANGKAU</span>
+                </div>
+              )}
+              {actionTimerVisible && <div className={`mx-action-timer ${actionSecondsLeft <= 5 ? 'is-critical' : actionSecondsLeft <= 10 ? 'is-danger' : actionSecondsLeft <= 15 ? 'is-warning' : ''}`}><span>{actionTimerIndex === localViewer ? 'YOUR TURN' : 'OPPONENT TURN'}</span><strong>{actionSecondsLeft}</strong><em>SEC</em><i aria-hidden="true"><b style={{ width: Math.max(0, Math.min(100, (actionSecondsLeft / 60) * 100)) + '%' }} /></i></div>}
+            </div>
+          </header>
+          <div className="arena-history-callout" key={game.message}>{game.message}</div>
 
-    <div className="mx3-premium-rail" aria-hidden="true" style={{
-      position: 'absolute', left: '104px', top: '388px', width: '572px', height: '490px', zIndex: 2,
-      pointerEvents: 'none', border: '2px solid rgba(105,181,230,.34)',
-      background: 'linear-gradient(90deg, rgba(24,132,213,.12), rgba(2,7,13,.76) 44%, rgba(2,7,13,.76) 56%, rgba(214,42,72,.12))',
-      boxShadow: 'inset 0 0 0 2px rgba(255,255,255,.035), inset 0 0 70px rgba(44,144,218,.08), 0 0 34px rgba(30,124,196,.12)',
-      clipPath: 'polygon(18px 0, calc(100% - 18px) 0, 100% 18px, 100% calc(100% - 18px), calc(100% - 18px) 100%, 18px 100%, 0 calc(100% - 18px), 0 18px)'
-    }} />
+          <PlayerHand
+            title=""
+            hand={game.players[topPlayer].hand}
+            hidden={true}
+            opponent
+            canSetVS={false}
+            canPlayEffect={false}
+            onSetVS={() => {}}
+            onPlayEffect={() => {}}
+            motionAnchor={`p${topPlayer + 1}-hand`}
+            arrivingCardIds={arrivingIdsForZone(`p${topPlayer + 1}-hand`)}
+            displayCount={Math.max(0, game.players[topPlayer].hand.length - arrivalCount(`p${topPlayer + 1}-hand`))}
+          />
 
-    <button className="mx3-quit" disabled={matchNetworkBusy} onClick={quitOnlineMatch}>QUIT MATCH</button>
-    <div className="mx3-status" role="status">{activeOnlineMatch && onlineMessage ? onlineMessage : game.message}</div>
-    <button className="mx3-audio" type="button" onClick={() => window.dispatchEvent(new CustomEvent('mega-x:audio-toggle-request'))}>AUDIO</button>
+          <div className="arena-wrap">
+            <div className={`arena arena-v9 phase-${game.phase.toLowerCase()} ${game.phase === 'EFFECT' && game.effectTurn === localViewer ? 'phase-effect-local' : ''}`}>
+              <div className="energy-field" aria-hidden="true" />
+              <div className="arena-depth-grid" aria-hidden="true" />
+              <div className="arena-energy-core arena-energy-core-left" aria-hidden="true" />
+              <div className="arena-energy-core arena-energy-core-right" aria-hidden="true" />
+              <div className="arena-pressure-field" aria-hidden="true" />
+              <div className="arena-particle-field" aria-hidden="true">
+                {arenaParticles.map((particle) => (
+                  <span
+                    key={particle.id}
+                    className="arena-firefly"
+                    style={{
+                      ['--mx-x' as any]: `${particle.x}%`,
+                      ['--mx-y' as any]: `${particle.y}%`,
+                      ['--mx-size' as any]: `${particle.size}px`,
+                      ['--mx-duration' as any]: `${particle.duration}s`,
+                      ['--mx-delay' as any]: `${particle.delay}s`,
+                      ['--mx-dx' as any]: `${particle.driftX}px`,
+                      ['--mx-dy' as any]: `${particle.driftY}px`,
+                      ['--mx-glow' as any]: `${particle.glow}s`,
+                      ['--mx-opacity' as any]: particle.opacity,
+                      ['--mx-color' as any]: particle.color,
+                    }}
+                  />
+                ))}
+              </div>
+              <div className="arena-live-rail" aria-hidden="true" />
+              <div className={`fighter-identity fighter-identity-left ${activePlayer === 0 ? 'is-active' : ''}`}>
+                <span className="fighter-id-side">X FIGHTER 1</span>
+                <strong>{playerDisplayName(0)}</strong>
+                {activePlayer === 0 && <em>AKTIF</em>}
+              </div>
+              <div className={`fighter-identity fighter-identity-right ${activePlayer === 1 ? 'is-active' : ''}`}>
+                <span className="fighter-id-side">X FIGHTER 2</span>
+                <strong>{playerDisplayName(1)}</strong>
+                {activePlayer === 1 && <em>AKTIF</em>}
+              </div>
+              {passToPlayer === null && game.phase === 'SET_VS' && setupPlayer === localViewer && (
+                <div className="arena-vs-prompt">
+                  <strong className="mx-responsive-vs-title">PILIH KAD VS</strong>
+                </div>
+              )}
+              {passToPlayer === null && game.phase === 'EFFECT' && game.effectTurn === localViewer && (
+                <div className="arena-command-prompt">
+                  <strong className="mx-responsive-effect-title">PILIH KAD EFFECT</strong>
+                </div>
+              )}
 
-    <section className={`mx3-fighter mx3-fighter-left ${activePlayer === 0 ? 'is-active' : ''} ${bottomPlayer === 0 ? 'is-local' : ''}`}>
-      <strong>{playerDisplayName(0)}</strong><em>#{leaderboardRows.find((row) => row.player_id === activeOnlineMatch?.player1_id)?.place ?? '—'}</em>
-    </section>
-    <section className={`mx3-fighter mx3-fighter-right ${activePlayer === 1 ? 'is-active' : ''} ${bottomPlayer === 1 ? 'is-local' : ''}`}>
-      <strong>{playerDisplayName(1)}</strong><em>#{leaderboardRows.find((row) => row.player_id === activeOnlineMatch?.player2_id)?.place ?? '—'}</em>
-    </section>
+              <div className={`center-clash ${impactFx ? `is-combat stage-${impactFx.stage.toLowerCase()}` : ''}`} aria-hidden="true">
+                <div className="arena-ring-fx" />
+                <div className="vs-emblem"><span>VS</span></div>
+                {impactFx && <div className="combat-callout">SERANG!</div>}
+              </div>
+              {impactFx && (
+                <div className={`combat-screen-fx stage-${impactFx.stage.toLowerCase()}`} aria-hidden="true">
+                  <i className="combat-flash" />
+                  <i className="combat-shock combat-shock-one" />
+                  <i className="combat-shock combat-shock-two" />
+                  <i className="combat-slash combat-slash-one" />
+                  <i className="combat-slash combat-slash-two" />
+                </div>
+              )}
+              {motionFx && (
+                <div className={`motion-card-fx ${motionFx.kind.toLowerCase()} ${motionFx.from} ${motionFx.to}`} style={motionStyle(motionFx)} key={`${motionFx.card.id}-${motionFx.kind}-${motionFx.to}`}>
+                  {motionFx.kind === 'DRAW' ? (
+                    <div className="digital-card card-back motion-hidden-card">
+                      <img src="/cards/back-game.webp" alt="Kad diambil secara tertutup" />
+                    </div>
+                  ) : (
+                    <CardView card={motionFx.card} />
+                  )}
+                  <strong>{motionFx.kind === 'CAPTURE' ? 'ZON X!' : motionFx.kind === 'DESTROY' ? 'DIMUSNAHKAN!' : motionFx.kind === 'DISCARD' ? 'BUANG!' : motionFx.kind === 'RETURN' ? 'KEMBALI!' : motionFx.kind === 'ENTER_VS' ? 'X FIGHTER MASUK!' : motionFx.kind === 'SUPPORT' ? 'EFFECT AKTIF!' : 'AMBIL KAD!'}</strong>
+                </div>
+              )}
 
-    <section className={`mx3-opponent-hand ${(game.phase === 'SET_VS' && game.needsVS[topPlayer]) || (game.phase === 'EFFECT' && game.effectTurn === topPlayer) ? 'is-live' : ''}`} data-motion-anchor={`p${topPlayer + 1}-hand`}>
-      <div className="mx3-hand-row">
-        {Array.from({ length: Math.max(0, game.players[topPlayer].hand.length - arrivalCount(`p${topPlayer + 1}-hand`)) }, (_, i) => <div key={`mx3-opp-${i}`} className="mx3-card-back"><img src="/cards/back-game.webp" alt="Kad lawan" /></div>)}
-      </div>
-      <div className="mx3-hand-label">TANGAN LAWAN · {Math.max(0, game.players[topPlayer].hand.length - arrivalCount(`p${topPlayer + 1}-hand`))} KAD</div>
-    </section>
+              <section className="fighter-field fighter-field-left">
+                <div className={`fighter-turn-energy fighter-turn-energy-left ${activePlayer === 0 ? 'is-active' : ''}`} aria-hidden="true" />
+                <div className="stat-fx-layer" aria-live="polite">{statFx.filter((fx) => fx.player === 0).map((fx) => <span key={fx.id} className={`stat-fx stat-${fx.stat.toLowerCase()}`}>{fx.stat} {fx.delta > 0 ? '+' : ''}{fx.delta}</span>)}</div>
+                <div className="vs-battle-row">
+                  <LiveStats stats={isCardArriving(game.players[0].vs?.card.id, 'p1-vs') ? null : currentStats[0]} side="left" />
+                  <div data-motion-anchor="p1-vs" className={`v9-vs-card ${impactFx?.attacker === 0 ? `is-attacking stage-${impactFx.stage.toLowerCase()}` : ''} ${impactFx?.defender === 0 ? `is-hit stage-${impactFx.stage.toLowerCase()}` : ''} ${isCardArriving(game.players[0].vs?.card.id, 'p1-vs') ? 'is-arrival-hidden' : ''}`}>
+                    <VSZone title="" vs={game.players[0].vs} stats={currentStats[0]} hidden={!revealRoundOneVS && game.round === 1} onInspect={(card) => setFocusedCard(card)} />
+                  </div>
+                </div>
+                <div className={`effect-rack ${game.phase === 'EFFECT' && game.effectTurn === 0 ? 'is-valid-destination' : ''}`} data-motion-anchor="p1-effect">
+                  {Array.from({ length: 5 }, (_, i) => {
+                    const effect = game.players[0].effects[i]
+                    return <div key={`p1-effect-${i}`} className="effect-card-slot"><span>EFFECT {i + 1}</span>{effect && <button data-card-id={effect.card.id} className={`zone-card-button ${isCardArriving(effect.card.id, 'p1-effect') ? 'is-arrival-hidden' : ''}`} onClick={() => setFocusedCard(effect.card)}><CardView card={effect.card} /></button>}</div>
+                  })}
+                </div>
+              </section>
 
-    <section className="mx3-zone mx3-p1-x" data-motion-anchor="p1-x">
-      <button onClick={() => setPileView({ title: `${bottomPlayer === 0 ? 'PEMAIN' : 'LAWAN'} · ZON X`, cards: game.players[0].x })}>{visiblePileTop(game.players[0].x, 'p1-x') && <CardView card={visiblePileTop(game.players[0].x, 'p1-x')!} />}</button>
-      <span className="mx3-zone-label" style={{position:'absolute',left:'4px',right:'4px',bottom:'4px',zIndex:4,pointerEvents:'none',fontSize:'20px',lineHeight:1,fontWeight:1000,color:'#ffe685',background:'rgba(8,8,10,.82)',padding:'4px 2px',textShadow:'0 2px 5px #000, 0 0 10px rgba(255,211,79,.55)'}}>ZON X</span>
-    </section>
-    <div className="mx3-big-counter mx3-p1-counter">{displayedPileCount('p1-x', game.players[0].x.length)}</div>
-    <section className="mx3-zone mx3-p1-discard" data-motion-anchor="p1-discard">
-      <button onClick={() => setPileView({ title: `${bottomPlayer === 0 ? 'PEMAIN' : 'LAWAN'} · ZON TEPI`, cards: game.players[0].discard })}>{visiblePileTop(game.players[0].discard, 'p1-discard') && <CardView card={visiblePileTop(game.players[0].discard, 'p1-discard')!} />}</button>
-      <span className="mx3-zone-label" style={{position:'absolute',left:'4px',right:'4px',bottom:'4px',zIndex:4,pointerEvents:'none',fontSize:'20px',lineHeight:1,fontWeight:1000,color:'#ffd36a',background:'rgba(8,8,10,.84)',padding:'4px 2px',textShadow:'0 2px 5px #000, 0 0 10px rgba(255,178,45,.48)'}}>ZON TEPI</span>
-    </section>
-    <section className="mx3-zone mx3-master" data-motion-anchor="master"><div className="mx3-master-core"><img src="/cards/back-game.webp" alt="Master Deck"/><span>MASTER<br/>DECK</span></div></section>
-    <div className="mx3-master-counter">{displayedDeckCount}</div>
-    <section className="mx3-zone mx3-p2-discard" data-motion-anchor="p2-discard">
-      <button onClick={() => setPileView({ title: `${bottomPlayer === 1 ? 'PEMAIN' : 'LAWAN'} · ZON TEPI`, cards: game.players[1].discard })}>{visiblePileTop(game.players[1].discard, 'p2-discard') && <CardView card={visiblePileTop(game.players[1].discard, 'p2-discard')!} />}</button>
-      <span className="mx3-zone-label" style={{position:'absolute',left:'4px',right:'4px',bottom:'4px',zIndex:4,pointerEvents:'none',fontSize:'20px',lineHeight:1,fontWeight:1000,color:'#ffd36a',background:'rgba(8,8,10,.84)',padding:'4px 2px',textShadow:'0 2px 5px #000, 0 0 10px rgba(255,178,45,.48)'}}>ZON TEPI</span>
-    </section>
-    <div className="mx3-big-counter mx3-p2-counter">{displayedPileCount('p2-x', game.players[1].x.length)}</div>
-    <section className="mx3-zone mx3-p2-x" data-motion-anchor="p2-x">
-      <button onClick={() => setPileView({ title: `${bottomPlayer === 1 ? 'PEMAIN' : 'LAWAN'} · ZON X`, cards: game.players[1].x })}>{visiblePileTop(game.players[1].x, 'p2-x') && <CardView card={visiblePileTop(game.players[1].x, 'p2-x')!} />}</button>
-      <span className="mx3-zone-label" style={{position:'absolute',left:'4px',right:'4px',bottom:'4px',zIndex:4,pointerEvents:'none',fontSize:'20px',lineHeight:1,fontWeight:1000,color:'#ffe685',background:'rgba(8,8,10,.82)',padding:'4px 2px',textShadow:'0 2px 5px #000, 0 0 10px rgba(255,211,79,.55)'}}>ZON X</span>
-    </section>
+              <section className="fighter-field fighter-field-right">
+                <div className={`fighter-turn-energy fighter-turn-energy-right ${activePlayer === 1 ? 'is-active' : ''}`} aria-hidden="true" />
+                <div className="stat-fx-layer" aria-live="polite">{statFx.filter((fx) => fx.player === 1).map((fx) => <span key={fx.id} className={`stat-fx stat-${fx.stat.toLowerCase()}`}>{fx.stat} {fx.delta > 0 ? '+' : ''}{fx.delta}</span>)}</div>
+                <div className="vs-battle-row reverse">
+                  <div data-motion-anchor="p2-vs" className={`v9-vs-card ${impactFx?.attacker === 1 ? `is-attacking stage-${impactFx.stage.toLowerCase()}` : ''} ${impactFx?.defender === 1 ? `is-hit stage-${impactFx.stage.toLowerCase()}` : ''} ${isCardArriving(game.players[1].vs?.card.id, 'p2-vs') ? 'is-arrival-hidden' : ''}`}>
+                    <VSZone title="" vs={game.players[1].vs} stats={currentStats[1]} hidden={!revealRoundOneVS && game.round === 1} onInspect={(card) => setFocusedCard(card)} />
+                  </div>
+                  <LiveStats stats={isCardArriving(game.players[1].vs?.card.id, 'p2-vs') ? null : currentStats[1]} side="right" />
+                </div>
+                <div className={`effect-rack ${game.phase === 'EFFECT' && game.effectTurn === 1 ? 'is-valid-destination' : ''}`} data-motion-anchor="p2-effect">
+                  {Array.from({ length: 5 }, (_, i) => {
+                    const effect = game.players[1].effects[i]
+                    return <div key={`p2-effect-${i}`} className="effect-card-slot"><span>EFFECT {i + 1}</span>{effect && <button data-card-id={effect.card.id} className={`zone-card-button ${isCardArriving(effect.card.id, 'p2-effect') ? 'is-arrival-hidden' : ''}`} onClick={() => setFocusedCard(effect.card)}><CardView card={effect.card} /></button>}</div>
+                  })}
+                </div>
+              </section>
 
-    <aside className={`mx3-effects mx3-effects-left ${game.phase === 'EFFECT' && game.effectTurn === 0 ? 'is-live' : ''}`} data-motion-anchor="p1-effect">{Array.from({ length: 5 }, (_, i) => { const effect = game.players[0].effects[i]; return <div key={`mx3-p1-e-${i}`} className={`mx3-effect ${effect ? 'is-filled' : ''}`}><b>{i + 1}<small>EFFECT</small></b>{effect && <button onClick={() => setFocusedCard(effect.card)}><CardView card={effect.card}/></button>}</div> })}</aside>
-    <aside className={`mx3-effects mx3-effects-right ${game.phase === 'EFFECT' && game.effectTurn === 1 ? 'is-live' : ''}`} data-motion-anchor="p2-effect">{Array.from({ length: 5 }, (_, i) => { const effect = game.players[1].effects[i]; return <div key={`mx3-p2-e-${i}`} className={`mx3-effect ${effect ? 'is-filled' : ''}`}><b>{i + 1}<small>EFFECT</small></b>{effect && <button onClick={() => setFocusedCard(effect.card)}><CardView card={effect.card}/></button>}</div> })}</aside>
+              <div className="pile-cluster score-pile p1-x" data-motion-anchor="p1-x">
+                <button className="support-zone pile-button x-pile" onClick={() => setPileView({ title: 'X FIGHTER 1 · ZON X', cards: game.players[0].x })}>
+                  <span>ZON X</span>{visiblePileTop(game.players[0].x, 'p1-x') ? <CardView card={visiblePileTop(game.players[0].x, 'p1-x')!} /> : <span className="empty-pile">CAPTURE</span>}
+                </button><span key={`p1-score-${game.players[0].x.length}`} className="pile-counter x-counter score-pulse">{displayedPileCount('p1-x', game.players[0].x.length)}</span>
+              </div>
+              <div className="pile-cluster score-pile p2-x" data-motion-anchor="p2-x">
+                <button className="support-zone pile-button x-pile" onClick={() => setPileView({ title: 'X FIGHTER 2 · ZON X', cards: game.players[1].x })}>
+                  <span>ZON X</span>{visiblePileTop(game.players[1].x, 'p2-x') ? <CardView card={visiblePileTop(game.players[1].x, 'p2-x')!} /> : <span className="empty-pile">CAPTURE</span>}
+                </button><span key={`p2-score-${game.players[1].x.length}`} className="pile-counter x-counter score-pulse">{displayedPileCount('p2-x', game.players[1].x.length)}</span>
+              </div>
+              <div className="pile-cluster p1-discard" data-motion-anchor="p1-discard"><button className="support-zone pile-button" onClick={() => setPileView({ title: 'X FIGHTER 1 · ZON TEPI', cards: game.players[0].discard })}><span>ZON TEPI</span>{visiblePileTop(game.players[0].discard, 'p1-discard') ? <CardView card={visiblePileTop(game.players[0].discard, 'p1-discard')!} /> : <span className="empty-pile">BUANG</span>}</button></div>
+              <div className={`pile-cluster master-pile ${/shuffle/i.test(game.message) ? 'is-shuffling' : ''}`} data-motion-anchor="master"><div className="support-zone deck-pile"><img src="/cards/back-game.webp" alt="Master Deck" /><span className="deck-card-title">MASTER DECK</span></div><span className="pile-counter">{displayedDeckCount}</span></div>
+              <div className="pile-cluster p2-discard" data-motion-anchor="p2-discard"><button className="support-zone pile-button" onClick={() => setPileView({ title: 'X FIGHTER 2 · ZON TEPI', cards: game.players[1].discard })}><span>ZON TEPI</span>{visiblePileTop(game.players[1].discard, 'p2-discard') ? <CardView card={visiblePileTop(game.players[1].discard, 'p2-discard')!} /> : <span className="empty-pile">BUANG</span>}</button></div>
+            </div>
+          </div>
 
-    <button className={`mx3-position mx3-position-left ${game.phase === 'EFFECT' && game.effectTurn === 0 ? 'is-live' : ''}`} onClick={() => { if (game.round > 1 && game.effectTurn === 0 && game.players[0].vs && !game.players[0].vs!.positionChangedThisRound && !hasActiveEffect(game, other(0), 6) && !game.effectActionTaken[0]) switchPosition(0) }}>POSISI {game.players[0].vs?.position ?? '—'}</button>
-    <button className={`mx3-position mx3-position-right ${game.phase === 'EFFECT' && game.effectTurn === 1 ? 'is-live' : ''}`} onClick={() => { if (game.round > 1 && game.effectTurn === 1 && game.players[1].vs && !game.players[1].vs!.positionChangedThisRound && !hasActiveEffect(game, other(1), 6) && !game.effectActionTaken[1]) switchPosition(1) }}>POSISI {game.players[1].vs?.position ?? '—'}</button>
+          <PlayerHand
+            title="TANGAN ANDA"
+            hand={game.players[bottomPlayer].hand}
+            hidden={passToPlayer !== null}
+            canSetVS={
+              game.phase === 'SET_VS' &&
+              game.needsVS[bottomPlayer] &&
+              (activeOnlineMatch ? true : setupPlayer === bottomPlayer) &&
+              !pendingChoice &&
+              passToPlayer === null
+            }
+            canPlayEffect={
+              game.phase === 'EFFECT' &&
+              game.effectTurn === bottomPlayer &&
+              !pendingChoice &&
+              passToPlayer === null
+            }
+            onSetVS={(id, pos) => setVS(bottomPlayer, id, pos)}
+            onPlayEffect={(id) => playEffect(bottomPlayer, id)}
+            onInspect={(card) => setFocusedCard(card)}
+            motionAnchor={`p${bottomPlayer + 1}-hand`}
+            arrivingCardIds={arrivingIdsForZone(`p${bottomPlayer + 1}-hand`)}
+            displayCount={Math.max(0, game.players[bottomPlayer].hand.length - arrivalCount(`p${bottomPlayer + 1}-hand`))}
+          />
 
-    {(
-      (canBegin && passToPlayer === null && (!activeOnlineMatch || activeOnlineMatch.state?.firstPlayer === onlineSession?.userId)) ||
-      (game.phase === 'SET_VS' && game.needsVS[activeOnlineMatch ? localViewer : bottomPlayer] && (activeOnlineMatch || setupPlayer === bottomPlayer)) ||
-      (game.phase === 'EFFECT' && game.effectTurn !== null && (activeOnlineMatch ? activeOnlineMatch.state?.effectTurn === onlineSession?.userId : game.effectTurn === bottomPlayer)) ||
-      (game.phase === 'ATTACK' && game.attackTurn !== null && (activeOnlineMatch ? activeOnlineMatch.state?.attackTurn === onlineSession?.userId : game.attackTurn === bottomPlayer))
-    ) && <section className={`mx3-phase-prompt ${canBegin ? 'is-ready' : ''}`}>
-      <strong className="mx-responsive-vs-title mx-responsive-effect-title">{canBegin ? 'VS SEDIA' : game.phase === 'SET_VS' ? 'PILIH KAD VS' : game.phase === 'EFFECT' ? 'PILIH KAD EFFECT' : 'SERANG / PASS'}</strong>
-      <div>
-        {canBegin && passToPlayer === null && (!activeOnlineMatch || activeOnlineMatch.state?.firstPlayer === onlineSession?.userId) && <button className="mx3-begin-round" onClick={beginRound}>MULA PUSINGAN</button>}
-        {game.phase === 'EFFECT' && game.effectTurn !== null && (activeOnlineMatch ? activeOnlineMatch.state?.effectTurn === onlineSession?.userId : game.effectTurn === bottomPlayer) && <button onClick={requestEndEffectTurn}>{game.effectActionTaken[game.effectTurn] ? 'TAMAT GILIRAN' : 'TAMAT TANPA EFFECT'}</button>}
-        {game.phase === 'ATTACK' && game.attackTurn !== null && (activeOnlineMatch ? activeOnlineMatch.state?.attackTurn === onlineSession?.userId : game.attackTurn === bottomPlayer) && <>{game.players[game.attackTurn].vs?.position === 'ATK' && <button onClick={() => attack(game.attackTurn!)}>SERANG</button>}<button onClick={() => passAttack(game.attackTurn!)}>PASS</button></>}
-      </div>
-    </section>}
+          <div className="action-bar">
+            {canBegin && passToPlayer === null && (!activeOnlineMatch || localViewer === game.firstPlayer) && <button onClick={beginRound}>MULA PUSINGAN</button>}
 
-    <section className={`mx3-vs mx3-vs-left ${activePlayer === 0 ? 'is-turn-active' : ''} ${(game.phase === 'SET_VS' && game.needsVS[0]) || (game.phase === 'ATTACK' && game.attackTurn === 0) ? 'is-live' : ''} ${impactFx?.attacker === 0 ? 'is-attacking' : ''} ${impactFx?.defender === 0 ? 'is-hit' : ''}`} data-motion-anchor="p1-vs" data-vs-card-id={game.players[0].vs?.card.id ?? ''}>
-      {game.players[0].vs ? (!revealRoundOneVS && game.round === 1 ? <img src="/cards/back-game.webp" alt="VS tersembunyi"/> : <button onClick={() => setFocusedCard(game.players[0].vs!.card)}><CardView card={game.players[0].vs!.card}/></button>) : null}
-    </section>
-    <section className={`mx3-vs mx3-vs-right ${activePlayer === 1 ? 'is-turn-active' : ''} ${(game.phase === 'SET_VS' && game.needsVS[1]) || (game.phase === 'ATTACK' && game.attackTurn === 1) ? 'is-live' : ''} ${impactFx?.attacker === 1 ? 'is-attacking' : ''} ${impactFx?.defender === 1 ? 'is-hit' : ''}`} data-motion-anchor="p2-vs" data-vs-card-id={game.players[1].vs?.card.id ?? ''}>
-      {game.players[1].vs ? (!revealRoundOneVS && game.round === 1 ? <img src="/cards/back-game.webp" alt="VS tersembunyi"/> : <button onClick={() => setFocusedCard(game.players[1].vs!.card)}><CardView card={game.players[1].vs!.card}/></button>) : null}
-    </section>
+            {game.phase === 'EFFECT' && game.effectTurn !== null && passToPlayer === null && (!activeOnlineMatch || game.effectTurn === localViewer) && (
+              <>
+                {game.round > 1 &&
+                  game.players[game.effectTurn].vs &&
+                  !game.players[game.effectTurn].vs!.positionChangedThisRound &&
+                  !hasActiveEffect(game, other(game.effectTurn), 6) &&
+                  !game.effectActionTaken[game.effectTurn] && (
+                    <button onClick={() => switchPosition(game.effectTurn!)}>TUKAR POSISI VS</button>
+                  )}
+                <button className={`end-turn-action ${!game.effectActionTaken[game.effectTurn] ? 'end-turn-warning' : ''}`} onClick={requestEndEffectTurn}>{game.effectActionTaken[game.effectTurn] ? 'TAMAT GILIRAN' : 'TAMAT TANPA EFFECT'}</button>
+              </>
+            )}
 
-    <div className={`mx3-center-vs ${game.phase === 'ATTACK' ? 'is-live' : ''}`} aria-hidden="true"><span>V</span><i>◆</i><span>S</span></div>
-    <div className={`mx3-timer ${actionSecondsLeft <= 10 ? 'is-danger' : ''}`}><strong>{actionTimerVisible ? actionSecondsLeft : '—'}</strong><span>TIMER</span></div>
+            {game.phase === 'ATTACK' && game.attackTurn !== null && passToPlayer === null && (!activeOnlineMatch || game.attackTurn === localViewer) && (
+              <>
+                {game.players[game.attackTurn].vs?.position === 'ATK' && <button className="primary-action" onClick={() => attack(game.attackTurn!)}>SERANG</button>}
+                <button onClick={() => passAttack(game.attackTurn!)}>PASS</button>
+              </>
+            )}
 
-    <div className={`mx3-stats mx3-stats-left ${game.phase === 'ATTACK' && game.attackTurn === 0 ? 'is-live' : ''}`}><div className="mx3-atk"><span>ATK</span><strong>{(currentStats[0] as any)?.atk ?? (game.players[0].vs?.card as any)?.atk ?? '—'}</strong></div><div className="mx3-def"><span>DEF</span><strong>{(currentStats[0] as any)?.def ?? (game.players[0].vs?.card as any)?.def ?? '—'}</strong></div><div className="mx3-sta"><span>STA</span><strong>{(currentStats[0] as any)?.sta ?? (game.players[0].vs?.card as any)?.sta ?? '—'}</strong></div></div>
-    <div className={`mx3-stats mx3-stats-right ${game.phase === 'ATTACK' && game.attackTurn === 1 ? 'is-live' : ''}`}><div className="mx3-atk"><span>ATK</span><strong>{(currentStats[1] as any)?.atk ?? (game.players[1].vs?.card as any)?.atk ?? '—'}</strong></div><div className="mx3-def"><span>DEF</span><strong>{(currentStats[1] as any)?.def ?? (game.players[1].vs?.card as any)?.def ?? '—'}</strong></div><div className="mx3-sta"><span>STA</span><strong>{(currentStats[1] as any)?.sta ?? (game.players[1].vs?.card as any)?.sta ?? '—'}</strong></div></div>
-
-    <section className={`mx3-local-hand ${(game.phase === 'SET_VS' && game.needsVS[bottomPlayer]) || (game.phase === 'EFFECT' && (game.effectTurn === bottomPlayer || (activeOnlineMatch?.id?.startsWith('practice-local:') && (activeOnlineMatch?.state?.effectTurn === onlineSession?.userId || activeOnlineMatch?.state?.effectTurn === 0)))) ? 'is-live' : ''}`} data-motion-anchor={`p${bottomPlayer + 1}-hand`}>
-      <div className="mx3-hand-label">KAD DI TANGAN · {Math.max(0, game.players[bottomPlayer].hand.length - arrivalCount(`p${bottomPlayer + 1}-hand`))} KAD</div>
-      <div className="mx3-hand-row">{game.players[bottomPlayer].hand.slice(0,5).map((card) => {
-        const arriving = arrivingIdsForZone(`p${bottomPlayer + 1}-hand`).includes(card.id)
-        const canSet = game.phase === 'SET_VS' && game.needsVS[bottomPlayer] && (activeOnlineMatch ? true : setupPlayer === bottomPlayer) && !pendingChoice && passToPlayer === null
-        const canEffect = game.phase === 'EFFECT' && (game.effectTurn === bottomPlayer || (activeOnlineMatch?.id?.startsWith('practice-local:') && (activeOnlineMatch?.state?.effectTurn === onlineSession?.userId || activeOnlineMatch?.state?.effectTurn === 0))) && !pendingChoice && passToPlayer === null
-        const sta = Number((currentStats[bottomPlayer] as any)?.sta ?? 0)
-        const staEffectLimit = Math.max(0, sta - 1)
-        const staExhausted = canEffect && sta > 0 && game.players[bottomPlayer].effects.length >= staEffectLimit
-        return <div key={card.id} className="mx3-hand-slot" data-arena-card-id={card.id}>
-          <button className={`mx3-hand-card ${arriving ? 'is-arrival-hidden' : ''} ${canSet || canEffect ? 'is-playable' : ''} ${staExhausted ? 'is-sta-exhausted' : ''}`} onClick={() => { if (staExhausted) { window.dispatchEvent(new CustomEvent('mega-x:arena-feedback', { detail: { message: `STA HABIS — VS STA ${sta} hanya membenarkan ${staEffectLimit} kad EFFECT.` } })); return } setFocusedCard(card) }}><CardView card={card}/></button>
-          {canSet && <>
-            <button type="button" style={{display:'none'}} data-arena-card-action="SET VS · ATK" onClick={() => setVS(bottomPlayer, card.id, 'ATK')}>SET VS · ATK</button>
-            <button type="button" style={{display:'none'}} data-arena-card-action="SET VS · DEF" onClick={() => setVS(bottomPlayer, card.id, 'DEF')}>SET VS · DEF</button>
-          </>}
-          {canEffect && !staExhausted && <button type="button" style={{display:'none'}} data-arena-card-action="PLAY EFFECT" onClick={() => playEffect(bottomPlayer, card.id)}>PLAY EFFECT</button>}
-        </div>
-      })}</div>
-    </section>
-
-    {impactFx && <div className={`mx3-impact mx3-impact-${impactFx.stage.toLowerCase()}`} aria-hidden="true"><strong>SERANG!</strong></div>}
-    {motionFx && <div className={`mx3-motion mx3-motion-${motionFx.kind.toLowerCase()} ${motionFx.from} ${motionFx.to}`} style={motionStyle(motionFx)} key={`${motionFx.card.id}-${motionFx.kind}-${motionFx.to}`}>{motionFx.kind === 'DRAW' ? <img src="/cards/back-game.webp" alt="Kad diambil"/> : <CardView card={motionFx.card}/>}</div>}
-  </div>
-</>
+            {game.phase === 'GAME_OVER' && (
+              <>
+                <strong>{game.winner === null ? 'SERI' : `${playerLabel(game.winner)} MENANG`}</strong>
+                <button onClick={resetToCoin}>PERLAWANAN BARU</button>
+              </>
+            )}
+          </div>
 
           {confirmEndWithoutEffect && (
             <div className="end-turn-confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="end-turn-confirm-title">
@@ -2214,27 +2315,13 @@ function App() {
           )}
 
           {focusedCard && passToPlayer === null && pendingChoice === null && game.pendingBoardChoice === null && (
-  <div className="mx3-card-overlay" role="dialog" aria-modal="false" aria-label="Maklumat kad terpilih">
-    <button className="mx3-card-overlay-dismiss" type="button" aria-label="Tutup maklumat kad" onClick={() => setFocusedCard(null)} />
-    <div className="mx3-card-overlay-panel">
-      <button className="mx3-card-overlay-close" type="button" aria-label="Tutup" onClick={() => setFocusedCard(null)}>×</button>
-      <div className="mx3-card-overlay-side">
-        <span className="mx3-card-overlay-kicker">KAD TERPILIH</span>
-        <strong className="mx3-card-overlay-name">{CARD_INFO[focusedCard.id]?.name ?? focusedCard.name}</strong>
-        <div className="mx3-card-overlay-stats">
-          <span>ATK <b>{CARD_INFO[focusedCard.id]?.atk ?? (focusedCard as any).atk ?? '—'}</b></span>
-          <span>DEF <b>{CARD_INFO[focusedCard.id]?.def ?? (focusedCard as any).def ?? '—'}</b></span>
-          <span>STA <b>{CARD_INFO[focusedCard.id]?.sta ?? (focusedCard as any).sta ?? '—'}</b></span>
-        </div>
-        <p className="mx3-card-overlay-effect">{CARD_INFO[focusedCard.id]?.effect ?? 'TIADA EFFECT.'}</p>
-        <div className="mx3-card-overlay-actions">
-          {game.players[bottomPlayer].hand.some((card) => card.id === focusedCard.id) && game.phase === 'SET_VS' && game.needsVS[bottomPlayer] && (activeOnlineMatch ? true : setupPlayer === bottomPlayer) && !pendingChoice && passToPlayer === null && <><button type="button" onClick={() => { setVS(bottomPlayer, focusedCard.id, 'ATK'); setFocusedCard(null) }}>ATK</button><button type="button" onClick={() => { setVS(bottomPlayer, focusedCard.id, 'DEF'); setFocusedCard(null) }}>DEF</button></>}
-          {game.players[bottomPlayer].hand.some((card) => card.id === focusedCard.id) && game.phase === 'EFFECT' && (game.effectTurn === bottomPlayer || (activeOnlineMatch?.id?.startsWith('practice-local:') && (activeOnlineMatch?.state?.effectTurn === onlineSession?.userId || activeOnlineMatch?.state?.effectTurn === 0))) && !pendingChoice && passToPlayer === null && (Number((currentStats[bottomPlayer] as any)?.sta ?? 0) > 0 && game.players[bottomPlayer].effects.length >= Math.max(0, Number((currentStats[bottomPlayer] as any)?.sta ?? 0) - 1) ? <button type="button" className="mx3-capacity-warning" onClick={() => window.dispatchEvent(new CustomEvent('mega-x:arena-feedback', { detail: { message: `STA HABIS — VS STA ${Number((currentStats[bottomPlayer] as any)?.sta ?? 0)} hanya membenarkan ${Math.max(0, Number((currentStats[bottomPlayer] as any)?.sta ?? 0) - 1)} kad EFFECT.` } }))}>STA HABIS</button> : <button type="button" onClick={() => { playEffect(bottomPlayer, focusedCard.id); setFocusedCard(null) }}>PLAY EFFECT</button>)}
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+            <div className="card-focus-overlay" onClick={() => setFocusedCard(null)}>
+              <div className="card-focus-panel" onClick={(e: any) => e.stopPropagation()}>
+                <CardView card={focusedCard} full />
+                <button onClick={() => setFocusedCard(null)}>TUTUP</button>
+              </div>
+            </div>
+          )}
 
           {pileView && passToPlayer === null && pendingChoice === null && !game.pendingSelfDiscard && game.pendingBoardChoice === null && (
             <div className="card-focus-overlay" onClick={() => setPileView(null)}>
@@ -2262,7 +2349,7 @@ function App() {
                   </>
                 ) : (
                   <>
-                    <h3 className="mx-responsive-discard-title">{game.pendingSelfDiscard.reason.startsWith('SPUDUR') ? 'PILIH KAD UNTUK SPUDUR' : 'PILIH KAD UNTUK DIBUANG'}</h3>
+                    <h3>{game.pendingSelfDiscard.reason.startsWith('SPUDUR') ? 'PILIH KAD UNTUK SPUDUR' : 'PILIH KAD UNTUK DIBUANG'}</h3>
                     <p>
                       {game.pendingSelfDiscard.mode === 'ANY'
                         ? 'Pilih mana-mana kad tangan yang mahu dibuang, kemudian sahkan. Boleh pilih 0 kad.'
@@ -2273,7 +2360,7 @@ function App() {
                         const selected = selectedDiscardIds.includes(card.id)
                         return (
                           <button key={card.id} className={`discard-card-choice ${selected ? 'is-selected' : ''}`} onClick={() => toggleDiscardCard(card.id)}>
-                            <img className="discard-card-art" src={`/cards/game/${String(card.id).padStart(2, '0')}.webp`} alt={card.name} draggable={false} decoding="async" />
+                            <CardView card={card} />
                             <span className="discard-check">{selected ? '✓ DIPILIH' : 'PILIH'}</span>
                           </button>
                         )
