@@ -8,6 +8,7 @@ import {
   type ActiveOnlineMatch,
   type OnlineSession,
 } from '../../../onlineAuth'
+import { startPracticeMatch } from '../../../practice-match'
 import type { ArenaEventEnvelope } from '../ArenaEvents'
 import type { ArenaLegalCommand, ArenaState } from '../ArenaState'
 import { deriveArenaEvents } from './ArenaEventDiff'
@@ -17,12 +18,24 @@ type ArenaLiveUpdate={state:ArenaState;events:ArenaEventEnvelope[]}
 type ArenaLiveOptions={
   onUpdate?:(update:ArenaLiveUpdate)=>void
   onError?:(message:string)=>void
+  allowPracticeBootstrap?:boolean
 }
 
 const SPECIAL_ACTIONS=new Set(['TIE_PICK','RESOLVE_VISIBLE_EFFECT_CHOICE'])
 
 function sameCommand(a:ArenaLegalCommand,b:ArenaLegalCommand){
   return a.action===b.action&&a.cardId===b.cardId&&a.position===b.position&&a.slot===b.slot
+}
+
+function makePracticeSession():OnlineSession{
+  const storageKey='mega-x-arena-next-practice-user-v1'
+  let userId=''
+  try{userId=window.localStorage.getItem(storageKey)??''}catch{}
+  if(!userId){
+    userId=`practice-guest:${crypto.randomUUID()}`
+    try{window.localStorage.setItem(storageKey,userId)}catch{}
+  }
+  return {accessToken:'practice-local',refreshToken:'practice-local',expiresAt:Number.MAX_SAFE_INTEGER,userId}
 }
 
 export class ArenaLiveController{
@@ -43,10 +56,17 @@ export class ArenaLiveController{
   get currentState(){return this.state}
 
   async start(){
-    const session=getSavedSession()
+    let session=getSavedSession()
+    let match:ActiveOnlineMatch|null=null
+
+    if(!session&&this.options.allowPracticeBootstrap){
+      session=makePracticeSession()
+      match=startPracticeMatch(session.userId,'ARENA TESTER') as ActiveOnlineMatch
+    }
+
     if(!session)throw new Error('NO_SAVED_SESSION')
     this.session=session
-    const match=await getMyActiveMatch(session)
+    if(!match)match=await getMyActiveMatch(session)
     if(!match)throw new Error('NO_ACTIVE_MATCH')
     const initial=projectActiveMatchToArenaState(match,session.userId)
     this.match=match
