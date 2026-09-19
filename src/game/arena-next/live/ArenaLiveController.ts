@@ -19,6 +19,8 @@ type ArenaLiveOptions={
   onUpdate?:(update:ArenaLiveUpdate)=>void
   onError?:(message:string)=>void
   allowPracticeBootstrap?:boolean
+  sessionOverride?:OnlineSession|null
+  matchOverride?:ActiveOnlineMatch|null
 }
 
 const SPECIAL_ACTIONS=new Set(['TIE_PICK','RESOLVE_VISIBLE_EFFECT_CHOICE'])
@@ -56,8 +58,8 @@ export class ArenaLiveController{
   get currentState(){return this.state}
 
   async start(){
-    let session=getSavedSession()
-    let match:ActiveOnlineMatch|null=null
+    let session=this.options.sessionOverride??getSavedSession()
+    let match:ActiveOnlineMatch|null=this.options.matchOverride??null
 
     if(!session&&this.options.allowPracticeBootstrap){
       session=makePracticeSession()
@@ -143,7 +145,14 @@ export class ArenaLiveController{
     this.refreshing=true
     try{
       const match=await getMyActiveMatch(this.session)
-      if(!match){this.options.onError?.('NO_ACTIVE_MATCH');return}
+      if(!match){
+        if(this.options.matchOverride?.id===this.match?.id&&this.match){
+          this.acceptMatch(this.match,reason)
+          return
+        }
+        this.options.onError?.('NO_ACTIVE_MATCH')
+        return
+      }
       if(!this.match||match.id!==this.match.id){
         this.match=match
         const state=projectActiveMatchToArenaState(match,this.session.userId)
