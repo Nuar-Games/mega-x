@@ -1,14 +1,16 @@
 import fs from 'node:fs'
 
-const app = fs.readFileSync('src/App.tsx', 'utf8')
+const controller = fs.readFileSync('src/game/arena-next/live/ArenaLiveController.ts', 'utf8')
 
 for (const marker of [
-  "import { startPracticeMatch, tickPracticeBot } from './practice-match'",
-  "activeOnlineMatch?.id?.startsWith('practice-local:')",
-  'const next = tickPracticeBot(onlineSession.userId, activeOnlineMatch.id)',
-  '// mega-x:practice-bot-paced-turn',
+  'tickPracticeBot',
+  'private practiceBotTimer=0',
+  'this.schedulePracticeBot()',
+  'tickPracticeBot(this.session.userId,this.match.id)',
 ]) {
-  if (!app.includes(marker)) throw new Error(`missing Practice bot pacing hook: ${marker}`)
+  if (!controller.includes(marker)) throw new Error(`missing Arena Next Practice bot pacing: ${marker}`)
 }
 
-console.log('PASS Practice bot has a paced UI caller after human actions')
+if (controller.includes("src/App.tsx")) throw new Error('Arena Next Practice bot pacing must not depend on generated App.tsx')
+
+console.log('PASS Arena Next owns paced Practice bot progression')
