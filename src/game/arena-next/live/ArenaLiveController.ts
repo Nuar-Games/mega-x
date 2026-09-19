@@ -8,7 +8,7 @@ import {
   type ActiveOnlineMatch,
   type OnlineSession,
 } from '../../../onlineAuth'
-import { startPracticeMatch } from '../../../practice-match'
+import { isPracticeMatchId, startPracticeMatch, tickPracticeBot } from '../../../practice-match'
 import type { ArenaEventEnvelope } from '../ArenaEvents'
 import type { ArenaLegalCommand, ArenaState } from '../ArenaState'
 import { deriveArenaEvents } from './ArenaEventDiff'
@@ -48,6 +48,7 @@ export class ArenaLiveController{
   private heartbeatTimer=0
   private fallbackTimer=0
   private signalTimer=0
+  private practiceBotTimer=0
   private stopped=false
   private refreshing=false
   private busy=false
@@ -76,6 +77,7 @@ export class ArenaLiveController{
     this.stopped=false
     this.sequence=0
     this.connectSignals(match.id)
+    this.schedulePracticeBot()
     return initial
   }
 
@@ -86,6 +88,7 @@ export class ArenaLiveController{
     window.clearInterval(this.heartbeatTimer)
     window.clearTimeout(this.fallbackTimer)
     window.clearTimeout(this.signalTimer)
+    window.clearTimeout(this.practiceBotTimer)
   }
 
   async dispatch(command:ArenaLegalCommand){
@@ -140,6 +143,21 @@ export class ArenaLiveController{
     schedule()
   }
 
+  private schedulePracticeBot(){
+    window.clearTimeout(this.practiceBotTimer)
+    if(this.stopped||!this.session||!this.match||!isPracticeMatchId(this.match.id))return
+    const phase=String(this.match.state?.phase??this.match.phase)
+    if(phase==='GAME_OVER'||phase==='TIE_BREAKER')return
+    const baseDelay=phase==='ATTACK'?1600:phase==='EFFECT'?1500:1300
+    const delay=baseDelay+Math.floor(Math.random()*500)
+    this.practiceBotTimer=window.setTimeout(()=>{
+      if(this.stopped||!this.session||!this.match||!isPracticeMatchId(this.match.id))return
+      const next=tickPracticeBot(this.session.userId,this.match.id)
+      if(next)this.acceptMatch(next as ActiveOnlineMatch)
+      else this.schedulePracticeBot()
+    },delay)
+  }
+
   private async refresh(reason:'STALE_REFRESH'|'RECOVERY'){
     if(this.stopped||this.refreshing||!this.session)return
     this.refreshing=true
@@ -157,6 +175,7 @@ export class ArenaLiveController{
         this.match=match
         const state=projectActiveMatchToArenaState(match,this.session.userId)
         this.state=state
+        this.schedulePracticeBot()
         const event:ArenaEventEnvelope={matchId:state.identity.matchId,sequence:++this.sequence,fromVersion:state.stateVersion,toVersion:state.stateVersion,event:{type:'STATE_RECONCILED',reason}}
         this.options.onUpdate?.({state,events:[event]})
         return
@@ -172,6 +191,7 @@ export class ArenaLiveController{
     const next=projectActiveMatchToArenaState(match,this.session.userId)
     this.match=match
     this.state=next
+    this.schedulePracticeBot()
     if(!previous){this.options.onUpdate?.({state:next,events:[]});return}
     if(next.stateVersion===previous.stateVersion){
       if(next.connection.status!==previous.connection.status||next.connection.reconnectDeadline!==previous.connection.reconnectDeadline){
