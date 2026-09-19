@@ -65,6 +65,7 @@ export class ArenaPrototypeScene extends Phaser.Scene {
     this.drawCommandSurface(root,layout,state)
     const phase=this.add.text(layout.viewport.width/2,layout.viewport.height*0.19,`ROUND ${state.round} · ${state.phase}`,{fontFamily:'Arial, sans-serif',fontSize:'22px',color:TEXT,fontStyle:'bold'}).setOrigin(0.5)
     root.add(phase)
+    if(state.phase==='GAME_OVER')this.drawGameOver(root,layout,state)
   }
 
   consumeEvent(envelope:ArenaEventEnvelope,nextState:ArenaState):Promise<void>{
@@ -243,7 +244,7 @@ export class ArenaPrototypeScene extends Phaser.Scene {
   }
 
   private drawCommandSurface(root:Phaser.GameObjects.Container,layout:ArenaPrototypeLayout,state:ArenaState){
-    if(!this.commandDispatcher||state.connection.networkBusy)return
+    if(state.phase==='GAME_OVER'||!this.commandDispatcher||state.connection.networkBusy)return
     const targets=deriveArenaCommandTargets(state)
     const local=state.identity.localPlayerIndex
     const hand=state.players[local].hand??[]
@@ -276,6 +277,18 @@ export class ArenaPrototypeScene extends Phaser.Scene {
         root.add([body,text])
       }
     }
+  }
+
+  private drawGameOver(root:Phaser.GameObjects.Container,layout:ArenaPrototypeLayout,state:ArenaState){
+    const local=state.identity.localPlayerIndex
+    const winner=state.winnerIndex
+    const result=winner===null?'MATCH OVER':winner===local?'VICTORY':'DEFEAT'
+    const winnerLabel=winner===null?'NO WINNER':`${state.players[winner].handle} WINS`
+    const shade=this.add.rectangle(layout.viewport.width/2,layout.viewport.height/2,layout.viewport.width,layout.viewport.height,0x000000,0.62)
+    const panel=this.add.rectangle(layout.viewport.width/2,layout.viewport.height/2,Math.min(520,layout.viewport.width*0.72),180,PANEL_DARK,0.98).setStrokeStyle(3,FLASH)
+    const title=this.add.text(layout.viewport.width/2,layout.viewport.height/2-24,result,{fontFamily:'Arial, sans-serif',fontSize:'34px',color:TEXT,fontStyle:'bold'}).setOrigin(0.5)
+    const detail=this.add.text(layout.viewport.width/2,layout.viewport.height/2+30,winnerLabel,{fontFamily:'Arial, sans-serif',fontSize:'18px',color:TEXT}).setOrigin(0.5)
+    root.add([shade,panel,title,detail])
   }
 
   private handPoint(index:number,count:number,layout:ArenaPrototypeLayout){
