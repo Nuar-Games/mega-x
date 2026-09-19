@@ -1,114 +1,138 @@
 import { test, expect, type Page } from 'playwright/test'
 
-// This test drives the 3D arena with REAL pointer input. Guest entry must follow
-// the same shared lobby flow as registered players before Practice starts.
-// It then proves the exact SET_VS sequence that was reported broken:
-//
-//   landing -> shared lobby -> practice
-//   click card -> choose ATK/DEF -> exact card enters authoritative VS
-//   -> exact card mesh appears in the 3D VS centerpiece
-//   -> card leaves hand -> stale SET_VS actions clear -> next phase appears.
+const STATUS=/^ARENA NEXT · PRACTICE · V(\d+) · ROUND (\d+) · (SET_VS|EFFECT|ATTACK|TIE_BREAKER|GAME_OVER)$/
 
-type QaHitGeometry = {
-  qaId: string
-  alt: string
-  src: string
-  actionId?: string
-  actions?: { id: string; label: string }[]
-  bounds: { left: number; top: number; right: number; bottom: number }
-}
-type QaWindow = Window & { __mx3dQaHitGeometry?: Record<string, QaHitGeometry> }
-
-async function readHitGeometry(page: Page): Promise<Record<string,QaHitGeometry>> {
-  return page.evaluate(() => (window as unknown as QaWindow).__mx3dQaHitGeometry || {})
+async function arenaStatus(page:Page){
+  const locator=page.getByText(/^ARENA NEXT ·/).first()
+  const text=(await locator.textContent())?.trim()??''
+  if(text==='ARENA NEXT · LOADING')return {text,version:-1,phase:'LOADING'}
+  const match=text.match(STATUS)
+  expect(match,`arena status became an error or invalid state: ${text}`).toBeTruthy()
+  return {text,version:Number(match![1]),phase:match![3]}
 }
 
-async function readHandHitGeometry(page: Page): Promise<QaHitGeometry[]> {
-  const geometry=await readHitGeometry(page)
-  return Object.values(geometry).filter((entry) => entry.qaId.startsWith('hand-'))
+async function waitForVersionChange(page:Page,version:number,timeout=4_000){
+  try{
+    await expect.poll(async()=>{
+      const current=await arenaStatus(page)
+      return current.version
+    },{timeout}).not.toBe(version)
+    return true
+  }catch{return false}
 }
 
-test('SET_VS: shared guest lobby -> real pointer -> ATK/DEF -> visible 3D VS card -> next phase', async ({ page }) => {
-  test.setTimeout(90_000)
-  await page.goto('/?qa3dHitboxes=1')
+async function clickCanvas(page:Page,x:number,y:number){
+  const canvas=page.locator('#arena-next-runtime-host canvas')
+  const box=await canvas.boundingBox()
+  expect(box,'arena canvas is missing').toBeTruthy()
+  await page.mouse.click(box!.x+x,box!.y+y)
+}
 
-  // Guest must enter the SAME lobby first; landing may never start Practice directly.
-  const landingCta = page.locator('#mx-main-practice-cta')
-  await expect(landingCta).toBeVisible({ timeout: 15_000 })
-  await landingCta.click()
+async function driveOneHumanAction(page:Page){
+  const canvas=page.locator('#arena-next-runtime-host canvas')
+  const box=await canvas.boundingBox()
+  expect(box,'arena canvas is missing').toBeTruthy()
+  const width=box!.width
+  const height=box!.height
+  const before=await arenaStatus(page)
 
-  // Practice is started from inside the shared lobby.
-  const practiceEntry = page.locator('.mx-practice-entry[data-practice-entry="true"]')
-  await expect(practiceEntry).toBeVisible({ timeout: 15_000 })
+  if(before.phase==='GAME_OVER')return {advanced:true,action:'GAME_OVER'}
+
+  if(before.phase==='SET_VS'){
+    const spacing=Math.min(118,(width*0.47)/5)
+    for(let i=0;i<5;i+=1){
+      const x=width*0.5+(i-2)*spacing-23
+      const y=Math.min(height-16,height*0.89+94)
+      await clickCanvas(page,x,y)
+      if(await waitForVersionChange(page,before.version))return {advanced:true,action:'SET_VS'}
+    }
+    return {advanced:false,action:'SET_VS'}
+  }
+
+  if(before.phase==='ATTACK'){
+    await clickCanvas(page,width*0.5-59,height*0.72)
+    if(await waitForVersionChange(page,before.version))return {advanced:true,action:'ATTACK'}
+    await clickCanvas(page,width*0.5+59,height*0.72)
+    return {advanced:await waitForVersionChange(page,before.version),action:'PASS'}
+  }
+
+  if(before.phase==='TIE_BREAKER'){
+    const spacing=Math.min(118,(width*0.47)/5)
+    for(let i=0;i<5;i+=1){
+      await clickCanvas(page,width*0.5+(i-2)*spacing,height*0.89)
+      if(await waitForVersionChange(page,before.version))return {advanced:true,action:'TIE_PICK'}
+    }
+    return {advanced:false,action:'TIE_PICK'}
+  }
+
+  // EFFECT can contain a normal turn action or a board/self-discard choice.
+  // Try the command buttons first, then the visible hand/board targets.
+  for(const x of [width*0.5-59,width*0.5+59]){
+    await clickCanvas(page,x,height*0.72)
+    if(await waitForVersionChange(page,before.version))return {advanced:true,action:'EFFECT_ACTION'}
+  }
+
+  const handSpacing=Math.min(118,(width*0.47)/5)
+  for(let i=0;i<5;i+=1){
+    await clickCanvas(page,width*0.5+(i-2)*handSpacing,height*0.89)
+    await clickCanvas(page,width*0.5-59,height*0.72)
+    if(await waitForVersionChange(page,before.version))return {advanced:true,action:'EFFECT_CHOICE'}
+  }
+
+  const boardTargets:[number,number][]=[
+    [width*0.405,height*0.45],[width*0.595,height*0.45],
+    [width*0.105,height*0.26],[width*0.895,height*0.26],
+  ]
+  for(const [x,y] of boardTargets){
+    await clickCanvas(page,x,y)
+    if(await waitForVersionChange(page,before.version))return {advanced:true,action:'BOARD_CHOICE'}
+  }
+
+  return {advanced:false,action:'EFFECT'}
+}
+
+test('guest practice match runs through ArenaNextRuntime from SET_VS to GAME_OVER',async({page})=>{
+  test.setTimeout(180_000)
+  await page.setViewportSize({width:1440,height:1000})
+
+  const pageErrors:string[]=[]
+  page.on('pageerror',(error)=>pageErrors.push(error.message))
+
+  await page.goto('/')
+  await page.locator('#mx-main-practice-cta').click()
+  const practiceEntry=page.locator('.mx-practice-entry[data-practice-entry="true"]')
+  await expect(practiceEntry).toBeVisible({timeout:15_000})
   await practiceEntry.click()
 
-  // Wait for the 3D scene to mount and report projected screen geometry.
-  await page.waitForFunction(
-    () => Object.keys((window as unknown as QaWindow).__mx3dQaHitGeometry || {}).some((id) => id.startsWith('hand-')),
-    { timeout: 20_000 },
-  )
+  await expect(page.locator('#arena-next-runtime-host canvas')).toBeVisible({timeout:20_000})
+  await expect.poll(async()=> (await arenaStatus(page)).phase,{timeout:20_000}).not.toBe('LOADING')
 
-  let target: QaHitGeometry | undefined
-  await expect(async () => {
-    const hand = await readHandHitGeometry(page)
-    target = hand.find((card) => (card.actions?.length ?? 0) >= 2)
-    expect(target, 'no SET_VS-eligible hand card found (expected ATK/DEF choice)').toBeTruthy()
-  }).toPass({ timeout: 15_000 })
+  let sawSetVs=false
+  let sawAttackOrPass=false
 
-  const clickedCard = target!
-  const clickedSrc = clickedCard.src
-  const clickedFile = clickedSrc.split('/').pop()!
-  const cx = (clickedCard.bounds.left + clickedCard.bounds.right) / 2
-  const cy = (clickedCard.bounds.top + clickedCard.bounds.bottom) / 2
-  await page.mouse.click(cx, cy)
+  for(let step=0;step<80;step+=1){
+    expect(pageErrors,`browser page errors: ${pageErrors.join(' | ')}`).toEqual([])
+    const status=await arenaStatus(page)
+    if(status.phase==='GAME_OVER')break
 
-  const chooser = page.locator('.mx3d-chooser')
-  await expect(chooser).toBeVisible({ timeout: 10_000 })
-  const choiceButtons = chooser.locator('button.mx3-choice, button.mx3d-choice')
-  const labels = (await choiceButtons.allTextContents()).map((text) => text.trim().toUpperCase())
-  expect(labels.some((label) => label.includes('ATK'))).toBe(true)
-  expect(labels.some((label) => label.includes('DEF'))).toBe(true)
+    const result=await driveOneHumanAction(page)
+    if(result.action==='SET_VS'&&result.advanced)sawSetVs=true
+    if((result.action==='ATTACK'||result.action==='PASS')&&result.advanced)sawAttackOrPass=true
 
-  await chooser.getByRole('button', { name: /ATK/i }).click()
-  await expect(chooser).toBeHidden({ timeout: 10_000 })
+    if(!result.advanced){
+      // Give the beginner bot one scheduling window before deciding the match is stuck.
+      await page.waitForTimeout(2_400)
+      const afterBot=await arenaStatus(page)
+      if(afterBot.version===status.version){
+        throw new Error(`practice match stuck in ${status.phase} at V${status.version}`)
+      }
+    }
+  }
 
-  // Authoritative hidden DOM: the exact selected card must enter the local VS zone.
-  const localVsSelector = await page.evaluate(() => {
-    const leftFighter = document.querySelector('.mx3-fighter-left')
-    const localSide = leftFighter?.classList.contains('is-local') ? 'left' : 'right'
-    return localSide === 'left' ? '.mx3-vs-left img' : '.mx3-vs-right img'
-  })
-
-  await expect(async () => {
-    const vsSrc = await page.locator(localVsSelector).getAttribute('src')
-    expect(vsSrc, 'authoritative local VS zone never showed the clicked card').toContain(clickedFile)
-  }).toPass({ timeout: 15_000 })
-
-  // Actual 3D surface: the same card must mount as the local VS mesh with a real
-  // projected on-screen rectangle. Hidden DOM success alone does not satisfy this test.
-  await expect(async () => {
-    const geometry=await readHitGeometry(page)
-    const visibleVs=geometry['local-vs']
-    expect(visibleVs, '3D local VS card mesh never mounted').toBeTruthy()
-    expect(visibleVs.src, '3D local VS mesh is not the selected card').toContain(clickedFile)
-    expect(visibleVs.bounds.right-visibleVs.bounds.left, '3D VS mesh has no visible width').toBeGreaterThan(20)
-    expect(visibleVs.bounds.bottom-visibleVs.bounds.top, '3D VS mesh has no visible height').toBeGreaterThan(20)
-  }).toPass({ timeout: 15_000 })
-
-  await expect(async () => {
-    const hand = await readHandHitGeometry(page)
-    expect(hand.some((card) => card.src === clickedSrc), 'clicked card is still present in the 3D hand').toBe(false)
-  }).toPass({ timeout: 15_000 })
-
-  await expect(async () => {
-    const hand = await readHandHitGeometry(page)
-    const stillOfferingVs = hand.filter((card) => card.actions?.some((action) => /ATK|DEF/i.test(action.label)))
-    expect(stillOfferingVs, `stale ATK/DEF actions survived on: ${stillOfferingVs.map((c) => c.alt).join(', ')}`).toHaveLength(0)
-  }).toPass({ timeout: 15_000 })
-
-  await expect(async () => {
-    const beginRound = await page.locator('.mx3-begin-round').count()
-    const phase = await page.evaluate(() => document.querySelector('.mx3-canvas')?.className.match(/phase-(\S+)/)?.[1] || '')
-    expect(beginRound > 0 || phase !== 'set_vs', `no next action appeared (phase=${phase})`).toBe(true)
-  }).toPass({ timeout: 20_000 })
+  const finalStatus=await arenaStatus(page)
+  expect(finalStatus.phase).toBe('GAME_OVER')
+  expect(sawSetVs,'practice match never completed a real SET_VS action').toBe(true)
+  expect(sawAttackOrPass,'practice match never completed a real ATTACK/PASS action').toBe(true)
+  expect(pageErrors,`browser page errors: ${pageErrors.join(' | ')}`).toEqual([])
+  await expect(page.getByText('LEADERBOARD POINTS WERE NOT RECORDED')).toBeVisible({timeout:10_000})
 })
