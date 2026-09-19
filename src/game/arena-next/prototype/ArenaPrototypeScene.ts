@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
 import type { ArenaEventEnvelope } from '../ArenaEvents'
-import type { ArenaCardState, ArenaState, ArenaStats } from '../ArenaState'
+import type { ArenaCardState, ArenaLegalCommand, ArenaState, ArenaStats } from '../ArenaState'
+import { deriveArenaCommandTargets } from '../ArenaCommandSurface'
 import { createDesktopPrototypeLayout, type ArenaPrototypeLayout, type ArenaPrototypeRect } from './ArenaPrototypeLayout'
 
 const PANEL=0x3d434b
@@ -12,11 +13,17 @@ const FLASH=0xd7dbe0
 export class ArenaPrototypeScene extends Phaser.Scene {
   private currentState:ArenaState|null=null
   private arenaRoot:Phaser.GameObjects.Container|null=null
+  private commandDispatcher:((command:ArenaLegalCommand)=>void)|null=null
 
   constructor(){super('arena-prototype')}
 
   init(data:{state?:ArenaState}){
     this.currentState=data?.state??null
+  }
+
+  setCommandDispatcher(dispatcher:((command:ArenaLegalCommand)=>void)|null){
+    this.commandDispatcher=dispatcher
+    if(this.currentState)this.rebuildFromState(this.currentState)
   }
 
   create(){
@@ -55,6 +62,7 @@ export class ArenaPrototypeScene extends Phaser.Scene {
     }
 
     this.drawHand(root,layout,state)
+    this.drawCommandSurface(root,layout,state)
     const phase=this.add.text(layout.viewport.width/2,layout.viewport.height*0.19,`ROUND ${state.round} · ${state.phase}`,{fontFamily:'Arial, sans-serif',fontSize:'22px',color:TEXT,fontStyle:'bold'}).setOrigin(0.5)
     root.add(phase)
   }
@@ -232,6 +240,31 @@ export class ArenaPrototypeScene extends Phaser.Scene {
     })
     const caption=this.add.text(layout.handBand.x,layout.handBand.y-layout.handBand.height*0.65,`HAND · ${state.players[local].handCount}`,{fontFamily:'Arial, sans-serif',fontSize:'18px',color:TEXT,fontStyle:'bold'}).setOrigin(0.5)
     root.add(caption)
+  }
+
+  private drawCommandSurface(root:Phaser.GameObjects.Container,layout:ArenaPrototypeLayout,state:ArenaState){
+    if(!this.commandDispatcher||state.connection.networkBusy)return
+    const targets=deriveArenaCommandTargets(state)
+    const local=state.identity.localPlayerIndex
+    const hand=state.players[local].hand??[]
+
+    for(const target of targets){
+      if(target.kind==='HAND_CARD'){
+        const cardIndex=hand.findIndex(card=>card.id===target.cardId)
+        if(cardIndex<0)continue
+        const point=this.handPoint(cardIndex,Math.max(1,hand.length),layout)
+        const commands=target.commands.filter(command=>command.action==='SET_VS')
+        commands.forEach((command,index)=>{
+          const x=point.x+(index-(commands.length-1)/2)*46
+          const y=point.y+94
+          const label=command.position??'VS'
+          const body=this.add.rectangle(x,y,42,28,PANEL,0.98).setStrokeStyle(2,FLASH).setInteractive({useHandCursor:true})
+          const text=this.add.text(x,y,label,{fontFamily:'Arial, sans-serif',fontSize:'11px',color:TEXT,fontStyle:'bold'}).setOrigin(0.5)
+          body.on('pointerdown',()=>this.commandDispatcher?.(command))
+          root.add([body,text])
+        })
+      }
+    }
   }
 
   private handPoint(index:number,count:number,layout:ArenaPrototypeLayout){

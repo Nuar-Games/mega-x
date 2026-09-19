@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { ArenaLegalCommand, ArenaState } from './ArenaState'
+import type { ArenaState } from './ArenaState'
 import { ArenaLiveController } from './live/ArenaLiveController'
 import { createArenaPrototypeGame } from './prototype/ArenaPrototypeGame'
 import { ArenaPrototypeScene } from './prototype/ArenaPrototypeScene'
@@ -36,7 +36,10 @@ export function ArenaNextRuntime({allowPracticeBootstrap=true}:{allowPracticeBoo
     void controller.start().then((initial)=>{
       if(cancelled||!hostRef.current)return
       setState(initial)
-      gameRef.current=createArenaPrototypeGame(RUNTIME_HOST_ID,initial)
+      const game=createArenaPrototypeGame(RUNTIME_HOST_ID,initial)
+      gameRef.current=game
+      const scene=game.scene.getScene('arena-prototype') as ArenaPrototypeScene
+      scene.setCommandDispatcher((command)=>{void controller.dispatch(command).catch(()=>undefined)})
     }).catch((e)=>{if(!cancelled)setError(e instanceof Error?e.message:'ARENA_START_FAILED')})
     return()=>{
       cancelled=true
@@ -47,23 +50,10 @@ export function ArenaNextRuntime({allowPracticeBootstrap=true}:{allowPracticeBoo
     }
   },[allowPracticeBootstrap])
 
-  const cardName=(cardId:number|undefined)=>{
-    if(cardId===undefined||!state)return ''
-    const hand=state.players[state.identity.localPlayerIndex].hand
-    return hand?.find((card)=>card.id===cardId)?.name??`CARD ${cardId}`
-  }
-
-  const dispatch=(command:ArenaLegalCommand)=>{void controllerRef.current?.dispatch(command).catch(()=>undefined)}
-
   return <main style={{position:'fixed',inset:0,overflow:'hidden',background:'#101216',zIndex:99999}}>
     <div id={RUNTIME_HOST_ID} ref={hostRef} style={{position:'absolute',inset:0}} />
     <div style={{position:'absolute',left:12,top:12,right:12,zIndex:20,pointerEvents:'none',font:'700 14px/1.2 system-ui',letterSpacing:'.08em',color:'#fff'}}>
       {error?`ARENA NEXT · ${error.replaceAll('_',' ')}`:state?`ARENA NEXT · ${state.identity.mode.toUpperCase()} · V${state.stateVersion} · ROUND ${state.round} · ${state.phase}`:'ARENA NEXT · LOADING'}
     </div>
-    {state&&state.legalCommands.length>0&&<div style={{position:'absolute',left:10,right:10,bottom:10,zIndex:21,display:'flex',gap:8,overflowX:'auto'}}>
-      {state.legalCommands.map((command,index)=><button key={`${command.action}-${command.cardId??''}-${command.position??''}-${command.slot??''}-${index}`} onClick={()=>dispatch(command)} disabled={state.connection.networkBusy} style={{flex:'0 0 auto',padding:'12px 14px',fontWeight:800}}>
-        {command.action==='SET_VS'?`SET ${cardName(command.cardId)} · ${command.position}`:command.action.replaceAll('_',' ')}
-      </button>)}
-    </div>}
   </main>
 }

@@ -28,7 +28,7 @@ must(controller.includes('submitMatchSpecialAction'),'controller must use author
 must(controller.includes('STALE_MATCH_STATE'),'controller must explicitly reconcile stale writes')
 must(controller.includes('subscribeToMatchChanges'),'controller must preserve realtime refresh signaling')
 must(controller.includes('heartbeatMatch'),'controller must preserve match heartbeat')
-must(liveMain.includes("action:'SET_VS'"),'live vertical slice must submit real SET_VS command')
+must(liveMain.includes('setCommandDispatcher'),'live vertical slice must dispatch legal commands through the Phaser command surface')
 must(vite.includes('arena-next-live.html'),'Vite must emit isolated live arena page')
 
 for(const forbidden of ['MutationObserver','querySelector','button.click','transform: scale','transform:scale'])
