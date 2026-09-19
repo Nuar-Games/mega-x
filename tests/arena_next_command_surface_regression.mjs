@@ -22,7 +22,10 @@ must(scene.includes('setCommandDispatcher'),'Phaser scene must expose one comman
 must(scene.includes('drawCommandSurface'),'Phaser scene must render the command surface')
 must(scene.includes("target.kind==='HAND_CARD'"),'SET_VS must bind to hand-card targets in Phaser')
 must(scene.includes("target.kind==='ACTION'"),'ATTACK/PASS must bind to action targets in Phaser')
+must(scene.includes('drawGameOver'),'Phaser scene must present GAME_OVER')
+must(scene.includes("state.phase==='GAME_OVER'"),'GAME_OVER must be driven from authoritative ArenaState phase')
+must(scene.includes('state.winnerIndex'),'GAME_OVER presentation must use authoritative winnerIndex')
 must(runtime.includes('setCommandDispatcher'),'runtime must wire controller dispatch into Phaser scene')
 must(liveMain.includes('setCommandDispatcher'),'live harness must wire the same dispatcher path')
 
-console.log('PASS arena command surface SET_VS and ATTACK/PASS slices')
+console.log('PASS arena command surface SET_VS ATTACK/PASS and GAME_OVER slices')
