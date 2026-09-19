@@ -1,11 +1,13 @@
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import App from './App.tsx'
-import { ArenaNextRuntime } from './game/arena-next/ArenaNextRuntime'
 import { getMyActiveMatch, getSavedSession, type ActiveOnlineMatch, type OnlineSession } from './onlineAuth'
 import { getPracticeMatchForUser, startPracticeMatch } from './practice-match'
 
 type ArenaRoute={session:OnlineSession;match:ActiveOnlineMatch}|null
 
+const ArenaNextRuntime=lazy(()=>
+  import('./game/arena-next/ArenaNextRuntime').then((module)=>({default:module.ArenaNextRuntime})),
+)
 const ARENA_STATUSES=new Set<ActiveOnlineMatch['status']>(['ACTIVE','PAUSED','COMPLETED'])
 const GUEST_KEY='mega-x-practice-guest-id-v1'
 
@@ -83,6 +85,10 @@ export default function Root(){
     }
   },[])
 
-  if(arenaRoute)return <ArenaNextRuntime allowPracticeBootstrap={false} session={arenaRoute.session} match={arenaRoute.match}/>
+  if(arenaRoute)return (
+    <Suspense fallback={<div aria-label="Loading arena" style={{minHeight:'100dvh',background:'#030407'}}/>}>
+      <ArenaNextRuntime allowPracticeBootstrap={false} session={arenaRoute.session} match={arenaRoute.match}/>
+    </Suspense>
+  )
   return <App/>
 }
