@@ -247,6 +247,7 @@ export class ArenaPrototypeScene extends Phaser.Scene {
     const targets=deriveArenaCommandTargets(state)
     const local=state.identity.localPlayerIndex
     const hand=state.players[local].hand??[]
+    let actionIndex=0
 
     for(const target of targets){
       if(target.kind==='HAND_CARD'){
@@ -263,6 +264,16 @@ export class ArenaPrototypeScene extends Phaser.Scene {
           body.on('pointerdown',()=>this.commandDispatcher?.(command))
           root.add([body,text])
         })
+      }else if(target.kind==='ACTION'){
+        const command=target.commands[0]
+        if(!command)continue
+        const x=layout.viewport.width/2+(actionIndex-0.5)*118
+        const y=layout.viewport.height*0.72
+        actionIndex+=1
+        const body=this.add.rectangle(x,y,108,42,PANEL,0.98).setStrokeStyle(2,FLASH).setInteractive({useHandCursor:true})
+        const text=this.add.text(x,y,target.label,{fontFamily:'Arial, sans-serif',fontSize:'14px',color:TEXT,fontStyle:'bold'}).setOrigin(0.5)
+        body.on('pointerdown',()=>this.commandDispatcher?.(command))
+        root.add([body,text])
       }
     }
   }
