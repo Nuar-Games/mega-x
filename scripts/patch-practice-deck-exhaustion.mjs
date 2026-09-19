@@ -64,15 +64,21 @@ function apply(actorId: string, action: string, payload: Record<string, unknown>
   store.match.state = nextState
 }`
 
-if (!source.includes(applyAnchor)) throw new Error('practice deck exhaustion apply anchor missing')
-source = source.replace(applyAnchor, applyReplacement)
-
 const botAnchor = `(state, actorId, candidate) => applyEngineAction({ state, meta: meta(), actorId, action: candidate as EngineAction }),`
 const botReplacement = `(state, actorId, candidate) => {
       const nextState = applyEngineAction({ state, meta: meta(), actorId, action: candidate as EngineAction })
       preservePracticeExhaustedDeckTurnCompletion(nextState, state, candidate.action, actorId, store!.match.player1_id, store!.match.player2_id)
       return nextState
     },`
+
+const alreadyApplied = source.includes('export function preservePracticeExhaustedDeckTurnCompletion(') && source.includes(botReplacement)
+if (alreadyApplied) {
+  console.log('Practice deck exhaustion patch already applied')
+  process.exit(0)
+}
+
+if (!source.includes(applyAnchor)) throw new Error('practice deck exhaustion apply anchor missing')
+source = source.replace(applyAnchor, applyReplacement)
 
 if (!source.includes(botAnchor)) throw new Error('practice deck exhaustion bot anchor missing')
 source = source.replace(botAnchor, botReplacement)
