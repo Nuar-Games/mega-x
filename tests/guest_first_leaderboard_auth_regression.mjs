@@ -11,7 +11,7 @@ if(guestEntry.includes("new CustomEvent('mega-x:start-practice-match')"))throw n
 if(guestEntry.includes('PRACTICE — PLAY AS GUEST'))throw new Error('separate guest Practice CTA must be removed')
 
 for(const marker of [
-  "state.identity.mode==='practice'",
+  "identity.mode==='practice'",
   'LEADERBOARD POINTS WERE NOT RECORDED',
   'SIGN IN',
   'PLAY AGAIN AS GUEST',
