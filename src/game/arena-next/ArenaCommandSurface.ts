@@ -89,13 +89,58 @@ export function deriveArenaCommandTargets(state:ArenaState):ArenaCommandTarget[]
         })
         break
       }
+      case 'BEGIN_ROUND':
+      case 'SWITCH_POSITION':
+      case 'END_EFFECT_TURN':
       case 'ATTACK':
       case 'PASS_ATTACK': {
         const key=`action:${command.action}`
+        const labels:Record<string,string>={
+          BEGIN_ROUND:'BEGIN ROUND',
+          SWITCH_POSITION:'SWITCH POSITION',
+          END_EFFECT_TURN:'END EFFECT TURN',
+          ATTACK:'ATTACK',
+          PASS_ATTACK:'PASS',
+        }
         targets.set(key,{
           kind:'ACTION',
           key,
-          label:command.action==='ATTACK'?'ATTACK':'PASS',
+          label:labels[command.action]??command.action,
+          commands:[command],
+        })
+        break
+      }
+      case 'PLAY_EFFECT': {
+        if(command.cardId===undefined)break
+        const key=`action:PLAY_EFFECT:${command.cardId}`
+        targets.set(key,{
+          kind:'ACTION',
+          key,
+          cardId:command.cardId,
+          label:`PLAY ${cardLabel(state,command.cardId)}`,
+          commands:[command],
+        })
+        break
+      }
+      case 'RESOLVE_HIDDEN_CHOICE': {
+        if(command.slot===undefined)break
+        const key=`action:RESOLVE_HIDDEN_CHOICE:${command.slot}`
+        targets.set(key,{
+          kind:'ACTION',
+          key,
+          label:`CHOICE ${command.slot+1}`,
+          commands:[command],
+        })
+        break
+      }
+      case 'RESOLVE_VISIBLE_EFFECT_CHOICE': {
+        if(command.cardId===undefined)break
+        const key=`action:RESOLVE_VISIBLE_EFFECT_CHOICE:${command.cardId}`
+        targets.set(key,{
+          kind:'ACTION',
+          key,
+          cardId:command.cardId,
+          label:`CHOOSE ${cardLabel(state,command.cardId)}`,
           commands:[command],
         })
         break
