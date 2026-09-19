@@ -4,6 +4,8 @@ import { ArenaLiveController } from './live/ArenaLiveController'
 import { createArenaPrototypeGame } from './prototype/ArenaPrototypeGame'
 import { ArenaPrototypeScene } from './prototype/ArenaPrototypeScene'
 
+const RUNTIME_HOST_ID='arena-next-runtime-host'
+
 export function ArenaNextRuntime({allowPracticeBootstrap=true}:{allowPracticeBootstrap?:boolean}){
   const hostRef=useRef<HTMLDivElement|null>(null)
   const controllerRef=useRef<ArenaLiveController|null>(null)
@@ -34,7 +36,7 @@ export function ArenaNextRuntime({allowPracticeBootstrap=true}:{allowPracticeBoo
     void controller.start().then((initial)=>{
       if(cancelled||!hostRef.current)return
       setState(initial)
-      gameRef.current=createArenaPrototypeGame(hostRef.current,initial)
+      gameRef.current=createArenaPrototypeGame(RUNTIME_HOST_ID,initial)
     }).catch((e)=>{if(!cancelled)setError(e instanceof Error?e.message:'ARENA_START_FAILED')})
     return()=>{
       cancelled=true
@@ -54,7 +56,7 @@ export function ArenaNextRuntime({allowPracticeBootstrap=true}:{allowPracticeBoo
   const dispatch=(command:ArenaLegalCommand)=>{void controllerRef.current?.dispatch(command).catch(()=>undefined)}
 
   return <main style={{position:'fixed',inset:0,overflow:'hidden',background:'#101216',zIndex:99999}}>
-    <div ref={hostRef} style={{position:'absolute',inset:0}} />
+    <div id={RUNTIME_HOST_ID} ref={hostRef} style={{position:'absolute',inset:0}} />
     <div style={{position:'absolute',left:12,top:12,right:12,zIndex:20,pointerEvents:'none',font:'700 14px/1.2 system-ui',letterSpacing:'.08em',color:'#fff'}}>
       {error?`ARENA NEXT · ${error.replaceAll('_',' ')}`:state?`ARENA NEXT · ${state.identity.mode.toUpperCase()} · V${state.stateVersion} · ROUND ${state.round} · ${state.phase}`:'ARENA NEXT · LOADING'}
     </div>
