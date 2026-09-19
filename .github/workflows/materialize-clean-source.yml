@@ -68,3 +68,5 @@ jobs:
           node tests/arena_next_live_match_regression.mjs
           node tests/arena_next_pipeline_guard_regression.mjs
           node tests/arena_next_command_surface_regression.mjs
+      - name: Production build
+        run: npm run build
