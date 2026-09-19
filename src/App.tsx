@@ -2,9 +2,10 @@
 import { getMyAdminStatus, adminListPlayers, adminSetSilenced, adminSetSuspended } from './onlineAuth'
 import { CARD_INFO } from './arena-card-info.ts'
 import { requestPasswordReset } from './onlineAuth'
-import { startPracticeMatch, tickPracticeBot } from './practice-match'
+import { startPracticeMatch } from './practice-match'
 import { VsIntroScreen, getMyActiveMatchVsIntro, joinMatchmakingVsIntro, respondToChallengeVsIntro } from './VsIntro'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { AppOpenHook, shouldShowAppOpenHook } from './AppOpenHook'
 import './App.css'
 import './V19.css'
 import './V20.css'
@@ -244,6 +245,7 @@ function motionStyle(event: MotionEvent | null) {
 }
 
 function App() {
+  const [showColdOpen, setShowColdOpen] = useState(shouldShowAppOpenHook)
   const [onlineScreen, setOnlineScreen] = useState<'LANDING' | 'AUTH' | 'HANDLE' | 'LOBBY' | 'GAME'>(() => { try { return sessionStorage.getItem('mx-enter-lobby-after-auth') === '1' ? 'LOBBY' : 'LANDING' } catch { return 'LANDING' } })
   const [authMode, setAuthMode] = useState<'SIGN_IN' | 'SIGN_UP'>('SIGN_IN')
   const [authEmail, setAuthEmail] = useState('')
@@ -486,8 +488,20 @@ function App() {
     matchNetworkBusyRef.current = true
     setMatchNetworkBusy(true)
     try {
-      const result = await submitMatchEngineAction(onlineSession, activeOnlineMatch.id, activeOnlineMatch.state_version, action, payload)
-      const nextMatch: ActiveOnlineMatch = { ...activeOnlineMatch, state: result.state, state_version: Number(result.state_version), phase: result.phase, status: result.status }
+      const matchId = activeOnlineMatch.id
+      let expectedVersion = activeOnlineMatch.state_version
+      let result
+      try {
+        result = await submitMatchEngineAction(onlineSession, matchId, expectedVersion, action, payload)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : ''
+        if (!message.includes('STALE_MATCH_STATE')) throw error
+        const fresh = await refreshActiveMatch()
+        if (!fresh || fresh.id !== matchId) throw error
+        expectedVersion = fresh.state_version
+        result = await submitMatchEngineAction(onlineSession, matchId, expectedVersion, action, payload)
+      }
+      const nextMatch: ActiveOnlineMatch = { ...activeOnlineMatch, id: matchId, state: result.state, state_version: Number(result.state_version), phase: result.phase, status: result.status }
       applyOnlineMatchView(nextMatch)
       setOnlineMessage('')
     } catch (error) {
@@ -711,25 +725,26 @@ function App() {
     const openGuestSignIn = () => {
       setOnlineScreen('AUTH')
     }
+    const enterGuestLobby = () => {
+      const guestKey = 'mega-x-practice-guest-id-v1'
+      let guestId = onlineSession?.userId || window.localStorage.getItem(guestKey)
+      if (!guestId) {
+        guestId = 'practice-guest:' + crypto.randomUUID()
+        window.localStorage.setItem(guestKey, guestId)
+      }
+      if (!onlineSession) setOnlineSession({
+        accessToken: 'practice-local',
+        refreshToken: 'practice-local',
+        expiresAt: Number.MAX_SAFE_INTEGER,
+        userId: guestId,
+      })
+      setOnlineScreen('LOBBY')
+    }
     window.addEventListener('mega-x:open-sign-in', openGuestSignIn)
+    window.addEventListener('mega-x:enter-guest-lobby', enterGuestLobby)
     window.addEventListener('mega-x:start-practice-match', startPractice)
-    return () => { window.removeEventListener('mega-x:open-sign-in', openGuestSignIn); window.removeEventListener('mega-x:start-practice-match', startPractice) }
+    return () => { window.removeEventListener('mega-x:open-sign-in', openGuestSignIn); window.removeEventListener('mega-x:enter-guest-lobby', enterGuestLobby); window.removeEventListener('mega-x:start-practice-match', startPractice) }
   }, [onlineSession?.userId, fighterProfile?.fighter_handle])
-
-  useEffect(() => {
-    if (!onlineSession || !activeOnlineMatch?.id?.startsWith('practice-local:')) return
-    let cancelled = false
-    const phase = activeOnlineMatch.state?.phase
-    const baseDelay = phase === 'ATTACK' ? 1600 : phase === 'EFFECT' ? 1500 : 1300
-    const delay = baseDelay + Math.floor(Math.random() * 500)
-    const timer = window.setTimeout(() => {
-      if (cancelled) return
-      const next = tickPracticeBot(onlineSession.userId, activeOnlineMatch.id)
-      if (next && !cancelled) applyOnlineMatchView(next as any)
-    }, delay)
-    return () => { cancelled = true; window.clearTimeout(timer) }
-  // mega-x:practice-bot-paced-turn
-  }, [onlineSession?.userId, activeOnlineMatch?.id, activeOnlineMatch?.state_version])
 
   useEffect(() => {
     const exitPractice = () => {
@@ -1835,6 +1850,10 @@ function App() {
   const actionTimerIndex: PlayerIndex | null = onlinePlayerIndex !== null && actionDeadlineList[onlinePlayerIndex] ? onlinePlayerIndex : onlinePlayerIndex !== null && actionDeadlineList[other(onlinePlayerIndex)] ? other(onlinePlayerIndex) : null
   const actionTimerVisible = actionTimerIndex !== null && Boolean(actionDeadlineList[actionTimerIndex]) && activeOnlineMatch?.status === 'ACTIVE'
 
+  if (showColdOpen) {
+    return <AppOpenHook onComplete={() => setShowColdOpen(false)} />
+  }
+
   if (activeOnlineMatch && onlineSession && (activeOnlineMatch.status as string) === 'VS_INTRO') {
     return (
       <VsIntroScreen key={activeOnlineMatch.id} session={onlineSession} match={activeOnlineMatch} onComplete={(nextMatch) => applyOnlineMatchView(nextMatch)} onError={setOnlineMessage} />
@@ -1849,7 +1868,7 @@ function App() {
           <img className="mx-resume-official-logo" src="/ui/landing/logo.avif" alt="MEGA-X" />
           
           <button className="mx-play-now" onClick={() => { if (activeOnlineMatch) applyOnlineMatchView(activeOnlineMatch); else setOnlineScreen(onlineSession ? (fighterProfile?.fighter_handle ? 'LOBBY' : 'HANDLE') : 'AUTH') }}>{activeOnlineMatch ? 'RESUME MATCH' : 'PLAY NOW'}</button>
-          {!activeOnlineMatch && <button className="mx-practice-now" onClick={() => window.dispatchEvent(new CustomEvent('mega-x:start-practice-match'))}>PRACTICE — PLAY AS GUEST</button>}
+          {!activeOnlineMatch && <button className="mx-practice-now" onClick={() => window.dispatchEvent(new CustomEvent('mega-x:enter-guest-lobby'))}>PLAY AS GUEST</button>}
         </section>
       </main>
     )
@@ -1918,6 +1937,11 @@ function App() {
           </div>
         </header>
         {onlineMessage && <div className="mx-live-status mx-lobby-status" role="status">{onlineMessage}</div>}
+        {onlineSession?.accessToken === 'practice-local' && <div className="mx-guest-banner" role="status">
+          <strong>PLAYING AS GUEST</strong>
+          <span>POINTS AND LEADERBOARD PROGRESS ARE NOT RECORDED FOR GUEST MATCHES.</span>
+          <button className="mx-guest-practice-start" onClick={() => window.dispatchEvent(new CustomEvent('mega-x:start-practice-match'))}>START PRACTICE MATCH</button>
+        </div>}
           {mxIsAdmin && mxAdminOpen && <div className="mega-x-admin-panel" style={{position:'fixed',inset:0,zIndex:99999,background:'rgba(0,0,0,.88)',display:'grid',placeItems:'center',padding:20}}>
             <div style={{width:'min(820px,96vw)',maxHeight:'82vh',overflow:'auto',background:'#090d14',border:'1px solid rgba(255,210,90,.45)',boxShadow:'0 24px 80px rgba(0,0,0,.7)',padding:20}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,marginBottom:16}}><strong style={{letterSpacing:2}}>ADMIN · PLAYER CONTROL</strong><button onClick={() => setMxAdminOpen(false)}>CLOSE</button></div>
