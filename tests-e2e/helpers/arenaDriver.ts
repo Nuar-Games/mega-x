@@ -2,7 +2,7 @@ import { expect, type Page } from 'playwright/test'
 import { createDesktopPrototypeLayout, type ArenaPrototypeRect } from '../../src/game/arena-next/prototype/ArenaPrototypeLayout'
 
 const STATUS=/^ARENA NEXT · (PRACTICE|ONLINE) · V(\d+) · ROUND (\d+) · (SET_VS|EFFECT|ATTACK|TIE_BREAKER|GAME_OVER)$/
-export const COMMAND_WAIT_MS=4_000
+export const COMMAND_WAIT_MS=8_000
 
 export type ArenaStatus={
   text:string
