@@ -226,7 +226,8 @@ function legalCommandsFor(state:Omit<ArenaState,'legalCommands'>,raw:any,match:A
     return commands
   }
   if(state.phase==='ATTACK'&&state.attackTurnIndex===me){
-    commands.push({action:'ATTACK'},{action:'PASS_ATTACK'})
+    if(mine.vs?.position==='ATK')commands.push({action:'ATTACK'})
+    commands.push({action:'PASS_ATTACK'})
   }
   return commands
 }
