@@ -25,9 +25,17 @@ export async function arenaStatus(page:Page):Promise<ArenaStatus>{
   return {text,mode:match![1] as 'PRACTICE'|'ONLINE',version:Number(match![2]),round:Number(match![3]),phase:match![4] as ArenaStatus['phase'],position,legalActions}
 }
 
+async function arenaVersion(page:Page){
+  const text=(await page.locator('[data-arena-status="true"]').first().textContent())?.trim()??''
+  if(text==='ARENA NEXT · LOADING')return -1
+  const match=text.match(STATUS)
+  expect(match,`arena status became an error or invalid state: ${text}`).toBeTruthy()
+  return Number(match![2])
+}
+
 export async function waitForVersionChange(page:Page,version:number,timeout=COMMAND_WAIT_MS){
   try{
-    await expect.poll(async()=> (await arenaStatus(page)).version,{timeout,intervals:[50,75,100,200,400]}).not.toBe(version)
+    await expect.poll(()=>arenaVersion(page),{timeout,intervals:[50,75,100,200,400]}).not.toBe(version)
     return true
   }catch{return false}
 }
