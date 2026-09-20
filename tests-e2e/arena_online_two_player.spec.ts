@@ -181,13 +181,9 @@ test('two real online players finish a match and one reconciles after reconnect'
     await contexts[offlineIndex].setOffline(true)
     await pages[offlineIndex].waitForTimeout(2_500)
 
-    const actorBefore=await arenaStatus(pages[onlineIndex])
-    if(actorBefore.legalActions.length>0){
-      const result=await driveOneHumanAction(pages[onlineIndex])
-      expect(result.advanced,'authoritative online peer must advance while the other client is offline').toBe(true)
-    }
-    const authoritative=await arenaStatus(pages[onlineIndex])
-    expect(authoritative.version).toBeGreaterThan(stale.version)
+    await expect.poll(async()=> (await activeMatch(pages[onlineIndex]))?.status,{timeout:SYNC_TIMEOUT,intervals:[250,500,1000]}).toBe('PAUSED')
+    const pausedPeer=await arenaStatus(pages[onlineIndex])
+    expect(pausedPeer.version).toBeGreaterThanOrEqual(stale.version)
 
     await contexts[offlineIndex].setOffline(false)
     await expect.poll(async()=>{
