@@ -20,6 +20,7 @@ must(projection.includes('computeArenaStats'),'authoritative arena stat projecti
 must(projection.includes('hand:isLocal ? visibleHand : null'),'local hand identities must be viewer-relative and opponent identities hidden')
 must(projection.includes('handCount:isLocal?visibleHand.length:Number(p.handCount'),'opponent hidden hand must use server count')
 must(projection.includes('deckCount'),'Master Deck must remain count-only')
+must(/state\.phase==='SET_VS'[\s\S]{0,180}state\.firstPlayerIndex===me[\s\S]{0,180}BEGIN_ROUND/.test(projection),'BEGIN_ROUND must only be projected to the authoritative first player')
 must(diff.includes('deriveArenaEvents'),'state-to-event derivation missing')
 must(diff.includes('STATE_RECONCILED'),'unsafe diffs must have reconciliation fallback')
 must(controller.includes('getMyActiveMatch'),'controller must load the existing active match')
@@ -34,4 +35,4 @@ must(vite.includes('arena-next-live.html'),'Vite must emit isolated live arena p
 for(const forbidden of ['MutationObserver','querySelector','button.click','transform: scale','transform:scale'])
   must(!all.includes(forbidden),`Phase 5 live bridge contains forbidden primitive: ${forbidden}`)
 
-console.log('PASS next arena real match bridge boundary')
+console.log('PASS next arena real match bridge boundary and authoritative BEGIN_ROUND ownership')
