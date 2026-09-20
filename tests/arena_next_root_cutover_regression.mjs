@@ -16,6 +16,7 @@ assert.match(root,/allowPracticeBootstrap=\{false\}/,'root cutover must not crea
 assert.match(root,/session=\{arenaRoute\.session\}/,'root must pass the active session into arena-next')
 assert.match(root,/match=\{arenaRoute\.match\}/,'root must pass the active match into arena-next')
 assert.match(root,/<Suspense/,'root must provide a loading boundary while the arena chunk is fetched')
+assert.equal(/catch\s*\{[\s\S]{0,180}setArenaRoute\(null\)/.test(root),false,'a transient active-match fetch failure must preserve the mounted arena route; only a successful null response may clear it')
 
 assert.match(main,/import Root from ['"]\.\/root\.tsx['"]/,'main must import the hand-authored root')
 assert.match(main,/<Root \/>/,'main must render the hand-authored root')
@@ -26,4 +27,4 @@ assert.equal(app.includes('ArenaNextRuntime'),false,'generated App must never im
 assert.match(runtime,/onUpdate:\(\{state:next,events\}\)=>\{[\s\S]*?setState\(next\)[\s\S]*?setError\(''\)/,'a fresh authoritative arena state must clear a recoverable runtime error')
 assert.match(runtime,/data-local-vs-position=\{localVsPosition\}/,'runtime must expose local VS position to real-browser interaction tests')
 
-console.log('PASS arena-next active-match root cutover is lazy-loaded and runtime errors recover on valid state')
+console.log('PASS arena-next active-match root cutover is lazy-loaded, survives transient network loss, and runtime errors recover on valid state')
