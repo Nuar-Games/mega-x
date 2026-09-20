@@ -96,6 +96,7 @@ export class ArenaLiveController{
     if(!this.state.legalCommands.some((legal)=>sameCommand(legal,command)))throw new Error('ILLEGAL_ARENA_COMMAND')
     this.busy=true
     this.publishBusy(true,null)
+    const startedAt=performance.now()
     try{
       const submit=SPECIAL_ACTIONS.has(command.action)?submitMatchSpecialAction:submitMatchEngineAction
       const payload:Record<string,unknown>={}
@@ -104,6 +105,7 @@ export class ArenaLiveController{
       if(command.slot!==undefined)payload.slot=command.slot
       if(command.cardIds!==undefined)payload.cardIds=command.cardIds
       const result=await submit(this.session,this.match.id,this.match.state_version,command.action,payload)
+      console.info('[arena-online] submit',command.action,'ms',Math.round(performance.now()-startedAt),'toV',Number(result.state_version))
       const nextMatch:ActiveOnlineMatch={
         ...this.match,
         state:result.state,
@@ -114,6 +116,7 @@ export class ArenaLiveController{
       this.acceptMatch(nextMatch)
     }catch(error){
       const message=error instanceof Error?error.message:'MATCH_ACTION_FAILED'
+      console.info('[arena-online] submit-error',command.action,'ms',Math.round(performance.now()-startedAt),message)
       if(message.includes('STALE_MATCH_STATE'))await this.refresh('STALE_REFRESH')
       else this.options.onError?.(message)
       throw error
@@ -127,8 +130,11 @@ export class ArenaLiveController{
     if(!this.session)return
     const session=this.session
     this.unsubscribe=subscribeToMatchChanges(session,matchId,()=>{
+      console.info('[arena-online] realtime-change','v',this.match?.state_version??-1)
       window.clearTimeout(this.signalTimer)
       this.signalTimer=window.setTimeout(()=>{void this.refresh('RECOVERY')},40)
+    },(healthy)=>{
+      console.info('[arena-online] realtime-status',healthy?'SUBSCRIBED':'NOT_SUBSCRIBED')
     })
     void heartbeatMatch(session,matchId).catch(()=>undefined)
     this.heartbeatTimer=window.setInterval(()=>{void heartbeatMatch(session,matchId).catch(()=>undefined)},20_000)
@@ -136,7 +142,9 @@ export class ArenaLiveController{
       const delay=document.visibilityState==='hidden'?30_000:5_000
       this.fallbackTimer=window.setTimeout(async()=>{
         if(this.stopped)return
+        const startedAt=performance.now()
         await this.refresh('RECOVERY').catch(()=>undefined)
+        console.info('[arena-online] fallback-refresh','ms',Math.round(performance.now()-startedAt),'v',this.match?.state_version??-1)
         if(!this.stopped)schedule()
       },delay)
     }
