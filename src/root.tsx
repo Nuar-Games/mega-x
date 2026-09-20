@@ -45,7 +45,9 @@ export default function Root(){
         if(cancelled)return
         setArenaRoute(match&&ARENA_STATUSES.has(match.status)?{session,match}:null)
       }catch{
-        if(!cancelled&&routeRef.current?.session.userId===session.userId)setArenaRoute(null)
+        // A failed active-match poll is unknown state, not proof that the match ended.
+        // Preserve any mounted arena route so transient network loss can reconcile
+        // when connectivity returns instead of unmounting into App/session bootstrap.
       }
     }
 
