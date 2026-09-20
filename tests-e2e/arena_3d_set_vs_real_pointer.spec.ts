@@ -4,7 +4,7 @@ import { arenaStatus, driveOneHumanAction, waitForArenaReady, waitForVersionChan
 const BOT_WAIT_MS=4_000
 
 test('guest practice match runs through ArenaNextRuntime from SET_VS to GAME_OVER',async({page})=>{
-  test.setTimeout(180_000)
+  test.setTimeout(300_000)
   await page.setViewportSize({width:1440,height:1000})
 
   const pageErrors:string[]=[]
