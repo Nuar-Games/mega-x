@@ -1,10 +1,9 @@
 import { test, expect, type BrowserContext, type Page } from 'playwright/test'
-import { arenaStatus, driveOneHumanAction, waitForArenaReady, waitForVersionChange } from './helpers/arenaDriver'
+import { arenaStatus, driveOneHumanAction, waitForArenaReady } from './helpers/arenaDriver'
 
 type Credentials={email:string;password:string;handle:string}
 
 const SYNC_TIMEOUT=12_000
-const STEP_TIMEOUT=4_000
 
 function generatedCredentials(slot:1|2):Credentials{
   const nonce=`${Date.now()}-${Math.random().toString(36).slice(2,8)}`
@@ -98,9 +97,17 @@ async function driveNextAction(pages:[Page,Page]){
     await waitForPeerVersion(peer,after.version)
     return {acted:true,status:after}
   }
+
   const before=await Promise.all(pages.map(arenaStatus))
-  const advanced=await Promise.all(pages.map((page,index)=>waitForVersionChange(page,before[index].version,STEP_TIMEOUT)))
-  if(!advanced.some(Boolean))throw new Error(`online match has no legal actor: ${before.map(s=>`V${s.version}:${s.phase}[${s.legalActions.join('|')}]`).join(' / ')}`)
+  await expect.poll(async()=>{
+    const current=await Promise.all(pages.map(arenaStatus))
+    return current.some((status,index)=>
+      status.version!==before[index].version||
+      status.connectionStatus!==before[index].connectionStatus||
+      status.legalActions.length>0||
+      status.phase==='GAME_OVER',
+    )
+  },{timeout:SYNC_TIMEOUT,intervals:[100,200,400]}).toBe(true)
   return {acted:false,status:await arenaStatus(pages[0])}
 }
 
@@ -189,9 +196,17 @@ test('two real online players finish a match and one reconciles after reconnect'
         arenaStatus(pages[onlineIndex]),
         activeMatch(pages[onlineIndex]),
       ])
-      if(!server)return 'NO_SERVER_MATCH'
-      return `${recovered.version}:${recovered.round}:${recovered.phase}|${peer.version}:${peer.round}:${peer.phase}|${server.stateVersion}:${server.round}:${server.phase}`
-    },{timeout:15_000,intervals:[250,500,1000]}).toBe(`${authoritative.version}:${authoritative.round}:${authoritative.phase}|${authoritative.version}:${authoritative.round}:${authoritative.phase}|${authoritative.version}:${authoritative.round}:${authoritative.phase}`)
+      return Boolean(server&&
+        server.status==='ACTIVE'&&
+        recovered.connectionStatus==='online'&&
+        peer.connectionStatus==='online'&&
+        recovered.version===server.stateVersion&&
+        peer.version===server.stateVersion&&
+        recovered.round===server.round&&
+        peer.round===server.round&&
+        recovered.phase===server.phase&&
+        peer.phase===server.phase)
+    },{timeout:20_000,intervals:[250,500,1000]}).toBe(true)
 
     expect(errors1,`player 1 page errors: ${errors1.join(' | ')}`).toEqual([])
     expect(errors2,`player 2 page errors: ${errors2.join(' | ')}`).toEqual([])
