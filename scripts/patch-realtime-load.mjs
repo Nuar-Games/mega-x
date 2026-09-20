@@ -35,7 +35,9 @@ export function subscribeToMatchChanges(session: OnlineSession, matchId: string,
   }
 }
 `
-if (!auth.includes('export function subscribeToMatchChanges')) auth += helper
+const realtimeStart = auth.indexOf('\nconst REALTIME_CLIENT = createClient(')
+if (realtimeStart >= 0) auth = auth.slice(0, realtimeStart) + '\n' + helper.trimStart()
+else auth += helper
 
 if (!app.includes('subscribeToMatchChanges')) {
   app = app.replace('resolveReconnectTimeout, sendChallenge', 'resolveReconnectTimeout, sendChallenge, subscribeToMatchChanges')
