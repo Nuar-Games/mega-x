@@ -213,7 +213,7 @@ function legalCommandsFor(state:Omit<ArenaState,'legalCommands'>,raw:any,match:A
     })
     return commands
   }
-  if(state.phase==='SET_VS'&&!state.needsVS[0]&&!state.needsVS[1]&&state.players[0].vs&&state.players[1].vs){
+  if(state.phase==='SET_VS'&&state.firstPlayerIndex===me&&!state.needsVS[0]&&!state.needsVS[1]&&state.players[0].vs&&state.players[1].vs){
     commands.push({action:'BEGIN_ROUND'})
     return commands
   }
