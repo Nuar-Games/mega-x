@@ -3,15 +3,17 @@ import { createDesktopPrototypeLayout, type ArenaPrototypeRect } from '../src/ga
 
 const STATUS=/^ARENA NEXT · PRACTICE · V(\d+) · ROUND (\d+) · (SET_VS|EFFECT|ATTACK|TIE_BREAKER|GAME_OVER)$/
 const COMMAND_WAIT_MS=700
+const BOT_WAIT_MS=4_000
 
 async function arenaStatus(page:Page){
   const locator=page.locator('[data-arena-status="true"]').first()
   const text=(await locator.textContent())?.trim()??''
   const position=(await locator.getAttribute('data-local-vs-position'))??''
-  if(text==='ARENA NEXT · LOADING')return {text,version:-1,phase:'LOADING',position}
+  const legalActions=((await locator.getAttribute('data-local-legal-actions'))??'').split(',').filter(Boolean)
+  if(text==='ARENA NEXT · LOADING')return {text,version:-1,phase:'LOADING',position,legalActions}
   const match=text.match(STATUS)
   expect(match,`arena status became an error or invalid state: ${text}`).toBeTruthy()
-  return {text,version:Number(match![1]),phase:match![3],position}
+  return {text,version:Number(match![1]),phase:match![3],position,legalActions}
 }
 
 async function waitForVersionChange(page:Page,version:number,timeout=COMMAND_WAIT_MS){
@@ -53,8 +55,6 @@ async function driveOneHumanAction(page:Page){
   if(before.phase==='GAME_OVER')return {advanced:true,action:'GAME_OVER'}
 
   if(before.phase==='SET_VS'){
-    // Practice starts each SET_VS with five visible hand cards. Click the actual
-    // ATK button position drawn beneath each real hand slot.
     for(let i=0;i<5;i+=1){
       const card=handPoint(layout,i,5)
       if(await tryPoint(page,box,before.version,{x:card.x-23,y:card.y+94}))return {advanced:true,action:'SET_VS'}
@@ -63,7 +63,6 @@ async function driveOneHumanAction(page:Page){
   }
 
   if(before.phase==='ATTACK'){
-    // Projection now exposes only PASS in DEF; in ATK, ATTACK is action index 0.
     if(await tryPoint(page,box,before.version,actionPoint(layout,0))){
       return {advanced:true,action:before.position==='DEF'?'PASS':'ATTACK'}
     }
@@ -80,32 +79,31 @@ async function driveOneHumanAction(page:Page){
     return {advanced:false,action:'TIE_PICK'}
   }
 
-  // EFFECT command buttons are laid out by ArenaPrototypeScene with the same
-  // actionPoint formula. Try every on-canvas action position quickly rather
-  // than burning four seconds on guessed coordinates. This covers normal
-  // effect play/end-turn plus hidden/visible effect choices.
-  for(let index=0;index<7;index+=1){
+  if(before.legalActions.includes('RESOLVE_BOARD_CHOICE')){
+    const boardSlots=[...layout.vs,...layout.effectSlots[0],...layout.effectSlots[1]]
+    for(const slot of boardSlots){
+      if(await tryPoint(page,box,before.version,slot))return {advanced:true,action:'BOARD_CHOICE'}
+    }
+    return {advanced:false,action:'BOARD_CHOICE'}
+  }
+
+  if(before.legalActions.includes('RESOLVE_SELF_DISCARD')){
+    for(const count of [5,4,3,2,1,6]){
+      for(let i=0;i<count;i+=1){
+        const point=handPoint(layout,i,count)
+        await clickCanvas(page,box,point.x,point.y)
+        await page.waitForTimeout(40)
+        if(await tryPoint(page,box,before.version,actionPoint(layout,0)))return {advanced:true,action:'SELF_DISCARD'}
+      }
+    }
+    return {advanced:false,action:'SELF_DISCARD'}
+  }
+
+  const actionCount=Math.max(1,before.legalActions.length)
+  for(let index=0;index<actionCount;index+=1){
     const point=actionPoint(layout,index)
     if(point.x<0||point.x>layout.viewport.width)continue
     if(await tryPoint(page,box,before.version,point))return {advanced:true,action:'EFFECT_ACTION'}
-  }
-
-  // Board choices use the real VS/effect-slot rectangles from the shared layout.
-  const boardSlots=[...layout.vs,...layout.effectSlots[0],...layout.effectSlots[1]]
-  for(const slot of boardSlots){
-    if(await tryPoint(page,box,before.version,slot))return {advanced:true,action:'BOARD_CHOICE'}
-  }
-
-  // SELF_DISCARD selection does not advance the state version until confirmed.
-  // Toggle visible hand cards using the real hand geometry, then retry the
-  // confirmation action after each selection.
-  for(const count of [5,4,3,2,1,6]){
-    for(let i=0;i<count;i+=1){
-      const point=handPoint(layout,i,count)
-      await clickCanvas(page,box,point.x,point.y)
-      await page.waitForTimeout(40)
-      if(await tryPoint(page,box,before.version,actionPoint(layout,0)))return {advanced:true,action:'SELF_DISCARD'}
-    }
   }
 
   return {advanced:false,action:'EFFECT'}
@@ -135,16 +133,20 @@ test('guest practice match runs through ArenaNextRuntime from SET_VS to GAME_OVE
     const status=await arenaStatus(page)
     if(status.phase==='GAME_OVER')break
 
+    if(status.legalActions.length===0){
+      const advanced=await waitForVersionChange(page,status.version,BOT_WAIT_MS)
+      if(!advanced)throw new Error(`practice bot turn stuck in ${status.phase} at V${status.version}`)
+      continue
+    }
+
     const result=await driveOneHumanAction(page)
     if(result.action==='SET_VS'&&result.advanced)sawSetVs=true
     if((result.action==='ATTACK'||result.action==='PASS')&&result.advanced)sawAttackOrPass=true
 
     if(!result.advanced){
-      // Give the beginner bot one scheduling window before deciding the match is stuck.
-      await page.waitForTimeout(2_400)
-      const afterBot=await arenaStatus(page)
-      if(afterBot.version===status.version){
-        throw new Error(`practice match stuck in ${status.phase} at V${status.version}`)
+      const after=await arenaStatus(page)
+      if(after.version===status.version){
+        throw new Error(`practice match stuck in ${status.phase} at V${status.version}; legal=${status.legalActions.join('|')}`)
       }
     }
   }
