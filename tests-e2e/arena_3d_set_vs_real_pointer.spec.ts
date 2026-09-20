@@ -3,12 +3,13 @@ import { test, expect, type Page } from 'playwright/test'
 const STATUS=/^ARENA NEXT · PRACTICE · V(\d+) · ROUND (\d+) · (SET_VS|EFFECT|ATTACK|TIE_BREAKER|GAME_OVER)$/
 
 async function arenaStatus(page:Page){
-  const locator=page.getByText(/^ARENA NEXT ·/).first()
+  const locator=page.locator('[data-arena-status="true"]').first()
   const text=(await locator.textContent())?.trim()??''
-  if(text==='ARENA NEXT · LOADING')return {text,version:-1,phase:'LOADING'}
+  const position=(await locator.getAttribute('data-local-vs-position'))??''
+  if(text==='ARENA NEXT · LOADING')return {text,version:-1,phase:'LOADING',position}
   const match=text.match(STATUS)
   expect(match,`arena status became an error or invalid state: ${text}`).toBeTruthy()
-  return {text,version:Number(match![1]),phase:match![3]}
+  return {text,version:Number(match![1]),phase:match![3],position}
 }
 
 async function waitForVersionChange(page:Page,version:number,timeout=4_000){
@@ -50,6 +51,10 @@ async function driveOneHumanAction(page:Page){
   }
 
   if(before.phase==='ATTACK'){
+    if(before.position==='DEF'){
+      await clickCanvas(page,width*0.5-59,height*0.72)
+      return {advanced:await waitForVersionChange(page,before.version),action:'PASS'}
+    }
     await clickCanvas(page,width*0.5-59,height*0.72)
     if(await waitForVersionChange(page,before.version))return {advanced:true,action:'ATTACK'}
     await clickCanvas(page,width*0.5+59,height*0.72)
