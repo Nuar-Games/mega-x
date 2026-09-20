@@ -1,113 +1,7 @@
-import { test, expect, type Page } from 'playwright/test'
-import { createDesktopPrototypeLayout, type ArenaPrototypeRect } from '../src/game/arena-next/prototype/ArenaPrototypeLayout'
+import { test, expect } from 'playwright/test'
+import { arenaStatus, driveOneHumanAction, waitForArenaReady, waitForVersionChange } from './helpers/arenaDriver'
 
-const STATUS=/^ARENA NEXT · PRACTICE · V(\d+) · ROUND (\d+) · (SET_VS|EFFECT|ATTACK|TIE_BREAKER|GAME_OVER)$/
-const COMMAND_WAIT_MS=700
 const BOT_WAIT_MS=4_000
-
-async function arenaStatus(page:Page){
-  const locator=page.locator('[data-arena-status="true"]').first()
-  const text=(await locator.textContent())?.trim()??''
-  const position=(await locator.getAttribute('data-local-vs-position'))??''
-  const legalActions=((await locator.getAttribute('data-local-legal-actions'))??'').split(',').filter(Boolean)
-  if(text==='ARENA NEXT · LOADING')return {text,version:-1,phase:'LOADING',position,legalActions}
-  const match=text.match(STATUS)
-  expect(match,`arena status became an error or invalid state: ${text}`).toBeTruthy()
-  return {text,version:Number(match![1]),phase:match![3],position,legalActions}
-}
-
-async function waitForVersionChange(page:Page,version:number,timeout=COMMAND_WAIT_MS){
-  try{
-    await expect.poll(async()=> (await arenaStatus(page)).version,{timeout,intervals:[50,75,100]}).not.toBe(version)
-    return true
-  }catch{return false}
-}
-
-async function canvasBox(page:Page){
-  const box=await page.locator('#arena-next-runtime-host canvas').boundingBox()
-  expect(box,'arena canvas is missing').toBeTruthy()
-  return box!
-}
-
-async function clickCanvas(page:Page,box:{x:number;y:number},x:number,y:number){
-  await page.mouse.click(box.x+x,box.y+y)
-}
-
-function actionPoint(layout:{viewport:{width:number;height:number}},index:number){
-  return {x:layout.viewport.width/2+(index-0.5)*118,y:layout.viewport.height*0.72}
-}
-
-function handPoint(layout:{handBand:ArenaPrototypeRect},index:number,count:number){
-  const spacing=Math.min(118,layout.handBand.width/Math.max(1,count))
-  return {x:layout.handBand.x+(index-(count-1)/2)*spacing,y:layout.handBand.y}
-}
-
-async function tryPoint(page:Page,box:{x:number;y:number},version:number,point:{x:number;y:number}){
-  await clickCanvas(page,box,point.x,point.y)
-  return waitForVersionChange(page,version)
-}
-
-async function driveOneHumanAction(page:Page){
-  const box=await canvasBox(page)
-  const layout=createDesktopPrototypeLayout(box.width,box.height)
-  const before=await arenaStatus(page)
-
-  if(before.phase==='GAME_OVER')return {advanced:true,action:'GAME_OVER'}
-
-  if(before.phase==='SET_VS'){
-    for(let i=0;i<5;i+=1){
-      const card=handPoint(layout,i,5)
-      if(await tryPoint(page,box,before.version,{x:card.x-23,y:card.y+94}))return {advanced:true,action:'SET_VS'}
-    }
-    return {advanced:false,action:'SET_VS'}
-  }
-
-  if(before.phase==='ATTACK'){
-    if(await tryPoint(page,box,before.version,actionPoint(layout,0))){
-      return {advanced:true,action:before.position==='DEF'?'PASS':'ATTACK'}
-    }
-    if(before.position!=='DEF'&&await tryPoint(page,box,before.version,actionPoint(layout,1))){
-      return {advanced:true,action:'PASS'}
-    }
-    return {advanced:false,action:before.position==='DEF'?'PASS':'ATTACK'}
-  }
-
-  if(before.phase==='TIE_BREAKER'){
-    for(let i=0;i<5;i+=1){
-      if(await tryPoint(page,box,before.version,handPoint(layout,i,5)))return {advanced:true,action:'TIE_PICK'}
-    }
-    return {advanced:false,action:'TIE_PICK'}
-  }
-
-  if(before.legalActions.includes('RESOLVE_BOARD_CHOICE')){
-    const boardSlots=[...layout.vs,...layout.effectSlots[0],...layout.effectSlots[1]]
-    for(const slot of boardSlots){
-      if(await tryPoint(page,box,before.version,slot))return {advanced:true,action:'BOARD_CHOICE'}
-    }
-    return {advanced:false,action:'BOARD_CHOICE'}
-  }
-
-  if(before.legalActions.includes('RESOLVE_SELF_DISCARD')){
-    for(const count of [5,4,3,2,1,6]){
-      for(let i=0;i<count;i+=1){
-        const point=handPoint(layout,i,count)
-        await clickCanvas(page,box,point.x,point.y)
-        await page.waitForTimeout(40)
-        if(await tryPoint(page,box,before.version,actionPoint(layout,0)))return {advanced:true,action:'SELF_DISCARD'}
-      }
-    }
-    return {advanced:false,action:'SELF_DISCARD'}
-  }
-
-  const actionCount=Math.max(1,before.legalActions.length)
-  for(let index=0;index<actionCount;index+=1){
-    const point=actionPoint(layout,index)
-    if(point.x<0||point.x>layout.viewport.width)continue
-    if(await tryPoint(page,box,before.version,point))return {advanced:true,action:'EFFECT_ACTION'}
-  }
-
-  return {advanced:false,action:'EFFECT'}
-}
 
 test('guest practice match runs through ArenaNextRuntime from SET_VS to GAME_OVER',async({page})=>{
   test.setTimeout(180_000)
@@ -122,8 +16,8 @@ test('guest practice match runs through ArenaNextRuntime from SET_VS to GAME_OVE
   await expect(practiceEntry).toBeVisible({timeout:15_000})
   await practiceEntry.click()
 
-  await expect(page.locator('#arena-next-runtime-host canvas')).toBeVisible({timeout:20_000})
-  await expect.poll(async()=> (await arenaStatus(page)).phase,{timeout:20_000}).not.toBe('LOADING')
+  const ready=await waitForArenaReady(page)
+  expect(ready.mode).toBe('PRACTICE')
 
   let sawSetVs=false
   let sawAttackOrPass=false
@@ -141,7 +35,7 @@ test('guest practice match runs through ArenaNextRuntime from SET_VS to GAME_OVE
 
     const result=await driveOneHumanAction(page)
     if(result.action==='SET_VS'&&result.advanced)sawSetVs=true
-    if((result.action==='ATTACK'||result.action==='PASS')&&result.advanced)sawAttackOrPass=true
+    if((result.action==='ATTACK'||result.action==='PASS'||result.action==='PASS_ATTACK')&&result.advanced)sawAttackOrPass=true
 
     if(!result.advanced){
       const after=await arenaStatus(page)
