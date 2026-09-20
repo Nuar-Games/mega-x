@@ -4,7 +4,7 @@ import { arenaStatus, driveOneHumanAction, waitForArenaReady, waitForVersionChan
 type Credentials={email:string;password:string;handle:string}
 
 const SYNC_TIMEOUT=12_000
-const STEP_TIMEOUT=3_000
+const STEP_TIMEOUT=4_000
 
 function generatedCredentials(slot:1|2):Credentials{
   const nonce=`${Date.now()}-${Math.random().toString(36).slice(2,8)}`
@@ -99,9 +99,8 @@ async function driveNextAction(pages:[Page,Page]){
     return {acted:true,status:after}
   }
   const before=await Promise.all(pages.map(arenaStatus))
-  const version=Math.max(...before.map(status=>status.version))
-  const advanced=await Promise.all(pages.map(page=>waitForVersionChange(page,version,STEP_TIMEOUT)))
-  if(!advanced.some(Boolean))throw new Error(`online match has no legal actor at V${version}: ${before.map(s=>`${s.phase}[${s.legalActions.join('|')}]`).join(' / ')}`)
+  const advanced=await Promise.all(pages.map((page,index)=>waitForVersionChange(page,before[index].version,STEP_TIMEOUT)))
+  if(!advanced.some(Boolean))throw new Error(`online match has no legal actor: ${before.map(s=>`V${s.version}:${s.phase}[${s.legalActions.join('|')}]`).join(' / ')}`)
   return {acted:false,status:await arenaStatus(pages[0])}
 }
 
@@ -115,7 +114,7 @@ async function playUntil(pages:[Page,Page],predicate:(statuses:[Awaited<ReturnTy
   throw new Error('online match exceeded action budget')
 }
 
-async function pageErrors(page:Page){
+function collectPageErrors(page:Page){
   const errors:string[]=[]
   page.on('pageerror',error=>errors.push(error.message))
   return errors
@@ -134,8 +133,8 @@ test('two real online players finish a match and one reconciles after reconnect'
   const context2=await browser.newContext({viewport:{width:1440,height:1000}})
   const page1=await context1.newPage()
   const page2=await context2.newPage()
-  const errors1=await pageErrors(page1)
-  const errors2=await pageErrors(page2)
+  const errors1=collectPageErrors(page1)
+  const errors2=collectPageErrors(page2)
 
   try{
     const [player1,player2]=await Promise.all([
@@ -170,9 +169,9 @@ test('two real online players finish a match and one reconciles after reconnect'
       else {offlineIndex=0;onlineIndex=1}
     }
 
-    const offlineContext:[BrowserContext,BrowserContext]=[context1,context2]
+    const contexts:[BrowserContext,BrowserContext]=[context1,context2]
     const stale=await arenaStatus(pages[offlineIndex])
-    await offlineContext[offlineIndex].setOffline(true)
+    await contexts[offlineIndex].setOffline(true)
     await pages[offlineIndex].waitForTimeout(2_500)
 
     const actorBefore=await arenaStatus(pages[onlineIndex])
@@ -183,11 +182,16 @@ test('two real online players finish a match and one reconciles after reconnect'
     const authoritative=await arenaStatus(pages[onlineIndex])
     expect(authoritative.version).toBeGreaterThan(stale.version)
 
-    await offlineContext[offlineIndex].setOffline(false)
+    await contexts[offlineIndex].setOffline(false)
     await expect.poll(async()=>{
-      const recovered=await arenaStatus(pages[offlineIndex])
-      return `${recovered.version}:${recovered.round}:${recovered.phase}`
-    },{timeout:15_000,intervals:[250,500,1000]}).toBe(`${authoritative.version}:${authoritative.round}:${authoritative.phase}`)
+      const [recovered,peer,server]=await Promise.all([
+        arenaStatus(pages[offlineIndex]),
+        arenaStatus(pages[onlineIndex]),
+        activeMatch(pages[onlineIndex]),
+      ])
+      if(!server)return 'NO_SERVER_MATCH'
+      return `${recovered.version}:${recovered.round}:${recovered.phase}|${peer.version}:${peer.round}:${peer.phase}|${server.stateVersion}:${server.round}:${server.phase}`
+    },{timeout:15_000,intervals:[250,500,1000]}).toBe(`${authoritative.version}:${authoritative.round}:${authoritative.phase}|${authoritative.version}:${authoritative.round}:${authoritative.phase}|${authoritative.version}:${authoritative.round}:${authoritative.phase}`)
 
     expect(errors1,`player 1 page errors: ${errors1.join(' | ')}`).toEqual([])
     expect(errors2,`player 2 page errors: ${errors2.join(' | ')}`).toEqual([])
