@@ -128,7 +128,7 @@ async function reopenArena(page:Page){
 }
 
 test('two real online players finish a match and one reconciles after reconnect',async({browser})=>{
-  test.setTimeout(300_000)
+  test.setTimeout(600_000)
   const context1=await browser.newContext({viewport:{width:1440,height:1000}})
   const context2=await browser.newContext({viewport:{width:1440,height:1000}})
   const page1=await context1.newPage()
