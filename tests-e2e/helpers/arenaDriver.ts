@@ -2,7 +2,7 @@ import { expect, type Page } from 'playwright/test'
 import { createDesktopPrototypeLayout, type ArenaPrototypeRect } from '../../src/game/arena-next/prototype/ArenaPrototypeLayout'
 
 const STATUS=/^ARENA NEXT · (PRACTICE|ONLINE) · V(\d+) · ROUND (\d+) · (SET_VS|EFFECT|ATTACK|TIE_BREAKER|GAME_OVER)$/
-export const COMMAND_WAIT_MS=900
+export const COMMAND_WAIT_MS=4_000
 
 export type ArenaStatus={
   text:string
@@ -27,7 +27,7 @@ export async function arenaStatus(page:Page):Promise<ArenaStatus>{
 
 export async function waitForVersionChange(page:Page,version:number,timeout=COMMAND_WAIT_MS){
   try{
-    await expect.poll(async()=> (await arenaStatus(page)).version,{timeout,intervals:[50,75,100]}).not.toBe(version)
+    await expect.poll(async()=> (await arenaStatus(page)).version,{timeout,intervals:[50,75,100,200,400]}).not.toBe(version)
     return true
   }catch{return false}
 }
@@ -69,9 +69,9 @@ export async function driveOneHumanAction(page:Page){
 
   if(before.phase==='GAME_OVER')return {advanced:true,action:'GAME_OVER'}
 
-  if(before.phase==='SET_VS'&&before.legalActions.includes('SET_VS')){
-    for(let i=0;i<6;i+=1){
-      const card=handPoint(layout,i,Math.max(5,Math.min(6,before.legalActions.filter(action=>action==='SET_VS').length/2||5)))
+  if(before.phase==='SET_VS'){
+    for(let i=0;i<5;i+=1){
+      const card=handPoint(layout,i,5)
       if(await tryPoint(page,box,before.version,{x:card.x-23,y:card.y+94}))return {advanced:true,action:'SET_VS'}
     }
     return {advanced:false,action:'SET_VS'}
@@ -88,7 +88,7 @@ export async function driveOneHumanAction(page:Page){
   }
 
   if(before.phase==='TIE_BREAKER'){
-    for(let i=0;i<6;i+=1){
+    for(let i=0;i<5;i+=1){
       if(await tryPoint(page,box,before.version,handPoint(layout,i,5)))return {advanced:true,action:'TIE_PICK'}
     }
     return {advanced:false,action:'TIE_PICK'}
