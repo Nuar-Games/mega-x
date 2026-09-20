@@ -30,6 +30,7 @@ export function ArenaNextRuntime({allowPracticeBootstrap=true,session=null,match
       matchOverride:match,
       onUpdate:({state:next,events})=>{
         if(cancelled)return
+        console.log('[MX_ARENA_DIAG]',`V${next.stateVersion}`,next.phase,`scene=${Boolean(sceneRef.current)}`,`busy=${next.connection.networkBusy}`,`legal=${next.legalCommands.map(command=>command.action).join('|')}`)
         setState(next)
         setError('')
         const scene=sceneRef.current
