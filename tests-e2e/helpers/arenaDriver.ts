@@ -69,7 +69,7 @@ export async function driveOneHumanAction(page:Page){
 
   if(before.phase==='GAME_OVER')return {advanced:true,action:'GAME_OVER'}
 
-  if(before.phase==='SET_VS'){
+  if(before.phase==='SET_VS'&&before.legalActions.includes('SET_VS')){
     for(let i=0;i<5;i+=1){
       const card=handPoint(layout,i,5)
       if(await tryPoint(page,box,before.version,{x:card.x-23,y:card.y+94}))return {advanced:true,action:'SET_VS'}
