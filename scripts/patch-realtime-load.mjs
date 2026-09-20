@@ -14,15 +14,25 @@ const REALTIME_CLIENT = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
 })
 
-export function subscribeToMatchChanges(session: OnlineSession, matchId: string, onChange: () => void) {
-  REALTIME_CLIENT.realtime.setAuth(session.accessToken)
-  const channel = REALTIME_CLIENT
-    .channel(\`mega-x-match:\${matchId}:\${session.userId}\`)
-    .on('postgres_changes', {
-      event: 'UPDATE', schema: 'public', table: 'matches', filter: \`id=eq.\${matchId}\`,
-    }, () => onChange())
-    .subscribe()
-  return () => { void REALTIME_CLIENT.removeChannel(channel) }
+export function subscribeToMatchChanges(session: OnlineSession, matchId: string, onChange: () => void, onStatus?: (healthy: boolean) => void) {
+  if (isPracticeMatchId(matchId)) { onStatus?.(true); return () => onStatus?.(false) }
+  let disposed = false
+  let channel: ReturnType<typeof REALTIME_CLIENT.channel> | null = null
+  void REALTIME_CLIENT.realtime.setAuth(session.accessToken).then(() => {
+    if (disposed) return
+    channel = REALTIME_CLIENT
+      .channel(\`mega-x-match:\${matchId}\`, { config: { private: true } })
+      .on('broadcast', { event: 'match_updated' }, () => onChange())
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') onStatus?.(true)
+        else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') onStatus?.(false)
+      })
+  }).catch(() => onStatus?.(false))
+  return () => {
+    disposed = true
+    onStatus?.(false)
+    if (channel) void REALTIME_CLIENT.removeChannel(channel)
+  }
 }
 `
 if (!auth.includes('export function subscribeToMatchChanges')) auth += helper
@@ -80,4 +90,4 @@ app = app.replace(oldBlock, newBlock)
 
 fs.writeFileSync(appPath, app)
 fs.writeFileSync(authPath, auth)
-console.log('Replaced high-frequency match polling with Realtime wakeups plus low-rate fallback')
+console.log('Replaced high-frequency match polling with private Realtime broadcast wakeups plus low-rate fallback')
