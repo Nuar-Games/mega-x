@@ -2,7 +2,11 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "noEmit": true,
-    "types": ["node"]
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "/src/*": ["src/*"]
+    }
   },
   "include": [
     "tests-e2e/**/*.ts",
