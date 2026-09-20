@@ -12,6 +12,8 @@ const projection=fs.readFileSync(path.join(root,'ArenaStateProjection.ts'),'utf8
 const diff=fs.readFileSync(path.join(root,'ArenaEventDiff.ts'),'utf8')
 const controller=fs.readFileSync(path.join(root,'ArenaLiveController.ts'),'utf8')
 const liveMain=fs.readFileSync('src/game/arena-next/prototype/live-main.ts','utf8')
+const onlineAuth=fs.readFileSync('src/onlineAuth.ts','utf8')
+const realtimeMigration=fs.readFileSync('supabase/migrations/20260920120246_secure_match_realtime_broadcast.sql','utf8')
 const vite=fs.readFileSync('vite.config.ts','utf8')
 const all=`${projection}\n${diff}\n${controller}\n${liveMain}`
 
@@ -29,10 +31,17 @@ must(controller.includes('submitMatchSpecialAction'),'controller must use author
 must(controller.includes('STALE_MATCH_STATE'),'controller must explicitly reconcile stale writes')
 must(controller.includes('subscribeToMatchChanges'),'controller must preserve realtime refresh signaling')
 must(controller.includes('heartbeatMatch'),'controller must preserve match heartbeat')
+must(onlineAuth.includes(".on('broadcast', { event: 'match_updated' }"),'match realtime wakeups must use Broadcast')
+must(onlineAuth.includes("{ config: { private: true } }"),'match realtime Broadcast must use a private channel')
+must(!onlineAuth.includes(".on('postgres_changes'"),'match wakeups must not expose authoritative match rows through Postgres Changes')
+must(realtimeMigration.includes('private.is_match_broadcast_participant'),'match Broadcast authorization helper missing')
+must(realtimeMigration.includes("'mega-x-match:' || m.id::text"),'match Broadcast topic must be tied to the authoritative match id')
+must(realtimeMigration.includes('(select auth.uid()) in (m.player1_id, m.player2_id)'),'match Broadcast must authorize only the two participants')
+must(realtimeMigration.includes("'match_updated'"),'match update Broadcast trigger missing')
 must(liveMain.includes('setCommandDispatcher'),'live vertical slice must dispatch legal commands through the Phaser command surface')
 must(vite.includes('arena-next-live.html'),'Vite must emit isolated live arena page')
 
 for(const forbidden of ['MutationObserver','querySelector','button.click','transform: scale','transform:scale'])
   must(!all.includes(forbidden),`Phase 5 live bridge contains forbidden primitive: ${forbidden}`)
 
-console.log('PASS next arena real match bridge boundary and authoritative BEGIN_ROUND ownership')
+console.log('PASS next arena real match bridge boundary, authoritative BEGIN_ROUND ownership, and secure Realtime wakeups')
