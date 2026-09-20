@@ -60,6 +60,8 @@ jobs:
           echo 'GENERATED_SOURCE_IN_SYNC'
       - name: Typecheck
         run: npx tsc --noEmit
+      - name: E2E typecheck
+        run: npx tsc -p tsconfig.e2e.json --noEmit
       - name: Arena-next regression tests
         run: |
           node tests/arena_next_contract_regression.mjs
