@@ -12,6 +12,7 @@ export type ArenaStatus={
   phase:'LOADING'|'SET_VS'|'EFFECT'|'ATTACK'|'TIE_BREAKER'|'GAME_OVER'
   position:string
   legalActions:string[]
+  connectionStatus:string
 }
 
 export async function arenaStatus(page:Page):Promise<ArenaStatus>{
@@ -19,10 +20,11 @@ export async function arenaStatus(page:Page):Promise<ArenaStatus>{
   const text=(await locator.textContent())?.trim()??''
   const position=(await locator.getAttribute('data-local-vs-position'))??''
   const legalActions=((await locator.getAttribute('data-local-legal-actions'))??'').split(',').filter(Boolean)
-  if(text==='ARENA NEXT · LOADING')return {text,mode:'LOADING',version:-1,round:0,phase:'LOADING',position,legalActions}
+  const connectionStatus=(await locator.getAttribute('data-connection-status'))??''
+  if(text==='ARENA NEXT · LOADING')return {text,mode:'LOADING',version:-1,round:0,phase:'LOADING',position,legalActions,connectionStatus}
   const match=text.match(STATUS)
   expect(match,`arena status became an error or invalid state: ${text}`).toBeTruthy()
-  return {text,mode:match![1] as 'PRACTICE'|'ONLINE',version:Number(match![2]),round:Number(match![3]),phase:match![4] as ArenaStatus['phase'],position,legalActions}
+  return {text,mode:match![1] as 'PRACTICE'|'ONLINE',version:Number(match![2]),round:Number(match![3]),phase:match![4] as ArenaStatus['phase'],position,legalActions,connectionStatus}
 }
 
 async function arenaVersion(page:Page){
