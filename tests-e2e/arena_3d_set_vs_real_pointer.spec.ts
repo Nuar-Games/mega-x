@@ -1,6 +1,8 @@
 import { test, expect, type Page } from 'playwright/test'
+import { createDesktopPrototypeLayout, type ArenaPrototypeRect } from '../src/game/arena-next/prototype/ArenaPrototypeLayout'
 
 const STATUS=/^ARENA NEXT · PRACTICE · V(\d+) · ROUND (\d+) · (SET_VS|EFFECT|ATTACK|TIE_BREAKER|GAME_OVER)$/
+const COMMAND_WAIT_MS=700
 
 async function arenaStatus(page:Page){
   const locator=page.locator('[data-arena-status="true"]').first()
@@ -12,85 +14,98 @@ async function arenaStatus(page:Page){
   return {text,version:Number(match![1]),phase:match![3],position}
 }
 
-async function waitForVersionChange(page:Page,version:number,timeout=4_000){
+async function waitForVersionChange(page:Page,version:number,timeout=COMMAND_WAIT_MS){
   try{
-    await expect.poll(async()=>{
-      const current=await arenaStatus(page)
-      return current.version
-    },{timeout}).not.toBe(version)
+    await expect.poll(async()=> (await arenaStatus(page)).version,{timeout,intervals:[50,75,100]}).not.toBe(version)
     return true
   }catch{return false}
 }
 
-async function clickCanvas(page:Page,x:number,y:number){
-  const canvas=page.locator('#arena-next-runtime-host canvas')
-  const box=await canvas.boundingBox()
+async function canvasBox(page:Page){
+  const box=await page.locator('#arena-next-runtime-host canvas').boundingBox()
   expect(box,'arena canvas is missing').toBeTruthy()
-  await page.mouse.click(box!.x+x,box!.y+y)
+  return box!
+}
+
+async function clickCanvas(page:Page,box:{x:number;y:number},x:number,y:number){
+  await page.mouse.click(box.x+x,box.y+y)
+}
+
+function actionPoint(layout:{viewport:{width:number;height:number}},index:number){
+  return {x:layout.viewport.width/2+(index-0.5)*118,y:layout.viewport.height*0.72}
+}
+
+function handPoint(layout:{handBand:ArenaPrototypeRect},index:number,count:number){
+  const spacing=Math.min(118,layout.handBand.width/Math.max(1,count))
+  return {x:layout.handBand.x+(index-(count-1)/2)*spacing,y:layout.handBand.y}
+}
+
+async function tryPoint(page:Page,box:{x:number;y:number},version:number,point:{x:number;y:number}){
+  await clickCanvas(page,box,point.x,point.y)
+  return waitForVersionChange(page,version)
 }
 
 async function driveOneHumanAction(page:Page){
-  const canvas=page.locator('#arena-next-runtime-host canvas')
-  const box=await canvas.boundingBox()
-  expect(box,'arena canvas is missing').toBeTruthy()
-  const width=box!.width
-  const height=box!.height
+  const box=await canvasBox(page)
+  const layout=createDesktopPrototypeLayout(box.width,box.height)
   const before=await arenaStatus(page)
 
   if(before.phase==='GAME_OVER')return {advanced:true,action:'GAME_OVER'}
 
   if(before.phase==='SET_VS'){
-    const spacing=Math.min(118,(width*0.47)/5)
+    // Practice starts each SET_VS with five visible hand cards. Click the actual
+    // ATK button position drawn beneath each real hand slot.
     for(let i=0;i<5;i+=1){
-      const x=width*0.5+(i-2)*spacing-23
-      const y=Math.min(height-16,height*0.89+94)
-      await clickCanvas(page,x,y)
-      if(await waitForVersionChange(page,before.version))return {advanced:true,action:'SET_VS'}
+      const card=handPoint(layout,i,5)
+      if(await tryPoint(page,box,before.version,{x:card.x-23,y:card.y+94}))return {advanced:true,action:'SET_VS'}
     }
     return {advanced:false,action:'SET_VS'}
   }
 
   if(before.phase==='ATTACK'){
-    if(before.position==='DEF'){
-      await clickCanvas(page,width*0.5-59,height*0.72)
-      return {advanced:await waitForVersionChange(page,before.version),action:'PASS'}
+    // Projection now exposes only PASS in DEF; in ATK, ATTACK is action index 0.
+    if(await tryPoint(page,box,before.version,actionPoint(layout,0))){
+      return {advanced:true,action:before.position==='DEF'?'PASS':'ATTACK'}
     }
-    await clickCanvas(page,width*0.5-59,height*0.72)
-    if(await waitForVersionChange(page,before.version))return {advanced:true,action:'ATTACK'}
-    await clickCanvas(page,width*0.5+59,height*0.72)
-    return {advanced:await waitForVersionChange(page,before.version),action:'PASS'}
+    if(before.position!=='DEF'&&await tryPoint(page,box,before.version,actionPoint(layout,1))){
+      return {advanced:true,action:'PASS'}
+    }
+    return {advanced:false,action:before.position==='DEF'?'PASS':'ATTACK'}
   }
 
   if(before.phase==='TIE_BREAKER'){
-    const spacing=Math.min(118,(width*0.47)/5)
     for(let i=0;i<5;i+=1){
-      await clickCanvas(page,width*0.5+(i-2)*spacing,height*0.89)
-      if(await waitForVersionChange(page,before.version))return {advanced:true,action:'TIE_PICK'}
+      if(await tryPoint(page,box,before.version,handPoint(layout,i,5)))return {advanced:true,action:'TIE_PICK'}
     }
     return {advanced:false,action:'TIE_PICK'}
   }
 
-  // EFFECT can contain a normal turn action or a board/self-discard choice.
-  // Try the command buttons first, then the visible hand/board targets.
-  for(const x of [width*0.5-59,width*0.5+59]){
-    await clickCanvas(page,x,height*0.72)
-    if(await waitForVersionChange(page,before.version))return {advanced:true,action:'EFFECT_ACTION'}
+  // EFFECT command buttons are laid out by ArenaPrototypeScene with the same
+  // actionPoint formula. Try every on-canvas action position quickly rather
+  // than burning four seconds on guessed coordinates. This covers normal
+  // effect play/end-turn plus hidden/visible effect choices.
+  for(let index=0;index<7;index+=1){
+    const point=actionPoint(layout,index)
+    if(point.x<0||point.x>layout.viewport.width)continue
+    if(await tryPoint(page,box,before.version,point))return {advanced:true,action:'EFFECT_ACTION'}
   }
 
-  const handSpacing=Math.min(118,(width*0.47)/5)
-  for(let i=0;i<5;i+=1){
-    await clickCanvas(page,width*0.5+(i-2)*handSpacing,height*0.89)
-    await clickCanvas(page,width*0.5-59,height*0.72)
-    if(await waitForVersionChange(page,before.version))return {advanced:true,action:'EFFECT_CHOICE'}
+  // Board choices use the real VS/effect-slot rectangles from the shared layout.
+  const boardSlots=[...layout.vs,...layout.effectSlots[0],...layout.effectSlots[1]]
+  for(const slot of boardSlots){
+    if(await tryPoint(page,box,before.version,slot))return {advanced:true,action:'BOARD_CHOICE'}
   }
 
-  const boardTargets:[number,number][]=[
-    [width*0.405,height*0.45],[width*0.595,height*0.45],
-    [width*0.105,height*0.26],[width*0.895,height*0.26],
-  ]
-  for(const [x,y] of boardTargets){
-    await clickCanvas(page,x,y)
-    if(await waitForVersionChange(page,before.version))return {advanced:true,action:'BOARD_CHOICE'}
+  // SELF_DISCARD selection does not advance the state version until confirmed.
+  // Toggle visible hand cards using the real hand geometry, then retry the
+  // confirmation action after each selection.
+  for(const count of [5,4,3,2,1,6]){
+    for(let i=0;i<count;i+=1){
+      const point=handPoint(layout,i,count)
+      await clickCanvas(page,box,point.x,point.y)
+      await page.waitForTimeout(40)
+      if(await tryPoint(page,box,before.version,actionPoint(layout,0)))return {advanced:true,action:'SELF_DISCARD'}
+    }
   }
 
   return {advanced:false,action:'EFFECT'}
