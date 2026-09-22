@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>MEGA-X — Confirm Account</title>
+  <style>
+    :root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;min-height:100dvh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 20% 15%,#0d416d 0,#071522 35%,transparent 60%),radial-gradient(circle at 80% 12%,#6b0f22 0,#1b0710 35%,transparent 62%),#03070d;color:#fff;font-family:Arial,Helvetica,sans-serif}.card{width:min(520px,100%);padding:32px;border:1px solid rgba(255,210,78,.55);background:rgba(4,10,18,.96);box-shadow:0 24px 70px rgba(0,0,0,.55)}.eyebrow{font-size:12px;font-weight:800;letter-spacing:.14em;color:#ffd34d}.title{margin:10px 0 16px;font-size:32px;line-height:1}.copy{color:#d7dfeb;line-height:1.55}.email{display:block;margin:16px 0;padding:12px;border:1px solid rgba(255,255,255,.16);background:#08111c;word-break:break-all;font-weight:700}.btn{display:inline-block;margin-top:14px;padding:14px 20px;background:linear-gradient(#ff392f,#c90f20);color:white;text-decoration:none;font-weight:900;letter-spacing:.05em;border:0}.note{margin-top:16px;font-size:13px;color:#94a3b8}</style>
+</head>
+<body>
+  <main class="card">
+    <div class="eyebrow">MEGA-X ONLINE</div>
+    <h1 class="title">CHECK YOUR EMAIL</h1>
+    <p class="copy">Your account was created. Confirm it using the link sent to:</p>
+    <strong class="email" id="email">your email address</strong>
+    <p class="copy">After confirmation, return to MEGA-X and sign in. You will continue to your X Fighter setup.</p>
+    <a class="btn" href="/">RETURN TO MEGA-X</a>
+    <p class="note">If you do not see the email, check Spam or Junk.</p>
+  </main>
+  <script>
+    const value = new URLSearchParams(location.search).get('email')
+    if (value) document.getElementById('email').textContent = value
+  </script>
+</body>
+</html>
