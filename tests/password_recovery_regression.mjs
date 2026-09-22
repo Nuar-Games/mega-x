@@ -2,6 +2,7 @@ import fs from 'node:fs'
 
 const authPatch = fs.readFileSync('scripts/patch-auth-runtime.mjs', 'utf8')
 const resetPage = fs.readFileSync('public/reset-password.html', 'utf8')
+const appSource = fs.readFileSync('src/App.tsx', 'utf8')
 const failures = []
 const check = (ok, message) => { if (!ok) failures.push(message) }
 
@@ -25,6 +26,8 @@ check(/Authorization: `Bearer \$\{accessToken\}`/.test(resetPage), 'reset page b
 check(/method: 'PUT'/.test(resetPage) && /\/auth\/v1\/user/.test(resetPage), 'reset page password update request missing')
 check(/PASSWORDS DO NOT MATCH/.test(resetPage), 'password confirmation mismatch guard missing')
 check(/PASSWORD UPDATED\./.test(resetPage), 'password reset completion feedback missing')
+
+check(/if \(authMode === 'SIGN_UP'\) \{\s*window\.location\.reload\(\)\s*return\s*\}/.test(appSource), 'successful signup does not auto-refresh into saved-session startup flow')
 
 if (failures.length) {
   console.error('PASSWORD_RECOVERY_REGRESSION_FAIL')
