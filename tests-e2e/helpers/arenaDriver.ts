@@ -3,6 +3,7 @@ import { createDesktopPrototypeLayout, type ArenaPrototypeRect } from '../../src
 
 const STATUS=/^ARENA NEXT · (PRACTICE|ONLINE) · V(\d+) · ROUND (\d+) · (SET_VS|EFFECT|ATTACK|TIE_BREAKER|GAME_OVER)$/
 export const COMMAND_WAIT_MS=8_000
+const COMMAND_ACCEPT_MS=700
 
 export type ArenaStatus={
   text:string
@@ -13,6 +14,7 @@ export type ArenaStatus={
   position:string
   legalActions:string[]
   connectionStatus:string
+  networkBusy:boolean
 }
 
 export async function arenaStatus(page:Page):Promise<ArenaStatus>{
@@ -21,10 +23,11 @@ export async function arenaStatus(page:Page):Promise<ArenaStatus>{
   const position=(await locator.getAttribute('data-local-vs-position'))??''
   const legalActions=((await locator.getAttribute('data-local-legal-actions'))??'').split(',').filter(Boolean)
   const connectionStatus=(await locator.getAttribute('data-connection-status'))??''
-  if(text==='ARENA NEXT · LOADING')return {text,mode:'LOADING',version:-1,round:0,phase:'LOADING',position,legalActions,connectionStatus}
+  const networkBusy=(await locator.getAttribute('data-network-busy'))==='true'
+  if(text==='ARENA NEXT · LOADING')return {text,mode:'LOADING',version:-1,round:0,phase:'LOADING',position,legalActions,connectionStatus,networkBusy}
   const match=text.match(STATUS)
   expect(match,`arena status became an error or invalid state: ${text}`).toBeTruthy()
-  return {text,mode:match![1] as 'PRACTICE'|'ONLINE',version:Number(match![2]),round:Number(match![3]),phase:match![4] as ArenaStatus['phase'],position,legalActions,connectionStatus}
+  return {text,mode:match![1] as 'PRACTICE'|'ONLINE',version:Number(match![2]),round:Number(match![3]),phase:match![4] as ArenaStatus['phase'],position,legalActions,connectionStatus,networkBusy}
 }
 
 async function arenaVersion(page:Page){
@@ -67,8 +70,23 @@ function handPoint(layout:{handBand:ArenaPrototypeRect},index:number,count:numbe
   return {x:layout.handBand.x+(index-(count-1)/2)*spacing,y:layout.handBand.y}
 }
 
+async function waitForCommandAcceptance(page:Page,version:number){
+  try{
+    await page.waitForFunction(({version})=>{
+      const element=document.querySelector('[data-arena-status="true"]')
+      const text=element?.textContent?.trim()??''
+      const match=text.match(/ · V(\d+) · /)
+      const currentVersion=match?Number(match[1]):-1
+      return currentVersion!==version||element?.getAttribute('data-network-busy')==='true'
+    },{version},{timeout:COMMAND_ACCEPT_MS})
+    return true
+  }catch{return false}
+}
+
 async function tryPoint(page:Page,box:{x:number;y:number},version:number,point:{x:number;y:number}){
   await clickCanvas(page,box,point.x,point.y)
+  if(!await waitForCommandAcceptance(page,version))return false
+  if(await arenaVersion(page)!==version)return true
   return waitForVersionChange(page,version)
 }
 
