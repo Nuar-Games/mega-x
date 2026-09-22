@@ -17,15 +17,23 @@ app = app.replace(
   `if (!session) {\n        setOnlineMessage('')\n        setOnlineScreen('AUTH_CONFIRM')\n        return\n      }`,
 )
 
+const sessionBlock = `      setOnlineSession(session)\n      const profile = await loadProfile(session)`
+if (!app.includes(sessionBlock)) throw new Error('signup session transition anchor missing')
+app = app.replace(
+  sessionBlock,
+  `      setOnlineSession(session)\n      if (authMode === 'SIGN_UP') {\n        setFighterProfile(null)\n        setOnlineScreen('HANDLE')\n        return\n      }\n      const profile = await loadProfile(session)`,
+)
+
 const handleAnchor = `  if (onlineScreen === 'HANDLE') {`
 if (!app.includes(handleAnchor)) throw new Error('HANDLE render anchor missing')
 
-const confirmScreen = `  if (onlineScreen === 'AUTH_CONFIRM') {\n    return (\n      <main className="mx-online-screen mx-auth">\n        <section className="mx-auth-card" role="status" aria-live="polite">\n          <span>ACCOUNT CREATED</span>\n          <h1>CHECK YOUR EMAIL</h1>\n          <p>We sent a confirmation link to <strong>{authEmail}</strong>.</p>\n          <p>Open that email and confirm your account. MEGA-X will continue to your X Fighter setup when you return.</p>\n          <button className="mx-online-primary" onClick={() => { setAuthMode('SIGN_IN'); setAuthPassword(''); setOnlineMessage(''); setOnlineScreen('AUTH') }}>I'VE CONFIRMED — SIGN IN</button>\n          <button className="mx-back-link" onClick={() => setOnlineScreen('LANDING')}>BACK TO HOME</button>\n        </section>\n      </main>\n    )\n  }\n\n`
+const confirmScreen = `  if (onlineScreen === 'AUTH_CONFIRM') {\n    return (\n      <main className="mx-online-screen mx-auth">\n        <section className="mx-auth-card" role="status" aria-live="polite">\n          <span>ACCOUNT CREATED</span>\n          <h1>CHECK YOUR EMAIL</h1>\n          <p>We sent a confirmation link to <strong>{authEmail}</strong>.</p>\n          <p>Open that email and confirm your account, then return to MEGA-X.</p>\n          <button className="mx-online-primary" onClick={() => { setAuthMode('SIGN_IN'); setAuthPassword(''); setOnlineMessage(''); setOnlineScreen('AUTH') }}>I'VE CONFIRMED — SIGN IN</button>\n          <button className="mx-back-link" onClick={() => setOnlineScreen('LANDING')}>BACK TO HOME</button>\n        </section>\n      </main>\n    )\n  }\n\n`
 app = app.replace(handleAnchor, confirmScreen + handleAnchor)
 
 if (!app.includes("onlineScreen === 'AUTH_CONFIRM'")) throw new Error('signup confirmation screen missing')
 if (!app.includes("setOnlineScreen('AUTH_CONFIRM')")) throw new Error('signup confirmation transition missing')
+if (!app.includes("if (authMode === 'SIGN_UP')")) throw new Error('direct signup session transition missing')
 if (!app.includes('ACCOUNT CREATED') || !app.includes('CHECK YOUR EMAIL')) throw new Error('signup confirmation copy missing')
 
 fs.writeFileSync(appPath, app)
-console.log('Added explicit signup confirmation screen')
+console.log('Added explicit signup confirmation and direct signup-to-handle transition')
