@@ -4,31 +4,48 @@ import fs from 'node:fs'
 const build = fs.readFileSync('scripts/build-clean.mjs', 'utf8')
 const workflow = fs.readFileSync('.github/workflows/materialize-clean-source.yml', 'utf8')
 
-for (const staleMigration of [
-  'patch-practice-effect-control.mjs',
-  'patch-practice-dead-turn.mjs',
+for (const forbidden of [
+  'recovery/',
+  '_restore/',
+  'patch-',
+  'diagnose-',
+  'recover-',
+  '--prepare-only',
 ]) {
   assert.equal(
-    build.includes(`'${staleMigration}'`),
+    build.includes(forbidden),
     false,
-    `${staleMigration} is a one-time migration and must not remain in build-clean prepare chain`,
+    `build-clean must not regenerate or patch source: found ${forbidden}`,
   )
 }
 
-assert.equal(
-  build.includes("'patch-arena-next-runtime-cutover.mjs'"),
-  false,
-  'arena-next production cutover must not be installed through build-clean patch chain',
-)
+assert.match(build, /verify-all\.mjs.*--tests-only/s, 'build-clean must run regression tests')
+assert.match(build, /verify-gate1\.mjs/, 'build-clean must run Gate 1 verification')
+assert.match(build, /['"]tsc['"]/, 'build-clean must run TypeScript compilation')
+assert.match(build, /['"]vite['"].*['"]build['"]/s, 'build-clean must run the Vite production build')
 
-assert.match(
-  workflow,
-  /grep[^\n]+arena-next/,
-  'CI must reject any patch/build script reference to arena-next regardless of path form',
-)
+assert.equal(workflow.includes('git push'), false, 'CI must never auto-commit or push source')
+assert.equal(workflow.includes('--prepare-only'), false, 'CI must never regenerate source')
+assert.match(workflow, /npm run build/, 'CI must build and run the regression suite')
 
-const patchFiles = fs.readdirSync('scripts').filter((name) => /^patch-.*\.mjs$/.test(name))
-const offenders = patchFiles.filter((name) => fs.readFileSync(`scripts/${name}`, 'utf8').includes('arena-next'))
-assert.deepEqual(offenders, [], `patch scripts must not reference arena-next: ${offenders.join(', ')}`)
+for (const removedPath of ['recovery', '_restore']) {
+  assert.equal(fs.existsSync(removedPath), false, `${removedPath} must stay deleted`)
+}
+
+const obsoleteScripts = fs.readdirSync('scripts').filter((name) =>
+  /^(patch-|diagnose-|recover-)/.test(name) || name === 'inspect-auth-app.mjs',
+)
+assert.deepEqual(obsoleteScripts, [], `obsolete source-rewrite scripts must stay deleted: ${obsoleteScripts.join(', ')}`)
+
+const arenaNextFiles = []
+const walk = (dir) => {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = `${dir}/${entry.name}`
+    if (entry.isDirectory()) walk(full)
+    else arenaNextFiles.push(full)
+  }
+}
+walk('src/game/arena-next')
+assert.ok(arenaNextFiles.length > 0, 'hand-written arena-next source must remain present')
 
 console.log('arena-next pipeline guard regression passed')
