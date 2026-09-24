@@ -1,0 +1,363 @@
+/* MEGA-X V19 — responsive arcade arena reset.
+   No whole-canvas scaling. The viewport is the layout surface.
+   Cards retain readable physical sizes while major bands reflow around them. */
+
+:root{
+  --mx-blue:#159cff;
+  --mx-blue-deep:#071d42;
+  --mx-red:#f0443f;
+  --mx-red-deep:#4a0b16;
+  --mx-gold:#f2cc54;
+  --mx-cream:#fff0bd;
+  --mx-ink:#04050a;
+  --mx-card-ratio:.68;
+}
+
+html,body,#root{width:100%;height:100%;margin:0;overflow:hidden;background:#03040a}
+*{box-sizing:border-box}
+.app{position:relative!important;width:100vw!important;height:100dvh!important;overflow:hidden!important;background:#03040a!important}
+
+/* =========================================================
+   OPENING — FULL VIEWPORT, BRANDED, NO LETTERBOX
+   ========================================================= */
+.start-screen.arcade-opening{
+  position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;
+  min-width:0!important;min-height:0!important;transform:none!important;overflow:hidden!important;
+  display:block!important;isolation:isolate!important;text-align:center!important;
+  background:
+    radial-gradient(circle at 50% 45%,rgba(103,47,167,.23),transparent 25%),
+    linear-gradient(112deg,#0a3c80 0%,#071e45 43%,#090913 50%,#42101d 58%,#861725 100%)!important;
+}
+.arcade-opening::before{
+  content:""!important;position:absolute!important;inset:0!important;z-index:0!important;pointer-events:none!important;
+  background:
+    radial-gradient(ellipse at 26% 46%,rgba(28,138,255,.24),transparent 38%),
+    radial-gradient(ellipse at 74% 46%,rgba(242,60,58,.22),transparent 38%),
+    repeating-linear-gradient(114deg,transparent 0 46px,rgba(255,255,255,.045) 48px,transparent 50px)!important;
+  opacity:.95!important;
+}
+.arcade-opening::after{
+  content:""!important;position:absolute!important;inset:0!important;z-index:1!important;pointer-events:none!important;
+  background:linear-gradient(90deg,rgba(2,12,28,.04),rgba(3,4,8,.30) 45% 55%,rgba(36,5,11,.04))!important;
+}
+.opening-x-watermark{display:none!important}
+.opening-cardstream{position:absolute!important;inset:-18vh 0!important;z-index:2!important;pointer-events:none!important;overflow:hidden!important}
+.opening-cardstream img{
+  position:absolute!important;width:clamp(150px,13vw,245px)!important;height:auto!important;aspect-ratio:420/579!important;
+  object-fit:cover!important;border-radius:10px!important;opacity:.27!important;
+  filter:saturate(.92) brightness(.77) contrast(1.08)!important;
+  box-shadow:0 22px 46px rgba(0,0,0,.48)!important;will-change:transform!important;
+}
+.opening-cardstream-left img{animation:mxOpeningUp 16s linear infinite!important}
+.opening-cardstream-right img{animation:mxOpeningDown 16s linear infinite!important}
+.opening-cardstream-left img:nth-child(1){left:-3vw!important;top:78%!important;--r:-20deg;animation-delay:-1s!important}
+.opening-cardstream-left img:nth-child(2){left:15vw!important;top:57%!important;--r:17deg;animation-delay:-4.2s!important}
+.opening-cardstream-left img:nth-child(3){left:0!important;top:34%!important;--r:-18deg;animation-delay:-7.4s!important}
+.opening-cardstream-left img:nth-child(4){left:20vw!important;top:10%!important;--r:19deg;animation-delay:-10.6s!important}
+.opening-cardstream-left img:nth-child(5){left:4vw!important;top:-16%!important;--r:-15deg;animation-delay:-13.8s!important}
+.opening-cardstream-right img:nth-child(1){right:1vw!important;top:-14%!important;--r:18deg;animation-delay:-1s!important}
+.opening-cardstream-right img:nth-child(2){right:18vw!important;top:10%!important;--r:-17deg;animation-delay:-4.2s!important}
+.opening-cardstream-right img:nth-child(3){right:-2vw!important;top:35%!important;--r:20deg;animation-delay:-7.4s!important}
+.opening-cardstream-right img:nth-child(4){right:18vw!important;top:60%!important;--r:-17deg;animation-delay:-10.6s!important}
+.opening-cardstream-right img:nth-child(5){right:2vw!important;top:82%!important;--r:15deg;animation-delay:-13.8s!important}
+@keyframes mxOpeningUp{from{transform:translateY(28vh) rotate(var(--r))}to{transform:translateY(-125vh) rotate(var(--r))}}
+@keyframes mxOpeningDown{from{transform:translateY(-28vh) rotate(var(--r))}to{transform:translateY(125vh) rotate(var(--r))}}
+
+.opening-logo{
+  position:absolute!important;z-index:7!important;left:50%!important;top:clamp(56px,10vh,110px)!important;margin:0!important;
+  transform:translateX(-50%) skew(-8deg)!important;transform-origin:center!important;
+  font-family:"Arial Black","Trebuchet MS",sans-serif!important;font-size:clamp(82px,11vw,168px)!important;font-weight:1000!important;font-style:italic!important;
+  line-height:.8!important;letter-spacing:-.085em!important;color:#fff1bd!important;-webkit-text-stroke:clamp(3px,.32vw,5px) #09090d!important;
+  text-shadow:10px 10px 0 #d3242d,-6px -5px 0 #168ee8,0 0 26px rgba(255,220,104,.28),0 20px 36px rgba(0,0,0,.74)!important;
+  white-space:nowrap!important;animation:mxLogoPulse 2.25s ease-in-out infinite!important;
+}
+@keyframes mxLogoPulse{
+  0%,100%{filter:brightness(1) drop-shadow(0 0 0 rgba(255,220,94,0));scale:1}
+  50%{filter:brightness(1.12) drop-shadow(0 0 22px rgba(255,220,94,.44));scale:1.025}
+}
+
+.coin-choice-panel{
+  position:absolute!important;z-index:8!important;left:50%!important;top:55%!important;width:min(820px,76vw)!important;height:auto!important;min-height:360px!important;
+  transform:translate(-50%,-45%)!important;margin:0!important;padding:clamp(24px,2.5vw,38px) clamp(30px,4vw,58px) clamp(24px,3vw,42px)!important;
+  border:0!important;background:linear-gradient(90deg,rgba(3,28,66,.90),rgba(7,8,14,.95) 43% 57%,rgba(70,9,18,.91))!important;
+  clip-path:polygon(4% 0,96% 0,100% 11%,96% 100%,4% 100%,0 89%,0 11%)!important;
+  box-shadow:0 0 0 2px rgba(242,204,84,.72),14px 16px 0 rgba(0,0,0,.54),0 0 48px rgba(242,204,84,.10)!important;
+}
+.coin-choice-panel::before{
+  content:""!important;position:absolute!important;inset:10px!important;z-index:-1!important;
+  border-top:3px solid var(--mx-blue)!important;border-bottom:3px solid var(--mx-red)!important;
+  background:radial-gradient(circle at 50% 20%,rgba(255,230,121,.07),transparent 42%)!important;
+}
+.opening-kicker{font-size:clamp(13px,1.15vw,18px)!important;letter-spacing:.18em!important;color:#ffdd68!important;text-shadow:2px 2px 0 #000!important}
+.coin-choice-panel h2{
+  margin:clamp(10px,1.2vh,16px) 0 clamp(18px,2.2vh,28px)!important;
+  font-family:"Arial Black","Trebuchet MS",sans-serif!important;font-size:clamp(44px,5.2vw,76px)!important;line-height:.88!important;
+  font-style:italic!important;letter-spacing:-.05em!important;color:#fff1c1!important;-webkit-text-stroke:clamp(2px,.2vw,3px) #09090c!important;
+  text-shadow:6px 6px 0 #c52029,-4px -4px 0 #178eea!important;
+}
+.coin-choice-row{display:flex!important;justify-content:center!important;gap:clamp(28px,5vw,74px)!important}
+.coin-choice{
+  width:clamp(148px,13vw,188px)!important;height:clamp(150px,17vh,178px)!important;padding:12px!important;
+  border:2px solid rgba(255,242,190,.20)!important;background:rgba(6,7,13,.88)!important;color:#fff!important;
+  clip-path:polygon(8% 0,100% 0,92% 100%,0 100%)!important;box-shadow:7px 8px 0 rgba(0,0,0,.72)!important;
+  transition:transform .15s ease,border-color .15s ease,filter .15s ease!important;
+}
+.coin-choice:hover,.coin-choice.chosen{transform:translateY(-6px) scale(1.035)!important;border-color:var(--mx-gold)!important;filter:brightness(1.12)!important;box-shadow:8px 10px 0 #000,0 0 0 3px rgba(242,204,84,.15)!important}
+.coin-face{width:clamp(86px,7.6vw,110px)!important;height:clamp(86px,7.6vw,110px)!important;margin:auto!important;border-width:6px!important;box-shadow:inset 0 0 0 5px #f2cf69,0 9px 0 #3c2108,0 16px 24px #000!important}
+.coin-face.x-face{font-size:clamp(46px,4.1vw,60px)!important}.coin-choice b{margin-top:9px!important;font-size:clamp(14px,1.2vw,18px)!important}
+.coin-assignment{margin-top:14px!important;font-size:clamp(10px,.82vw,13px)!important;letter-spacing:.13em!important;color:rgba(255,239,183,.72)!important}
+.coin-launch{margin-top:16px!important;padding:12px 48px!important;font-size:clamp(19px,1.8vw,27px)!important;border:2px solid var(--mx-gold)!important;background:linear-gradient(100deg,#0b64d7 0 47%,#be1f2c 53% 100%)!important;clip-path:polygon(7% 0,100% 0,93% 100%,0 100%)!important;box-shadow:7px 8px 0 #000!important;text-shadow:2px 2px 0 #000!important}
+.coin-stage,.fight-splash{position:absolute!important;z-index:9!important;inset:0!important;display:grid!important;place-items:center!important;align-content:center!important;gap:24px!important}
+
+/* =========================================================
+   DUEL — NATIVE RESPONSIVE LAYOUT, NO SHRINK-TO-FIT
+   ========================================================= */
+.duel-shell{
+  position:relative!important;inset:auto!important;left:auto!important;top:auto!important;
+  width:100vw!important;height:100dvh!important;min-width:0!important;min-height:0!important;transform:none!important;overflow:hidden!important;
+  display:grid!important;
+  --hud-h:clamp(52px,7dvh,72px);
+  --call-h:clamp(24px,3.3dvh,32px);
+  --opp-h:clamp(38px,5.2dvh,52px);
+  --hand-h:clamp(165px,23dvh,220px);
+  --action-h:clamp(54px,7.5dvh,72px);
+  grid-template-rows:var(--hud-h) var(--call-h) var(--opp-h) minmax(300px,1fr) var(--hand-h) var(--action-h)!important;
+  background:
+    linear-gradient(90deg,rgba(5,42,98,.32),transparent 35%,transparent 65%,rgba(91,10,24,.32)),
+    #03040a!important;
+}
+.fighter-hud{
+  height:100%!important;display:grid!important;grid-template-columns:minmax(180px,1fr) minmax(250px,360px) minmax(180px,1fr)!important;
+  align-items:center!important;gap:12px!important;padding:0 clamp(12px,2.2vw,32px)!important;
+  border-bottom:2px solid rgba(242,204,84,.36)!important;background:linear-gradient(90deg,rgba(8,54,126,.78),rgba(5,6,14,.96) 35% 65%,rgba(119,16,29,.78))!important;
+}
+.player-profile strong{font-size:clamp(16px,1.55vw,24px)!important}.profile-kicker,.rank-slot{font-size:clamp(8px,.72vw,10px)!important}
+.arcade-center-hud{min-width:0!important}.round-slam{font-size:clamp(24px,2.6vw,40px)!important}.turn-slam{font-size:clamp(11px,1vw,15px)!important}.phase-slam{font-size:clamp(8px,.7vw,10px)!important}
+.battle-callout{font-size:clamp(10px,.82vw,13px)!important;padding:0 3vw!important;background:linear-gradient(90deg,transparent,rgba(0,0,0,.86) 16% 84%,transparent)!important}
+.opponent-hand{height:100%!important;padding:0!important;background:rgba(2,3,8,.52)!important;border-bottom:1px solid rgba(242,204,84,.18)!important}
+.opponent-hand .hand-card-wrap{width:clamp(34px,3.2vw,48px)!important;margin-left:clamp(-12px,-.8vw,-7px)!important}
+
+.arena-wrap{width:100%!important;height:100%!important;min-height:0!important;padding:clamp(4px,.6vw,10px) clamp(8px,1vw,18px)!important;display:block!important;overflow:hidden!important}
+.arena{
+  position:relative!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;aspect-ratio:auto!important;
+  overflow:hidden!important;isolation:isolate!important;border:2px solid rgba(213,172,62,.82)!important;border-radius:clamp(8px,.8vw,13px)!important;
+  background:
+    radial-gradient(ellipse at 28% 42%,rgba(18,114,239,.20),transparent 38%),
+    radial-gradient(ellipse at 72% 42%,rgba(222,43,54,.17),transparent 38%),
+    linear-gradient(105deg,#092858 0,#071d43 45%,#0b0a17 50%,#3d101d 56%,#691722 100%)!important;
+  box-shadow:0 16px 40px rgba(0,0,0,.60),inset 0 0 56px rgba(0,0,0,.33)!important;
+}
+.arena::before{content:""!important;position:absolute!important;inset:1.4%!important;border:1px solid rgba(242,204,84,.16)!important;pointer-events:none!important;z-index:1!important}
+.energy-field{opacity:.26!important}
+
+/* Center VS is the only idle center animation. No slash bars. */
+.center-clash{position:absolute!important;z-index:40!important;left:50%!important;top:43%!important;width:clamp(86px,8vw,132px)!important;height:clamp(86px,8vw,132px)!important;transform:translate(-50%,-50%)!important;display:grid!important;place-items:center!important;pointer-events:none!important}
+.arena-ring-fx{display:block!important;position:absolute!important;inset:0!important;border:0!important;border-radius:50%!important;background:conic-gradient(from 0deg,var(--mx-blue) 0 12%,transparent 12% 44%,var(--mx-gold) 44% 57%,transparent 57% 88%,var(--mx-red) 88% 100%)!important;mask:radial-gradient(circle,transparent 0 67%,#000 69% 74%,transparent 76%)!important;box-shadow:none!important;animation:mxVsRing 5.5s linear infinite!important}
+.arena-ring-fx::before,.arena-ring-fx::after{display:none!important;content:none!important}
+.vs-emblem{position:relative!important;z-index:2!important;width:auto!important;height:auto!important;border:0!important;background:none!important;box-shadow:none!important;transform:none!important;overflow:visible!important;animation:mxVsBreathe 2.2s ease-in-out infinite!important}
+.vs-emblem::before,.vs-emblem::after,.vs-emblem span::after{display:none!important;content:none!important}
+.vs-emblem span{display:block!important;font-family:"Arial Black","Trebuchet MS",sans-serif!important;font-size:clamp(40px,4.3vw,68px)!important;font-style:italic!important;letter-spacing:-.09em!important;color:#ffe46f!important;-webkit-text-stroke:clamp(2px,.22vw,4px) #160d05!important;text-shadow:0 3px 0 #fff0a6,0 7px 0 #8d3f00,4px 8px 0 #000!important;transform:skew(-8deg)!important}
+.center-clash.is-combat{animation:mxVsCombat .55s cubic-bezier(.18,.95,.2,1)!important}.center-clash.is-combat .arena-ring-fx{animation:mxVsRingCombat .55s cubic-bezier(.18,.95,.2,1)!important}.center-clash.is-combat .vs-emblem{animation:mxVsTextCombat .55s cubic-bezier(.18,.95,.2,1)!important}
+@keyframes mxVsRing{to{transform:rotate(360deg)}}
+@keyframes mxVsBreathe{50%{filter:brightness(1.12);scale:1.045}}
+@keyframes mxVsCombat{35%,50%{scale:1.18}100%{scale:1}}
+@keyframes mxVsRingCombat{0%{transform:rotate(0) scale(.88)}55%{transform:rotate(160deg) scale(1.35)}100%{transform:rotate(220deg) scale(1)}}
+@keyframes mxVsTextCombat{35%,50%{scale:1.28;filter:brightness(1.4)}100%{scale:1;filter:none}}
+
+/* Each fighter owns one coherent unit: plate, stats+VS, effects. */
+.fighter-field{
+  position:absolute!important;z-index:20!important;top:5%!important;width:min(43%,660px)!important;height:89%!important;
+  display:grid!important;grid-template-rows:9% 62% 25%!important;gap:2%!important;min-width:0!important;
+}
+.fighter-field-left{left:5.2%!important}.fighter-field-right{right:5.2%!important}
+.field-fighter-label{
+  position:relative!important;align-self:center!important;width:max-content!important;max-width:76%!important;padding:.28em 1.05em .34em!important;
+  font-family:"Arial Black","Trebuchet MS",sans-serif!important;font-size:clamp(15px,1.45vw,23px)!important;font-style:italic!important;color:var(--mx-cream)!important;
+  -webkit-text-stroke:1px #100d09!important;text-shadow:3px 3px 0 #000!important;background:#07090f!important;border:0!important;
+  box-shadow:5px 5px 0 rgba(0,0,0,.62)!important;clip-path:polygon(6% 0,100% 0,93% 100%,0 88%)!important;
+}
+.fighter-one{justify-self:start!important;border-left:6px solid var(--mx-blue)!important}.fighter-two{justify-self:end!important;border-right:6px solid var(--mx-red)!important}
+.field-fighter-label.is-active{animation:mxPlatePunch .44s cubic-bezier(.18,1.4,.24,1)!important;filter:brightness(1.16)!important}.field-fighter-label.is-active::before{display:none!important}
+@keyframes mxPlatePunch{0%{scale:.82}62%{scale:1.11}100%{scale:1.06}}
+
+.vs-battle-row{height:100%!important;display:grid!important;grid-template-columns:clamp(92px,20%,128px) minmax(0,1fr)!important;gap:clamp(10px,2vw,24px)!important;align-items:center!important;min-width:0!important}
+.vs-battle-row.reverse{grid-template-columns:minmax(0,1fr) clamp(92px,20%,128px)!important}
+.v9-vs-card{height:100%!important;min-width:0!important;display:grid!important;place-items:center!important;position:relative!important;overflow:visible!important}
+.vs-zone,.vs-card-stack{width:100%!important;height:100%!important;display:grid!important;place-items:center!important;position:relative!important}
+.vs-inspect-button{height:min(100%,clamp(225px,34dvh,350px))!important;width:auto!important;max-width:100%!important;aspect-ratio:var(--mx-card-ratio)!important;padding:0!important;border:0!important;background:none!important;filter:drop-shadow(0 14px 15px rgba(0,0,0,.72))!important}
+.vs-inspect-button .digital-card,.vs-inspect-button img{width:100%!important;height:100%!important;object-fit:contain!important}
+.live-stats{width:100%!important;max-width:128px!important;padding:7px!important;background:rgba(3,5,12,.88)!important;border:1px solid rgba(242,204,84,.18)!important;box-shadow:5px 6px 0 rgba(0,0,0,.48)!important}
+.live-stat{height:clamp(28px,4dvh,38px)!important;display:grid!important;grid-template-columns:42px 1fr!important;align-items:center!important;margin-bottom:4px!important}.live-stat span{font-size:9px!important}.live-stat strong{font-size:clamp(18px,1.65vw,26px)!important;font-family:Arial,sans-serif!important;font-weight:1000!important;letter-spacing:0!important}
+.live-stats small{font-size:7px!important}
+.position-badge{bottom:clamp(-30px,-3dvh,-22px)!important;font-size:clamp(7px,.72vw,10px)!important;padding:5px 8px!important;white-space:nowrap!important}
+.position-icon{width:16px!important;height:16px!important}
+
+.effect-rack{height:100%!important;display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:clamp(5px,.75vw,11px)!important;align-items:end!important;justify-items:center!important;padding:0 1%!important;min-width:0!important}
+.effect-card-slot{position:relative!important;width:min(100%,82px)!important;height:auto!important;aspect-ratio:var(--mx-card-ratio)!important;max-height:100%!important;border:1px solid rgba(242,204,84,.38)!important;background:linear-gradient(145deg,rgba(255,221,101,.035),rgba(0,0,0,.30))!important;clip-path:polygon(4% 0,100% 0,96% 100%,0 100%)!important;overflow:hidden!important}
+.effect-card-slot>span{position:absolute!important;inset:auto 0 4px!important;text-align:center!important;font-size:clamp(6px,.48vw,8px)!important;color:rgba(255,232,153,.34)!important;letter-spacing:.06em!important}
+.effect-card-slot .zone-card-button{width:100%!important;height:100%!important;padding:0!important;border:0!important;background:none!important}.effect-card-slot .digital-card,.effect-card-slot img{width:100%!important;height:100%!important;object-fit:contain!important}
+
+/* Piles are destinations, not debug widgets. */
+.pile-cluster{position:absolute!important;z-index:35!important;display:flex!important;align-items:center!important;gap:6px!important}
+.support-zone{position:relative!important;width:clamp(54px,5vw,76px)!important;aspect-ratio:var(--mx-card-ratio)!important;padding:0!important;border:1px solid rgba(242,204,84,.46)!important;background:rgba(4,5,10,.72)!important;overflow:visible!important}
+.support-zone .digital-card,.support-zone img{width:100%!important;height:100%!important;object-fit:contain!important}.support-zone>span:first-child{position:absolute!important;left:50%!important;bottom:calc(100% + 5px)!important;transform:translateX(-50%)!important;color:#ffe267!important;font-size:clamp(7px,.62vw,9px)!important;font-weight:1000!important;white-space:nowrap!important;text-shadow:2px 2px #000!important}
+.pile-counter{display:grid!important;place-items:center!important;min-width:clamp(34px,3.2vw,48px)!important;height:clamp(34px,3.2vw,48px)!important;border:2px solid var(--mx-gold)!important;border-radius:50%!important;background:#08080b!important;color:#fff0a5!important;font-size:clamp(16px,1.45vw,22px)!important;font-weight:1000!important;box-shadow:0 0 0 3px #251807,0 0 16px rgba(242,204,84,.24)!important}
+.score-pile .pile-counter{min-width:clamp(44px,4vw,58px)!important;height:clamp(44px,4vw,58px)!important;font-size:clamp(21px,2vw,30px)!important;box-shadow:0 0 0 4px #2b1c08,0 0 23px rgba(242,204,84,.34)!important}
+.p1-x{left:1.1%!important;top:22%!important}.p2-x{right:1.1%!important;top:22%!important;flex-direction:row-reverse!important}.p1-discard{left:1.1%!important;bottom:7%!important}.p2-discard{right:1.1%!important;bottom:7%!important;flex-direction:row-reverse!important}
+.master-pile{left:50%!important;bottom:2.5%!important;transform:translateX(-50%)!important;flex-direction:row!important;gap:10px!important;padding:7px 12px!important;background:rgba(3,5,11,.91)!important;border:2px solid rgba(242,204,84,.68)!important;box-shadow:6px 7px 0 rgba(0,0,0,.66),0 0 20px rgba(242,204,84,.14)!important}
+.master-pile .support-zone{width:clamp(64px,5.8vw,88px)!important;border:0!important}.master-pile .support-zone>span:first-child{left:calc(100% + 12px)!important;bottom:55%!important;transform:none!important;font-size:clamp(10px,.9vw,13px)!important;letter-spacing:.08em!important}.master-pile .pile-counter{margin-left:74px!important}
+.empty-pile{font-size:6px!important;color:rgba(255,255,255,.35)!important}
+
+/* Phase communication owns the center briefly, then gets out of the way. */
+.phase-arena-announcer{position:absolute!important;z-index:160!important;left:50%!important;top:46%!important;width:min(720px,62vw)!important;transform:translate(-50%,-50%) skew(-7deg)!important;pointer-events:none!important;text-align:center!important;animation:mxPhaseSlam 2.55s cubic-bezier(.12,.9,.2,1) both!important}
+.phase-arena-announcer::before{content:""!important;position:absolute!important;inset:-18px -42px!important;z-index:-2!important;background:linear-gradient(100deg,transparent 0 4%,rgba(7,8,16,.96) 10% 88%,transparent 95%)!important;border-top:3px solid #ffe15a!important;border-bottom:3px solid #e52e2e!important;clip-path:polygon(5% 8%,96% 0,91% 94%,0 100%)!important;box-shadow:0 14px 0 rgba(0,0,0,.28)!important}
+.phase-arena-announcer::after{display:none!important;content:none!important}
+.phase-arena-announcer span{font-size:clamp(34px,4vw,62px)!important}.phase-arena-announcer b{font-size:clamp(10px,.95vw,14px)!important}
+@keyframes mxPhaseSlam{0%{opacity:0;transform:translate(-50%,-50%) skew(-7deg) scale(.58)}10%{opacity:1;transform:translate(-50%,-50%) skew(-7deg) scale(1.08)}18%,74%{opacity:1;transform:translate(-50%,-50%) skew(-7deg) scale(1)}100%{opacity:0;transform:translate(-50%,-56%) skew(-7deg) scale(1.04)}}
+.arena-command-prompt{position:absolute!important;z-index:110!important;left:50%!important;bottom:27%!important;transform:translateX(-50%)!important;width:auto!important;min-width:290px!important;padding:8px 16px!important;background:rgba(5,6,12,.90)!important;border:2px solid rgba(242,204,84,.60)!important;text-align:center!important;box-shadow:5px 6px 0 rgba(0,0,0,.55)!important}.arena-command-prompt strong{font-size:clamp(17px,1.55vw,23px)!important}.arena-command-prompt span{font-size:clamp(8px,.65vw,10px)!important}
+
+/* Hand: large artwork, controlled overlap, dedicated band. */
+.player-hand{height:100%!important;display:grid!important;grid-template-rows:24px minmax(0,1fr)!important;padding:0 clamp(10px,2vw,26px)!important;background:linear-gradient(180deg,rgba(3,4,10,.22),rgba(3,4,10,.94))!important;border-top:2px solid rgba(242,204,84,.34)!important;overflow:visible!important}
+.hand-title{height:24px!important;font-size:clamp(10px,.78vw,12px)!important}
+.player-hand .hand-fan{height:100%!important;padding:0 18px 6px!important;overflow:visible!important;align-items:flex-end!important}
+.player-hand .hand-card-wrap{height:min(calc(100% - 4px),clamp(148px,22dvh,210px))!important;max-height:none!important;margin-left:clamp(-54px,-3.2vw,-28px)!important}.player-hand .hand-card-wrap:first-child{margin-left:0!important}
+.player-hand.effect-ready .hand-card-wrap:not(.is-hidden){filter:none!important;animation:mxPlayable 1.05s ease-in-out infinite!important}.player-hand.effect-ready .hand-card-wrap:not(.is-hidden)::after{inset:-3px!important;border:3px solid var(--mx-gold)!important;box-shadow:0 0 0 2px rgba(0,0,0,.72),0 0 14px rgba(242,204,84,.58)!important}
+@keyframes mxPlayable{50%{translate:0 -5px}}
+.selected-card-bar{bottom:100%!important}
+
+.action-bar{height:100%!important;min-height:0!important;padding:6px 18px!important;gap:12px!important;background:linear-gradient(180deg,rgba(5,6,12,.99),#03040a)!important;border-top:2px solid rgba(242,204,84,.40)!important;overflow:hidden!important}.effect-turn-guide strong{font-size:clamp(14px,1.2vw,19px)!important}.effect-turn-guide span{font-size:clamp(8px,.68vw,10px)!important}.action-bar button{font-size:clamp(10px,.8vw,12px)!important;padding:8px 13px!important}.end-turn-action.end-turn-warning{background:linear-gradient(180deg,#84251e,#260b0b)!important;border-color:var(--mx-gold)!important;box-shadow:4px 4px 0 #000!important;animation:none!important}
+
+/* Motion uses viewport rects captured by JS; destination stays hidden until arrival. */
+.is-arrival-hidden{visibility:hidden!important}
+.motion-card-fx{position:fixed!important;z-index:3000!important;margin:0!important;pointer-events:none!important;transform:none!important;transform-origin:top left!important;filter:drop-shadow(0 16px 18px rgba(0,0,0,.75))!important;animation:mxTravel .78s cubic-bezier(.16,.82,.22,1) forwards!important}
+.motion-card-fx .digital-card,.motion-card-fx img{width:100%!important;height:100%!important;object-fit:contain!important}.motion-card-fx strong{position:absolute!important;left:50%!important;top:-24px!important;transform:translateX(-50%)!important;font:1000 16px/1 "Arial Black",sans-serif!important;color:var(--mx-cream)!important;white-space:nowrap!important;text-shadow:3px 3px 0 #000!important}
+.motion-card-fx.enter_vs{animation-name:mxEnterVS!important;animation-duration:1.05s!important}.motion-card-fx.support{animation-name:mxSupport!important;animation-duration:.9s!important}.motion-card-fx.draw{animation-name:mxDraw!important;animation-duration:.72s!important}.motion-card-fx.capture{animation-name:mxCapture!important;animation-duration:.9s!important}
+@keyframes mxTravel{0%{opacity:1;transform:translate3d(0,0,0) scale(1)}82%{opacity:1;transform:translate3d(var(--mx),var(--my),0) scale(var(--msx),var(--msy))}100%{opacity:0;transform:translate3d(var(--mx),var(--my),0) scale(var(--msx),var(--msy))}}
+@keyframes mxDraw{0%{opacity:.25;transform:translate3d(0,0,0) scale(.72) rotate(-6deg)}20%{opacity:1;transform:translate3d(0,-18px,0) scale(.82) rotate(-3deg)}100%{opacity:0;transform:translate3d(var(--mx),var(--my),0) scale(var(--msx),var(--msy)) rotate(0)}}
+@keyframes mxEnterVS{0%{opacity:1;transform:translate3d(0,0,0) scale(1)}20%{transform:translate3d(0,-24px,0) scale(1.08) rotate(-2deg)}73%{transform:translate3d(var(--mx),var(--my),0) scale(var(--msx),var(--msy)) rotate(1deg)}82%{transform:translate3d(var(--mx),var(--my),0) scale(calc(var(--msx)*1.08),calc(var(--msy)*1.08))}100%{opacity:0;transform:translate3d(var(--mx),var(--my),0) scale(var(--msx),var(--msy))}}
+@keyframes mxSupport{0%{opacity:1;transform:translate3d(0,0,0) scale(1)}34%{transform:translate3d(0,-14px,0) scale(.94) rotate(3deg)}86%{opacity:1;transform:translate3d(var(--mx),var(--my),0) scale(var(--msx),var(--msy))}100%{opacity:0;transform:translate3d(var(--mx),var(--my),0) scale(var(--msx),var(--msy))}}
+@keyframes mxCapture{0%{opacity:1;transform:translate3d(0,0,0) scale(1)}30%{transform:translate3d(0,-12px,0) scale(1.06)}82%{opacity:1;transform:translate3d(var(--mx),var(--my),0) scale(var(--msx),var(--msy))}100%{opacity:0;transform:translate3d(var(--mx),var(--my),0) scale(calc(var(--msx)*.82),calc(var(--msy)*.82))}}
+
+/* Selector overlays never expose browser scrollbars. */
+.choice-panel,.discard-panel,.board-choice-panel,.pile-view-panel{overflow:auto!important;scrollbar-width:none!important}.choice-panel::-webkit-scrollbar,.discard-panel::-webkit-scrollbar,.board-choice-panel::-webkit-scrollbar,.pile-view-panel::-webkit-scrollbar{display:none!important}.discard-card-grid,.target-row,.board-target-row,.pile-card-grid{display:flex!important;justify-content:center!important;align-items:center!important;flex-wrap:wrap!important;gap:12px!important;max-width:100%!important}.discard-card-choice,.board-target-card,.pile-card-choice,.card-back-button{flex:0 1 142px!important}
+.impact-slash{display:none!important}
+
+/* Responsive changes reflow pieces; they never uniformly shrink the whole game. */
+@media (max-width:1180px){
+  .duel-shell{--hand-h:clamp(155px,22dvh,205px);--action-h:clamp(54px,7dvh,66px)}
+  .fighter-field{width:44%!important}.fighter-field-left{left:3.8%!important}.fighter-field-right{right:3.8%!important}
+  .vs-battle-row{grid-template-columns:clamp(84px,20%,110px) minmax(0,1fr)!important}.vs-battle-row.reverse{grid-template-columns:minmax(0,1fr) clamp(84px,20%,110px)!important}
+  .effect-rack{gap:5px!important}.effect-card-slot{width:min(100%,70px)!important}
+  .p1-x,.p1-discard{left:.6%!important}.p2-x,.p2-discard{right:.6%!important}
+  .support-zone{width:clamp(48px,5vw,64px)!important}.score-pile .pile-counter{min-width:42px!important;height:42px!important}
+  .master-pile .support-zone{width:62px!important}.master-pile .pile-counter{margin-left:68px!important}
+}
+@media (max-width:900px){
+  .duel-shell{--hud-h:50px;--call-h:22px;--opp-h:36px;--hand-h:150px;--action-h:58px;grid-template-rows:var(--hud-h) var(--call-h) var(--opp-h) minmax(278px,1fr) var(--hand-h) var(--action-h)!important}
+  .fighter-hud{grid-template-columns:1fr minmax(170px,230px) 1fr!important;padding:0 8px!important}.profile-kicker,.rank-slot{display:none!important}.player-profile strong{font-size:13px!important}.round-slam{font-size:21px!important}.turn-slam{font-size:9px!important}.phase-slam{font-size:7px!important}
+  .fighter-field{width:45.5%!important;top:4%!important;height:91%!important;grid-template-rows:9% 63% 24%!important}.fighter-field-left{left:2.5%!important}.fighter-field-right{right:2.5%!important}
+  .vs-battle-row{grid-template-columns:72px minmax(0,1fr)!important;gap:8px!important}.vs-battle-row.reverse{grid-template-columns:minmax(0,1fr) 72px!important}
+  .vs-inspect-button{height:min(100%,238px)!important}.live-stats{max-width:72px!important;padding:4px!important}.live-stat{height:27px!important;grid-template-columns:28px 1fr!important}.live-stat span{font-size:7px!important}.live-stat strong{font-size:17px!important}.live-stats small{display:none!important}
+  .field-fighter-label{font-size:13px!important}.effect-card-slot{width:min(100%,58px)!important}.effect-card-slot>span{display:none!important}
+  .center-clash{width:84px!important;height:84px!important}.vs-emblem span{font-size:40px!important}
+  .support-zone{width:44px!important}.pile-counter{min-width:30px!important;height:30px!important;font-size:14px!important}.score-pile .pile-counter{min-width:38px!important;height:38px!important;font-size:20px!important}
+  .master-pile{padding:5px 7px!important}.master-pile .support-zone{width:52px!important}.master-pile .support-zone>span:first-child{font-size:9px!important;left:calc(100% + 8px)!important}.master-pile .pile-counter{margin-left:58px!important}
+  .player-hand .hand-card-wrap{height:min(calc(100% - 4px),142px)!important;margin-left:-34px!important}.action-bar{gap:6px!important;padding:5px 8px!important}.effect-turn-guide span{display:none!important}.action-bar button{font-size:9px!important;padding:6px 8px!important}
+  .phase-arena-announcer{width:76vw!important}.phase-arena-announcer span{font-size:34px!important}.arena-command-prompt{bottom:25%!important;min-width:240px!important}.arena-command-prompt strong{font-size:16px!important}
+}
+@media (max-height:720px){
+  .duel-shell{--hud-h:50px;--call-h:20px;--opp-h:34px;--hand-h:145px;--action-h:54px;grid-template-rows:var(--hud-h) var(--call-h) var(--opp-h) minmax(270px,1fr) var(--hand-h) var(--action-h)!important}
+  .vs-inspect-button{height:min(100%,clamp(210px,33dvh,270px))!important}.effect-card-slot{width:min(100%,62px)!important}.position-badge{bottom:-24px!important}
+  .player-hand .hand-card-wrap{height:min(calc(100% - 4px),138px)!important}.master-pile{bottom:1.5%!important}
+}
+@media (max-height:620px){
+  .duel-shell{--hud-h:44px;--call-h:18px;--opp-h:28px;--hand-h:116px;--action-h:48px;grid-template-rows:var(--hud-h) var(--call-h) var(--opp-h) minmax(238px,1fr) var(--hand-h) var(--action-h)!important}
+  .vs-inspect-button{height:min(100%,210px)!important}.effect-card-slot{width:min(100%,54px)!important}.player-hand .hand-card-wrap{height:108px!important}.hand-title{height:18px!important;font-size:8px!important}.player-hand{grid-template-rows:18px minmax(0,1fr)!important}.action-bar{padding:4px 8px!important}.round-slam{font-size:19px!important}.player-profile strong{font-size:12px!important}
+}
+@media (max-aspect-ratio:4/3){
+  .arcade-opening .opening-logo{top:7vh!important;font-size:clamp(74px,13vw,136px)!important}
+  .arcade-opening .coin-choice-panel{top:52%!important;width:min(820px,86vw)!important;transform:translate(-50%,-42%)!important}
+  .arcade-opening .opening-cardstream img{width:clamp(145px,17vw,220px)!important;opacity:.25!important}
+}
+
+/* V19 QA corrections: remove inherited duplicate pile labels and old Master Deck widget geometry. */
+.score-pile::before{display:none!important;content:none!important}
+.master-pile::before,.master-pile::after{display:none!important;content:none!important}
+.master-pile{
+  width:auto!important;height:auto!important;min-width:0!important;padding:0!important;background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:visible!important;
+  left:50%!important;bottom:3%!important;transform:translateX(-50%)!important;display:flex!important;flex-direction:row!important;align-items:center!important;gap:10px!important;
+}
+.master-pile .support-zone{
+  position:relative!important;left:auto!important;top:auto!important;width:clamp(68px,6.3vw,94px)!important;height:auto!important;aspect-ratio:var(--mx-card-ratio)!important;
+  border:2px solid rgba(242,204,84,.78)!important;border-radius:5px!important;overflow:visible!important;
+  box-shadow:-5px -5px 0 rgba(242,204,84,.16),-9px -9px 0 rgba(242,204,84,.07),0 10px 18px rgba(0,0,0,.72)!important;
+}
+.master-pile .support-zone>span:first-child{
+  display:block!important;position:absolute!important;left:50%!important;right:auto!important;top:auto!important;bottom:calc(100% + 7px)!important;transform:translateX(-50%)!important;
+  padding:0!important;background:none!important;color:#ffe16d!important;font-size:clamp(9px,.85vw,12px)!important;letter-spacing:.10em!important;text-shadow:2px 2px #000!important;
+}
+.master-pile .pile-counter{
+  position:relative!important;left:auto!important;bottom:auto!important;margin:0!important;min-width:clamp(38px,3.5vw,50px)!important;height:clamp(38px,3.5vw,50px)!important;padding:0!important;
+  border:2px solid var(--mx-gold)!important;border-radius:50%!important;background:#07080d!important;color:#fff0ad!important;font-size:clamp(16px,1.45vw,22px)!important;
+}
+.score-pile .support-zone>span:first-child{font-size:clamp(8px,.7vw,10px)!important;color:#ffe16d!important}
+.field-fighter-label{opacity:1!important;filter:none!important;color:#fff3c7!important}
+.field-fighter-label.is-active{filter:brightness(1.22)!important}
+.arena-command-prompt{bottom:29%!important}
+
+@media(max-width:900px){
+  .master-pile{bottom:2.5%!important}.master-pile .support-zone{width:56px!important}.master-pile .pile-counter{min-width:34px!important;height:34px!important;font-size:15px!important}
+  .arena-command-prompt{bottom:28%!important}
+}
+@media(max-height:720px){.master-pile .support-zone{width:58px!important}.master-pile{bottom:2%!important}.arena-command-prompt{bottom:27%!important}}
+
+/* V19 composition refinement after rendered QA */
+.duel-shell{--hand-h:clamp(180px,25dvh,225px)}
+.vs-inspect-button{height:min(100%,clamp(235px,36dvh,360px))!important}
+.arena-command-prompt{top:60%!important;bottom:auto!important;transform:translate(-50%,-50%)!important}
+.master-pile{bottom:2.2%!important}
+.master-pile .support-zone>span:first-child{width:max-content!important;white-space:nowrap!important;bottom:calc(100% + 6px)!important}
+
+/* Keep score piles important without letting them collide with live stats. */
+.score-pile{gap:0!important}
+.score-pile .pile-counter{position:absolute!important;top:50%!important;right:-24px!important;transform:translateY(-50%)!important;z-index:8!important}
+.p2-x .pile-counter{right:auto!important;left:-24px!important}
+.score-pile .support-zone{width:clamp(58px,5vw,74px)!important}
+.p1-x{left:1.15%!important}.p2-x{right:1.15%!important}
+.pile-cluster:not(.score-pile):not(.master-pile){gap:0!important}
+.pile-cluster:not(.score-pile):not(.master-pile) .pile-counter{position:absolute!important;top:50%!important;right:-15px!important;transform:translateY(-50%)!important;z-index:8!important}
+.p2-discard .pile-counter{right:auto!important;left:-15px!important}
+
+.field-fighter-label{font-weight:1000!important;color:#fff4ca!important;text-shadow:3px 3px 0 #000,0 0 9px rgba(255,224,123,.20)!important}
+
+@media(max-width:900px){
+  .duel-shell{--hand-h:160px!important}
+  .vs-inspect-button{height:min(100%,245px)!important}
+  .arena-command-prompt{top:59%!important}
+  .score-pile .support-zone{width:50px!important}.score-pile .pile-counter{right:-19px!important}.p2-x .pile-counter{left:-19px!important}
+}
+@media(max-height:720px){
+  .duel-shell{--hand-h:155px!important}
+  .vs-inspect-button{height:min(100%,245px)!important}
+  .arena-command-prompt{top:59%!important}
+}
+@media(max-height:620px){.duel-shell{--hand-h:122px!important}.vs-inspect-button{height:min(100%,205px)!important}}
+
+/* Compact opponent hand floats at the top edge of the arena; it no longer burns an entire black band. */
+.duel-shell{--opp-h:0px!important}
+.opponent-hand{
+  position:absolute!important;z-index:145!important;left:50%!important;top:calc(var(--hud-h) + var(--call-h) - 2px)!important;
+  width:max-content!important;max-width:45vw!important;height:clamp(48px,6.5dvh,64px)!important;transform:translateX(-50%)!important;
+  padding:0!important;background:transparent!important;border:0!important;overflow:visible!important;pointer-events:none!important;
+}
+.opponent-hand .hand-fan{width:max-content!important;height:100%!important;padding:0!important;overflow:visible!important}
+.opponent-hand .hand-card-wrap{width:clamp(36px,3.4vw,50px)!important;margin-left:clamp(-13px,-.8vw,-8px)!important;filter:drop-shadow(0 5px 5px rgba(0,0,0,.82))!important}
+
+@media(max-width:900px){.opponent-hand{height:46px!important;max-width:52vw!important}.opponent-hand .hand-card-wrap{width:36px!important}}
+/* Opponent hand is absolute, so the duel grid has five flow rows. */
+.duel-shell{grid-template-rows:var(--hud-h) var(--call-h) minmax(300px,1fr) var(--hand-h) var(--action-h)!important}
+@media(max-width:900px){.duel-shell{grid-template-rows:var(--hud-h) var(--call-h) minmax(278px,1fr) var(--hand-h) var(--action-h)!important}}
+@media(max-height:720px){.duel-shell{grid-template-rows:var(--hud-h) var(--call-h) minmax(270px,1fr) var(--hand-h) var(--action-h)!important}}
+@media(max-height:620px){.duel-shell{grid-template-rows:var(--hud-h) var(--call-h) minmax(238px,1fr) var(--hand-h) var(--action-h)!important}}
+
+/* V20 targeted polish + scale fixes */

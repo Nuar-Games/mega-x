@@ -5,8 +5,8 @@ type Scene = 'silent' | 'lobby' | 'coinToss' | 'match'
 const SETTINGS_KEY = 'mega-x-audio-v8'
 const ARENA_BAG_KEY = 'mega-x-arena-bag-v1'
 const ARENA_LAST_KEY = 'mega-x-arena-last-v1'
-const COIN_TOSS_GAIN = 0.78
-const ARENA_GAIN = 0.58
+const COIN_TOSS_GAIN = 1.0
+const ARENA_GAIN = 0.88
 const RESULT_GAIN = 0.9
 const SFX_DUCK_GAIN = 0.56
 const SFX_LIGHT_DUCK_GAIN = 0.72
@@ -16,10 +16,10 @@ const ARENA_FADE_IN_MS = 900
 const ARENA_FADE_OUT_MS = 600
 
 const SFX_GAIN: Partial<Record<MegaXSfx, number>> = {
-  card: 0.95,
+  card: 0.25,
   draw: 1.25,
   enter: 1.0,
-  vsEnter: 1.25,
+  vsEnter: 0.65,
   attack: 0.72,
   destroy: 1.0,
   zonX: 1.15,
@@ -47,17 +47,19 @@ class MegaXAudio {
   private arenaDuckGain = 1
   private arenaTrack: string | null = null
   private lastPrompt = ''
-  private lastPromptAt = 0
   private resultPlayed = false
   private lastArenaDeckCount: number | null = null
   private lastArenaXCounts: [number | null, number | null] = [null, null]
-  private lastArenaVsOccupied: [boolean | null, boolean | null] = [null, null]
+  private lastArenaVsCardIds: [string | null, string | null] = [null, null]
+  private lastVsEntryGestureAt = 0
+  private suppressPromptUntil = 0
 
   start() {
     this.mountControls()
     this.preloadResultMusic()
     for (const kind of Object.keys(SFX_ASSETS) as MegaXSfx[]) this.preloadSfx(kind)
     document.addEventListener('pointerdown', () => this.unlock(), { once: true, capture: true })
+    document.addEventListener('pointerdown', this.onVsEntryPointerDown, true)
     document.addEventListener('keydown', () => this.unlock(), { once: true, capture: true })
     document.addEventListener('click', this.onClick, true)
     window.addEventListener('mega-x:motion', this.onMotionSfx as EventListener)
@@ -65,6 +67,7 @@ class MegaXAudio {
     observer.observe(document.documentElement, { childList: true, subtree: true, characterData: true })
     this.syncScene()
     this.syncArenaStateSfx()
+    window.setInterval(() => this.syncArenaStateSfx(), 180)
   }
 
   private unlock() {
@@ -101,7 +104,7 @@ class MegaXAudio {
   private resetArenaStateSfx() {
     this.lastArenaDeckCount = null
     this.lastArenaXCounts = [null, null]
-    this.lastArenaVsOccupied = [null, null]
+    this.lastArenaVsCardIds = [null, null]
   }
 
   private syncScene(force = false) {
@@ -250,6 +253,11 @@ class MegaXAudio {
   private playSfx(kind: MegaXSfx) {
     if (!this.unlocked || this.settings.muted || this.settings.sfx <= 0) return
     const now = performance.now()
+    if (kind === 'vsEnter') {
+      for (const promptAudio of this.sfxPool.get('prompt') ?? []) {
+        try { promptAudio.pause(); promptAudio.currentTime = 0 } catch {}
+      }
+    }
     const last = this.lastSfxAt.get(kind) ?? -Infinity
     if (now - last < 140) return
     this.lastSfxAt.set(kind, now)
@@ -300,11 +308,24 @@ class MegaXAudio {
     vsSelectors.forEach((selector, index) => {
       const zone = document.querySelector<HTMLElement>(selector)
       if (!zone) return
-      const occupied = Boolean(zone.querySelector('button, img'))
-      const previous = this.lastArenaVsOccupied[index]
-      if (previous !== true && occupied) this.playSfx('vsEnter')
-      this.lastArenaVsOccupied[index] = occupied
+      const cardId = zone.dataset.vsCardId || null
+      if (!this.unlocked && cardId) return
+      const previous = this.lastArenaVsCardIds[index]
+      if (previous !== cardId && cardId && performance.now() - this.lastVsEntryGestureAt > 1200) this.playSfx('vsEnter')
+      this.lastArenaVsCardIds[index] = cardId
     })
+  }
+
+  private onVsEntryPointerDown = (event: Event) => {
+    if (!this.unlocked) this.unlock()
+    const target = event.target instanceof Element ? event.target.closest('button') : null
+    if (!target) return
+    const label = (target.textContent ?? '').replace(/\s+/g, ' ').trim().toUpperCase()
+    if ((label === 'ATK' || label === 'DEF') && target.closest('.mx3-card-overlay-actions') && document.querySelector('.mx3-canvas.phase-set_vs')) {
+      this.lastVsEntryGestureAt = performance.now()
+      this.suppressPromptUntil = performance.now() + 1400
+      this.playSfx('vsEnter')
+    }
   }
 
   private onClick = (event: Event) => {
@@ -317,27 +338,31 @@ class MegaXAudio {
     if (target.matches('.digital-card, .mx3-effect, .mx3-hand-card') || target.querySelector('.digital-card')) this.playSfx('card')
   }
 
-  private maybePlayPrompt(text: string) {
-    const match = text.match(/PILIH\s+(?:KAD|VS|SASARAN|TARGET)|SELECT\s+(?:CARD|TARGET)|CHOOSE\s+(?:CARD|TARGET)/)
-    if (!match) return
-    const prompt = match[0]; const now = performance.now()
-    if (prompt === this.lastPrompt && now - this.lastPromptAt < 1200) return
-    this.lastPrompt = prompt; this.lastPromptAt = now; this.playSfx('prompt')
+  private syncPromptSfx() {
+    const promptNodes = Array.from(document.querySelectorAll<HTMLElement>('.mx3-phase-prompt strong, .mx3-target-selection-title'))
+    const prompt = promptNodes.map((node) => (node.textContent ?? '').replace(/\s+/g, ' ').trim().toUpperCase()).find((text) => /PILIH\s+(?:KAD|VS|SASARAN|TARGET)|SELECT\s+(?:CARD|TARGET)|CHOOSE\s+(?:CARD|TARGET)/.test(text)) ?? ''
+    if (!prompt) { this.lastPrompt = ''; return }
+    if (prompt === this.lastPrompt) return
+    this.lastPrompt = prompt
+    if (performance.now() < this.suppressPromptUntil) {
+      if (prompt.includes('PILIH KAD VS')) return
+    }
+    this.playSfx('prompt')
   }
 
   private maybePlayResult(text: string) {
     if (this.resultPlayed) return
-    if (/PERLAWANAN\s+TAMAT|MENANG!?|KALAH|YOU\s+WIN|YOU\s+LOSE|ANDA\s+MENANG/.test(text)) this.playResultMusic()
+    if (document.querySelector('.mx3-canvas.phase-game_over')) this.playResultMusic()
   }
 
   private onMutations = (mutations: MutationRecord[]) => {
     if (mutations.some((mutation) => mutation.type === 'childList')) this.syncScene()
     this.syncArenaStateSfx()
+    this.syncPromptSfx()
     for (const mutation of mutations) {
       const nodes = mutation.type === 'childList' ? Array.from(mutation.addedNodes) : [mutation.target]
       for (const node of nodes) {
         const text = (node.textContent ?? '').replace(/\s+/g, ' ').toUpperCase(); if (!text) continue
-        this.maybePlayPrompt(text)
         this.maybePlayResult(text)
       }
     }

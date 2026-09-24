@@ -371,8 +371,9 @@ function mxEnsureTop20RankSlots() {
     const match = (el.textContent ?? '').match(/#\s*(\d+)/)
     return match ? Number(match[1]) : 999
   }
-  rows.sort((a, b) => rankOf(a) - rankOf(b))
-  rows.forEach((row) => stack.appendChild(row))
+  const sortedRows = [...rows].sort((a, b) => rankOf(a) - rankOf(b))
+  const alreadySorted = rows.length === sortedRows.length && rows.every((row, index) => row === sortedRows[index])
+  if (!alreadySorted) sortedRows.forEach((row) => stack.appendChild(row))
 }
 
 function mxBootTop20RankSlots() {

@@ -1,0 +1,197 @@
+/* MEGA-X V20 targeted polish/regression pass.
+   Scope: opening identity, prompt visibility, fighter-turn emphasis,
+   VS sizing, Master Deck, Zon Tepi/Zon X geometry, and resize readability. */
+
+/* ---------- OPENING: preserve logo position; pulse the GLOW, not the lettering ---------- */
+.opening-logo{
+  animation:none!important;
+  filter:none!important;
+  scale:1!important;
+  isolation:isolate!important;
+}
+.opening-logo::before{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  left:50%; top:50%;
+  width:112%; height:128%;
+  transform:translate(-50%,-50%) skew(8deg);
+  border-radius:50%;
+  background:radial-gradient(ellipse,rgba(255,226,106,.34) 0%,rgba(255,198,57,.15) 34%,rgba(41,148,255,.10) 52%,transparent 72%);
+  filter:blur(18px);
+  opacity:.42;
+  animation:mxLogoAura 1.9s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes mxLogoAura{0%,100%{opacity:.30;filter:blur(18px)}50%{opacity:.82;filter:blur(27px)}}
+
+/* Main choice box: edges visibly breathe without moving the box. */
+.coin-choice-panel{
+  box-shadow:0 0 0 2px rgba(242,204,84,.88),14px 16px 0 rgba(0,0,0,.54),0 0 28px rgba(242,204,84,.25),0 0 62px rgba(42,137,255,.08),0 0 62px rgba(242,53,63,.08)!important;
+  animation:mxPanelEdgeGlow 2.2s ease-in-out infinite!important;
+}
+@keyframes mxPanelEdgeGlow{
+  0%,100%{filter:drop-shadow(0 0 4px rgba(242,204,84,.20))}
+  50%{filter:drop-shadow(0 0 13px rgba(242,204,84,.68))}
+}
+
+/* ---------- ARENA COMMAND: important instruction must not drown ---------- */
+.arena-command-prompt{
+  border:2px solid #f2cc54!important;
+  background:linear-gradient(100deg,rgba(4,16,38,.96),rgba(8,8,14,.98) 48%,rgba(45,7,15,.96))!important;
+  box-shadow:0 0 0 2px rgba(0,0,0,.72),0 0 15px rgba(242,204,84,.65),0 0 34px rgba(242,204,84,.24),6px 7px 0 rgba(0,0,0,.58)!important;
+  animation:mxPromptGlow 1.65s ease-in-out infinite!important;
+}
+.arena-command-prompt strong{color:#ffe470!important;text-shadow:2px 2px 0 #000,0 0 10px rgba(255,225,89,.44)!important}
+@keyframes mxPromptGlow{0%,100%{box-shadow:0 0 0 2px rgba(0,0,0,.72),0 0 10px rgba(242,204,84,.40),6px 7px 0 rgba(0,0,0,.58)}50%{box-shadow:0 0 0 2px rgba(0,0,0,.72),0 0 20px rgba(242,204,84,.88),0 0 38px rgba(242,204,84,.30),6px 7px 0 rgba(0,0,0,.58)}}
+
+/* ---------- FIGHTER PLATES: no black slabs; active side owns the moment ---------- */
+.field-fighter-label{
+  overflow:visible!important;
+  max-width:none!important;
+  padding:.34em 1.35em .42em!important;
+  font-size:clamp(17px,1.65vw,28px)!important;
+  color:#fff1bd!important;
+  background:linear-gradient(105deg,rgba(13,71,154,.97),rgba(7,10,20,.96) 64%,rgba(7,10,20,.88))!important;
+  border:2px solid rgba(81,172,255,.72)!important;
+  border-left:7px solid #27a9ff!important;
+  clip-path:polygon(0 8%,88% 0,100% 50%,88% 100%,0 92%,5% 50%)!important;
+  box-shadow:7px 8px 0 rgba(0,0,0,.68),inset 0 0 20px rgba(53,143,255,.12)!important;
+}
+.field-fighter-label.fighter-two{
+  background:linear-gradient(255deg,rgba(143,26,41,.97),rgba(15,8,15,.96) 64%,rgba(15,8,15,.88))!important;
+  border-color:rgba(255,89,76,.72)!important;
+  border-left:2px solid rgba(255,89,76,.72)!important;
+  border-right:7px solid #ff594c!important;
+  clip-path:polygon(12% 0,100% 8%,95% 50%,100% 92%,12% 100%,0 50%)!important;
+}
+.field-fighter-label::after{
+  content:""!important;
+  position:absolute!important;
+  left:12%!important;right:12%!important;bottom:4px!important;height:3px!important;
+  background:linear-gradient(90deg,transparent,#ffe36b,transparent)!important;
+  opacity:.42!important;
+}
+.field-fighter-label.is-active{
+  transform:skew(-7deg) scale(1.13)!important;
+  filter:brightness(1.22)!important;
+  animation:mxActivePlate 1.15s ease-in-out infinite!important;
+  z-index:4!important;
+}
+.field-fighter-label.is-active::before{
+  display:block!important;
+  content:""!important;
+  position:absolute!important;
+  z-index:-2!important;
+  inset:-75% -35%!important;
+  background:repeating-conic-gradient(from 4deg,transparent 0 10deg,rgba(255,226,89,.36) 11deg 13deg,transparent 14deg 21deg)!important;
+  mask:radial-gradient(ellipse,#000 0 42%,transparent 74%)!important;
+  opacity:.72!important;
+  animation:mxTurnBurst .82s steps(3,end) infinite!important;
+  pointer-events:none!important;
+}
+@keyframes mxActivePlate{0%,100%{scale:1.07}50%{scale:1.14}}
+@keyframes mxTurnBurst{0%{transform:scale(.92) rotate(-2deg);opacity:.42}100%{transform:scale(1.08) rotate(3deg);opacity:.85}}
+
+/* ---------- VS: bounded, centered, no inherited slash geometry ---------- */
+.impact-slash{display:none!important;visibility:hidden!important;opacity:0!important}
+.center-clash{
+  top:42%!important;
+  width:clamp(82px,7.2vw,118px)!important;
+  height:clamp(82px,7.2vw,118px)!important;
+}
+.arena-ring-fx{opacity:.82!important}
+.vs-emblem span{font-size:clamp(38px,3.9vw,62px)!important}
+
+/* ---------- CARDS: maintain useful physical size while browser changes ---------- */
+.fighter-field{top:4.5%!important;height:90%!important;width:42.5%!important}
+.fighter-field-left{left:4.6%!important}.fighter-field-right{right:4.6%!important}
+.vs-battle-row{grid-template-columns:clamp(104px,21%,142px) minmax(0,1fr)!important}
+.vs-battle-row.reverse{grid-template-columns:minmax(0,1fr) clamp(104px,21%,142px)!important}
+.vs-inspect-button{height:clamp(250px,38dvh,390px)!important;max-height:100%!important;min-height:0!important}
+.effect-card-slot{width:min(100%,92px)!important;aspect-ratio:.68!important}
+.player-hand .hand-card-wrap{height:min(calc(100% - 4px),clamp(162px,23dvh,220px))!important}
+
+/* ---------- MASTER DECK: label centered above the deck ---------- */
+.master-pile{
+  display:grid!important;
+  grid-template-columns:auto auto!important;
+  align-items:center!important;
+  column-gap:12px!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  padding:0!important;
+}
+.master-pile .support-zone{width:clamp(72px,6vw,96px)!important;overflow:visible!important}
+.master-pile .support-zone>span:first-child{
+  left:50%!important;right:auto!important;top:auto!important;bottom:calc(100% + 7px)!important;
+  transform:translateX(-50%)!important;
+  width:max-content!important;text-align:center!important;
+  font-size:clamp(10px,.9vw,13px)!important;letter-spacing:.08em!important;
+}
+.master-pile .pile-counter{margin:0!important;position:relative!important;left:auto!important;right:auto!important;top:auto!important;transform:none!important}
+
+/* ---------- ZON TEPI + ZON X: one coherent pile component, circular counters ---------- */
+.pile-cluster:not(.master-pile){gap:8px!important}
+.pile-cluster:not(.master-pile) .support-zone{
+  width:clamp(62px,5.3vw,82px)!important;
+  aspect-ratio:.68!important;
+  border-radius:5px!important;
+  overflow:visible!important;
+  background:rgba(4,6,12,.52)!important;
+}
+.pile-cluster:not(.master-pile):not(.score-pile) .support-zone{
+  border:1px solid rgba(242,204,84,.36)!important;
+  box-shadow:0 7px 15px rgba(0,0,0,.48)!important;
+}
+.pile-cluster:not(.master-pile) .pile-counter{
+  position:relative!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;
+  transform:none!important;margin:0!important;
+  width:clamp(38px,3.2vw,48px)!important;min-width:clamp(38px,3.2vw,48px)!important;height:auto!important;aspect-ratio:1/1!important;
+  flex:0 0 auto!important;border-radius:50%!important;
+}
+.score-pile .pile-counter{width:clamp(48px,4vw,60px)!important;min-width:clamp(48px,4vw,60px)!important;height:auto!important;aspect-ratio:1/1!important}
+.p2-x,.p2-discard{flex-direction:row-reverse!important}
+.pile-cluster .empty-pile{position:absolute!important;inset:0!important;display:grid!important;place-items:center!important;font-size:7px!important;letter-spacing:.07em!important}
+
+/* ---------- EFFECT / END TURN: same highlight language, no chasing lights ---------- */
+.end-turn-action.end-turn-warning{
+  background:linear-gradient(180deg,#6e241e,#250b0b)!important;
+  border:2px solid #f2cc54!important;
+  box-shadow:0 0 0 2px rgba(0,0,0,.66),0 0 14px rgba(242,204,84,.34),4px 4px 0 #000!important;
+  animation:none!important;
+}
+
+/* ---------- RESIZE: reflow instead of shrinking the whole game ---------- */
+@media (max-width:1180px){
+  .fighter-hud{grid-template-columns:minmax(145px,1fr) minmax(220px,300px) minmax(145px,1fr)!important}
+  .fighter-field{width:43.6%!important}.fighter-field-left{left:3.4%!important}.fighter-field-right{right:3.4%!important}
+  .vs-inspect-button{height:clamp(235px,35dvh,320px)!important}
+  .effect-card-slot{width:min(100%,80px)!important}
+  .field-fighter-label{font-size:clamp(15px,1.8vw,23px)!important}
+  .score-pile .support-zone,.pile-cluster:not(.master-pile):not(.score-pile) .support-zone{width:58px!important}
+}
+@media (max-width:960px){
+  .duel-shell{--hud-h:54px!important;--call-h:24px!important;--hand-h:172px!important;--action-h:60px!important}
+  .fighter-hud{grid-template-columns:1fr 190px 1fr!important;padding-inline:8px!important}
+  .profile-kicker,.rank-slot{display:none!important}.player-profile strong{font-size:12px!important}
+  .fighter-field{width:44.5%!important;top:5%!important;height:89%!important}.fighter-field-left{left:2.6%!important}.fighter-field-right{right:2.6%!important}
+  .vs-battle-row{grid-template-columns:94px minmax(0,1fr)!important;gap:8px!important}.vs-battle-row.reverse{grid-template-columns:minmax(0,1fr) 94px!important}
+  .vs-inspect-button{height:clamp(220px,34dvh,285px)!important}
+  .live-stats{max-width:94px!important;padding:5px!important}.live-stat{grid-template-columns:34px 1fr!important}.live-stat strong{font-size:17px!important}
+  .effect-rack{gap:4px!important}.effect-card-slot{width:min(100%,66px)!important}
+  .center-clash{width:76px!important;height:76px!important}.vs-emblem span{font-size:38px!important}
+  .field-fighter-label{font-size:14px!important;padding:.32em .9em .38em!important}
+  .player-hand .hand-card-wrap{height:min(calc(100% - 4px),158px)!important;margin-left:-36px!important}
+  .p1-x,.p1-discard{left:.6%!important}.p2-x,.p2-discard{right:.6%!important}
+  .pile-cluster:not(.master-pile) .support-zone{width:50px!important}.pile-cluster:not(.master-pile) .pile-counter{width:34px!important;min-width:34px!important}
+  .score-pile .pile-counter{width:40px!important;min-width:40px!important}
+  .master-pile .support-zone{width:58px!important}.master-pile .pile-counter{width:34px!important;min-width:34px!important;aspect-ratio:1/1!important;height:auto!important}
+}
+@media (max-height:700px){
+  .duel-shell{--hand-h:150px!important;--action-h:54px!important}
+  .vs-inspect-button{height:clamp(210px,36dvh,270px)!important}
+  .player-hand .hand-card-wrap{height:140px!important}
+  .effect-card-slot{width:min(100%,68px)!important}
+}
