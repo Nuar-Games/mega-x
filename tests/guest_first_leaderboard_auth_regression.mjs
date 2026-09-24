@@ -2,7 +2,7 @@ import fs from 'node:fs'
 
 const guestEntry=fs.readFileSync('src/guest-practice-cta.ts','utf8')
 const arenaRuntime=fs.readFileSync('src/game/arena-next/ArenaNextRuntime.tsx','utf8')
-const guestPatch=fs.readFileSync('scripts/patch-guest-lobby-vs-race.mjs','utf8')
+const appSource=fs.readFileSync('src/App.tsx','utf8')
 
 for(const marker of ['getSavedSession','mega-x:enter-guest-lobby','mega-x:open-sign-in','mx-main-cta','SIGN IN']){
   if(!guestEntry.includes(marker))throw new Error(`guest-first landing route missing: ${marker}`)
@@ -21,8 +21,8 @@ for(const marker of [
   if(!arenaRuntime.includes(marker))throw new Error(`arena-next guest result reminder missing: ${marker}`)
 }
 
-if(!guestPatch.includes("mega-x:enter-guest-lobby"))throw new Error('App patch does not expose the guest lobby event')
-if(!guestPatch.includes("setOnlineScreen('LOBBY')"))throw new Error('guest lobby event does not open the shared lobby')
-if(!guestPatch.includes("setOnlineScreen('AUTH')"))throw new Error('sign-in event does not open the existing auth screen')
+if(!appSource.includes("mega-x:enter-guest-lobby"))throw new Error('App source does not expose the guest lobby event')
+if(!appSource.includes("setOnlineScreen('LOBBY')"))throw new Error('guest lobby event does not open the shared lobby')
+if(!appSource.includes("setOnlineScreen('AUTH')"))throw new Error('sign-in event does not open the existing auth screen')
 
 console.log('GUEST_FIRST_LEADERBOARD_AUTH_PASS')
