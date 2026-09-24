@@ -1,17 +1,14 @@
-name: Verify generated clean source
+name: Phase 1 one-time source materialization
 
 on:
   push:
-    branches: [arena-clean-rebuild, arena-total-rewrite]
-  pull_request:
-    branches: [arena-clean-rebuild, arena-total-rewrite]
-  workflow_dispatch:
+    branches: [phase1-freeze-generated-source]
 
 permissions:
   contents: write
 
 jobs:
-  verify-generated-source:
+  materialize-once:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,73 +19,17 @@ jobs:
           node-version: 24
       - name: Install dependencies
         run: npm install
-      - name: Guard arena-next from patch-chain codegen
-        run: |
-          if grep -R --line-number --include='patch-*.mjs' --include='build-clean.mjs' 'arena-next' scripts; then
-            echo 'arena-next must remain normal hand-authored source and may not be referenced by build-clean or patch scripts.'
-            exit 1
-          fi
-          echo 'ARENA_NEXT_PATCH_CHAIN_GUARD_OK'
-      - name: Regenerate authoritative source once
+      - name: Materialize current generated source exactly once
         run: node scripts/build-clean.mjs --prepare-only
-      - name: Auto-commit generated source on rewrite branch
-        if: github.event_name == 'push' && github.ref == 'refs/heads/arena-total-rewrite'
+      - name: Commit every materialized source change
         run: |
-          paths=(src/App.tsx src/onlineAuth.ts src/index.css src/arena-blueprint.fragment)
-          if [[ -z "$(git status --porcelain -- "${paths[@]}")" ]]; then
-            echo 'GENERATED_SOURCE_IN_SYNC'
+          if [[ -z "$(git status --porcelain)" ]]; then
+            echo 'MATERIALIZED_SOURCE_ALREADY_COMMITTED'
             exit 0
           fi
-
-          echo 'Generated source drift detected; committing deterministic outputs.'
-          git status --short -- "${paths[@]}"
-          git diff -- "${paths[@]}" || true
+          git status --short
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- "${paths[@]}"
-          git commit -m 'chore: regenerate authoritative generated source'
-          git push origin HEAD:arena-total-rewrite
-      - name: Fail if generated source is not committed exactly
-        run: |
-          paths=(src/App.tsx src/onlineAuth.ts src/index.css src/arena-blueprint.fragment)
-          if [[ -n "$(git status --porcelain -- "${paths[@]}")" ]]; then
-            echo 'Generated source drift remains after regeneration.'
-            git status --short -- "${paths[@]}"
-            git diff -- "${paths[@]}" || true
-            exit 1
-          fi
-          echo 'GENERATED_SOURCE_IN_SYNC'
-      - name: Typecheck
-        run: npx tsc --noEmit
-      - name: E2E typecheck
-        run: npx tsc -p tsconfig.e2e.json --noEmit
-      - name: Arena-next regression tests
-        run: |
-          node tests/arena_next_contract_regression.mjs
-          node tests/arena_next_event_pipeline_regression.mjs
-          node tests/arena_next_prototype_regression.mjs
-          node tests/arena_next_live_match_regression.mjs
-          node tests/arena_next_pipeline_guard_regression.mjs
-          node tests/arena_next_command_surface_regression.mjs
-      - name: Production build
-        run: |
-          set -o pipefail
-          npm run build 2>&1 | tee build.log
-      - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
-      - name: Arena-next full practice browser E2E
-        run: npx playwright test
-      - name: Upload production build failure log
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: production-build-failure-log
-          path: build.log
-      - name: Upload Playwright trace on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: arena-next-playwright-failure
-          path: test-results/
-          if-no-files-found: ignore
-          retention-days: 7
+          git add -A
+          git commit -m 'chore: materialize generated source before removing codegen'
+          git push origin HEAD:phase1-freeze-generated-source
