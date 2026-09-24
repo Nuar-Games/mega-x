@@ -1,4 +1,3 @@
-// GENERATED FILE — produced by scripts/build-clean.mjs; do not hand-edit.
 import { clearPracticeMatch, getPracticeMatchForUser, getPracticeResultSummary, isPracticeMatchId, submitPracticeAction, submitPracticeSpecialAction, surrenderPracticeMatch } from './practice-match'
 import { createClient } from '@supabase/supabase-js'
 export type OnlineSession = {

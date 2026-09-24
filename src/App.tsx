@@ -1,4 +1,3 @@
-// GENERATED FILE — produced by scripts/build-clean.mjs; do not hand-edit.
 import { getMyAdminStatus, adminListPlayers, adminSetSilenced, adminSetSuspended } from './onlineAuth'
 import { requestPasswordReset } from './onlineAuth'
 import { startPracticeMatch } from './practice-match'
