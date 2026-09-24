@@ -1,35 +1,39 @@
-name: Phase 1 one-time source materialization
+name: Verify source
 
 on:
   push:
-    branches: [phase1-freeze-generated-source]
+    branches: [arena-total-rewrite, phase1-freeze-generated-source]
+  pull_request:
+    branches: [arena-total-rewrite]
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  materialize-once:
+  build-and-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 24
       - name: Install dependencies
         run: npm install
-      - name: Materialize current generated source exactly once
-        run: node scripts/build-clean.mjs --prepare-only
-      - name: Commit every materialized source change
+      - name: Build and regression tests
+        run: npm run build
+      - name: E2E typecheck
+        run: npx tsc -p tsconfig.e2e.json --noEmit
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Browser E2E
+        run: npm run test:e2e
+      - name: Verify build did not modify tracked source
         run: |
-          if [[ -z "$(git status --porcelain)" ]]; then
-            echo 'MATERIALIZED_SOURCE_ALREADY_COMMITTED'
-            exit 0
+          if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
+            echo 'Build changed tracked files:'
+            git status --short --untracked-files=no
+            git diff
+            exit 1
           fi
-          git status --short
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
-          git commit -m 'chore: materialize generated source before removing codegen'
-          git push origin HEAD:phase1-freeze-generated-source
+          echo 'BUILD_LEFT_TRACKED_SOURCE_CLEAN'
