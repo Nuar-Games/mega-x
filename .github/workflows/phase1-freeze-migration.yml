@@ -1,0 +1,106 @@
+name: Phase 1 freeze generated source migration
+
+on:
+  push:
+    branches: [phase1-freeze-generated-source]
+
+permissions:
+  contents: write
+
+jobs:
+  freeze-source:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Convert generated outputs into normal source
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          headers = {
+              'src/App.tsx': '// GENERATED FILE — produced by scripts/build-clean.mjs; do not hand-edit.\n',
+              'src/onlineAuth.ts': '// GENERATED FILE — produced by scripts/build-clean.mjs; do not hand-edit.\n',
+              'src/index.css': '/* GENERATED FILE — produced by scripts/build-clean.mjs; do not hand-edit. */\n',
+              'src/arena-blueprint.fragment': '<!-- GENERATED FILE — produced by scripts/build-clean.mjs; do not hand-edit. -->\n',
+          }
+          for name, header in headers.items():
+              path = Path(name)
+              text = path.read_text(encoding='utf-8')
+              if not text.startswith(header):
+                  raise SystemExit(f'expected generated header missing: {name}')
+              path.write_text(text[len(header):], encoding='utf-8')
+          PY
+
+          cat > scripts/build-clean.mjs <<'EOF'
+          import { spawnSync } from 'node:child_process'
+
+          const run=(command,args=[])=>{
+            const result=spawnSync(command,args,{stdio:'inherit',shell:process.platform==='win32'})
+            if(result.status!==0)process.exit(result.status??1)
+          }
+
+          run('node',['scripts/verify-all.mjs','--tests-only'])
+          run('node',['scripts/verify-gate1.mjs'])
+          run('npx',['tsc'])
+          run('npx',['vite','build'])
+          EOF
+
+          cat > scripts/verify-all.mjs <<'EOF'
+          import { readdirSync } from 'node:fs'
+          import { spawnSync } from 'node:child_process'
+
+          const testsOnly = process.argv.includes('--tests-only')
+          const run=(command,args=[])=>{
+            console.log(`RUN ${command} ${args.join(' ')}`)
+            const result=spawnSync(command,args,{stdio:'inherit',shell:process.platform==='win32'})
+            if(result.status!==0){
+              console.error(`FAILED ${command} ${args.join(' ')}`)
+              process.exit(result.status??1)
+            }
+          }
+
+          const regressionFiles = readdirSync('tests', { withFileTypes: true })
+            .filter(entry => entry.isFile() && entry.name.endsWith('_regression.mjs'))
+            .map(entry => `tests/${entry.name}`)
+            .sort()
+
+          if (testsOnly && regressionFiles.length === 0) {
+            console.error('NO_REGRESSION_TESTS_FOUND')
+            process.exit(1)
+          }
+
+          if(testsOnly){
+            for(const file of regressionFiles)run('node',[file])
+            console.log(`ALL_REGRESSION_TESTS_PASS count=${regressionFiles.length}`)
+          }else{
+            run('npm',['run','build'])
+            console.log('FULL_VERIFY_PASS')
+          }
+          EOF
+
+          rm -rf recovery _restore
+          rm -f scripts/patch-*.mjs scripts/diagnose-*.mjs scripts/recover-*.mjs scripts/inspect-auth-app.mjs
+          rm -f loader.js main.js onlineAuth.js
+          rm -f .github/workflows/materialize-guest-lobby-vs-fix.yml
+
+          cat > .gitignore <<'EOF'
+          node_modules/
+          dist/
+          test-results/
+          playwright-report/
+          build.log
+          *.log
+          EOF
+
+          rm -f .github/workflows/phase1-freeze-migration.yml
+
+      - name: Commit frozen source
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git status --short
+          git commit -m 'refactor: freeze generated code into real source'
+          git push origin HEAD:phase1-freeze-generated-source
