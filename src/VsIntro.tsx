@@ -1,13 +1,12 @@
 import { getPracticeMatchForUser } from './practice-match'
 import { useEffect, useRef, useState } from 'react'
 import type { ActiveChallenge, ActiveOnlineMatch, OnlineSession } from './onlineAuth'
+import { SUPABASE_KEY as VS_SUPABASE_KEY, SUPABASE_URL as VS_SUPABASE_URL } from './supabaseConfig'
 import './VsIntro.css'
 import './VsIntroHype.css'
 
 const VS_INTRO_AUDIO_SRC = '/audio/coin-toss/mega-x-coin-toss-v1.opus'
 const VS_INTRO_AUDIO_START = 10
-const VS_SUPABASE_URL = ((import.meta as any).env?.VITE_SUPABASE_URL || 'https://mmtorfzxnidsczcdygbp.supabase.co') as string
-const VS_SUPABASE_KEY = ((import.meta as any).env?.VITE_SUPABASE_KEY || 'sb_publishable_fXF7LXgKXeH4p5_Bwai0nQ_d-NWdOk_') as string
 
 type VsIntroStage = 'ENTRY' | 'VERSUS' | 'REVEAL'
 
