@@ -67,6 +67,17 @@ async function surrenderActiveMatch(page:Page){
   },match.id)
 }
 
+async function surrenderExistingMatch(page:Page){
+  const match=await activeMatch(page)
+  if(!match)return
+  await page.evaluate(async(matchId)=>{
+    const auth=await import('/src/onlineAuth.ts')
+    const session=auth.getSavedSession()
+    if(!session)throw new Error('E2E_NO_SAVED_SESSION')
+    await auth.surrenderMatch(session,matchId)
+  },match.id)
+}
+
 async function startRealMatch(page:Page,matchId:string){
   await page.evaluate(async(matchId)=>{
     const auth=await import('/src/onlineAuth.ts')
@@ -155,6 +166,9 @@ test('two real online players reach round 2 and reconcile exactly after reconnec
       establishOnlineSession(page2,credentials(2)),
     ])
     expect(player1.userId).not.toBe(player2.userId)
+
+    await surrenderExistingMatch(page1)
+    await surrenderExistingMatch(page2)
 
     await joinRealMatch(page1)
     await joinRealMatch(page2)
