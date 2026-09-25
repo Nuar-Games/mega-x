@@ -44,20 +44,23 @@ function parseTargets(raw:string|null):PointerTarget[]{
 
 export async function arenaStatus(page:Page):Promise<ArenaStatus>{
   const locator=page.locator('[data-arena-status="true"]').first()
-  const text=(await locator.textContent())?.trim()??''
-  const position=(await locator.getAttribute('data-local-vs-position'))??''
-  const legalActions=((await locator.getAttribute('data-local-legal-actions'))??'').split(',').filter(Boolean)
-  const connectionStatus=(await locator.getAttribute('data-connection-status'))??''
-  const networkBusy=(await locator.getAttribute('data-network-busy'))==='true'
-  const pointerTargetVersion=Number((await locator.getAttribute('data-legal-target-version'))??'-1')
-  const pointerTargets=parseTargets(await locator.getAttribute('data-legal-targets'))
-  const mode=(await locator.getAttribute('data-self-discard-mode'))??''
-  const selfDiscardMode=mode==='EXACT'||mode==='ANY'?mode:''
-  const selfDiscardCount=Number((await locator.getAttribute('data-self-discard-count'))??'0')
-  if(text==='ARENA NEXT · LOADING')return {text,mode:'LOADING',version:-1,round:0,phase:'LOADING',position,legalActions,connectionStatus,networkBusy,pointerTargetVersion,pointerTargets,selfDiscardMode,selfDiscardCount}
-  const match=text.match(STATUS)
-  expect(match,`arena status became an error or invalid state: ${text}`).toBeTruthy()
-  return {text,mode:match![1] as 'PRACTICE'|'ONLINE',version:Number(match![2]),round:Number(match![3]),phase:match![4] as ArenaStatus['phase'],position,legalActions,connectionStatus,networkBusy,pointerTargetVersion,pointerTargets,selfDiscardMode,selfDiscardCount}
+  const snapshot=await locator.evaluate((element)=>({
+    text:element.textContent?.trim()??'',
+    position:element.getAttribute('data-local-vs-position')??'',
+    legalActions:(element.getAttribute('data-local-legal-actions')??'').split(',').filter(Boolean),
+    connectionStatus:element.getAttribute('data-connection-status')??'',
+    networkBusy:element.getAttribute('data-network-busy')==='true',
+    pointerTargetVersion:Number(element.getAttribute('data-legal-target-version')??'-1'),
+    pointerTargets:element.getAttribute('data-legal-targets'),
+    selfDiscardMode:element.getAttribute('data-self-discard-mode')??'',
+    selfDiscardCount:Number(element.getAttribute('data-self-discard-count')??'0'),
+  }))
+  const pointerTargets=parseTargets(snapshot.pointerTargets)
+  const selfDiscardMode=snapshot.selfDiscardMode==='EXACT'||snapshot.selfDiscardMode==='ANY'?snapshot.selfDiscardMode:''
+  if(snapshot.text==='ARENA NEXT · LOADING')return {text:snapshot.text,mode:'LOADING',version:-1,round:0,phase:'LOADING',position:snapshot.position,legalActions:snapshot.legalActions,connectionStatus:snapshot.connectionStatus,networkBusy:snapshot.networkBusy,pointerTargetVersion:snapshot.pointerTargetVersion,pointerTargets,selfDiscardMode,selfDiscardCount:snapshot.selfDiscardCount}
+  const match=snapshot.text.match(STATUS)
+  expect(match,`arena status became an error or invalid state: ${snapshot.text}`).toBeTruthy()
+  return {text:snapshot.text,mode:match![1] as 'PRACTICE'|'ONLINE',version:Number(match![2]),round:Number(match![3]),phase:match![4] as ArenaStatus['phase'],position:snapshot.position,legalActions:snapshot.legalActions,connectionStatus:snapshot.connectionStatus,networkBusy:snapshot.networkBusy,pointerTargetVersion:snapshot.pointerTargetVersion,pointerTargets,selfDiscardMode,selfDiscardCount:snapshot.selfDiscardCount}
 }
 
 async function arenaVersion(page:Page){
