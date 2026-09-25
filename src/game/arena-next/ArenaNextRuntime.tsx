@@ -85,10 +85,13 @@ export function ArenaNextRuntime({allowPracticeBootstrap=true,session=null,match
   const connectionStatus=state?.connection.status??''
   const networkBusy=state?.connection.networkBusy?'true':'false'
   const legalPointerTargets=JSON.stringify(pointerSnapshot.targets)
+  const selfDiscard=state?.pendingChoice?.kind==='SELF_DISCARD'?state.pendingChoice.value:null
+  const selfDiscardMode=selfDiscard?.mode??''
+  const selfDiscardCount=selfDiscard?.count??0
 
   return <main style={{position:'fixed',inset:0,overflow:'hidden',background:'#101216',zIndex:99999}}>
     <div id={RUNTIME_HOST_ID} ref={hostRef} style={{position:'absolute',inset:0}} />
-    <div data-arena-status="true" data-local-vs-position={localVsPosition} data-local-legal-actions={localLegalActions} data-connection-status={connectionStatus} data-network-busy={networkBusy} data-legal-target-version={pointerSnapshot.version} data-legal-targets={legalPointerTargets} style={{position:'absolute',left:12,top:12,right:12,zIndex:20,pointerEvents:'none',font:'700 14px/1.2 system-ui',letterSpacing:'.08em',color:'#fff'}}>
+    <div data-arena-status="true" data-local-vs-position={localVsPosition} data-local-legal-actions={localLegalActions} data-connection-status={connectionStatus} data-network-busy={networkBusy} data-legal-target-version={pointerSnapshot.version} data-legal-targets={legalPointerTargets} data-self-discard-mode={selfDiscardMode} data-self-discard-count={selfDiscardCount} style={{position:'absolute',left:12,top:12,right:12,zIndex:20,pointerEvents:'none',font:'700 14px/1.2 system-ui',letterSpacing:'.08em',color:'#fff'}}>
       {error?`ARENA NEXT · ${error.replaceAll('_',' ')}`:state?`ARENA NEXT · ${state.identity.mode.toUpperCase()} · V${state.stateVersion} · ROUND ${state.round} · ${state.phase}`:'ARENA NEXT · LOADING'}
     </div>
     {practiceGameOver&&<section style={{position:'absolute',left:'50%',bottom:24,transform:'translateX(-50%)',zIndex:30,width:'min(92vw,520px)',padding:18,border:'1px solid rgba(255,215,96,.55)',background:'rgba(5,8,14,.94)',color:'#fff',textAlign:'center',font:'700 14px/1.3 system-ui'}}>
