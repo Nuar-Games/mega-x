@@ -4,11 +4,6 @@ import { arenaStatus, driveOneHumanAction, waitForArenaReady } from './helpers/a
 type Credentials={email:string;password:string;handle:string}
 
 const SYNC_TIMEOUT=12_000
-const suiteStartedAt=Date.now()
-
-function trace(message:string){
-  console.log(`[online-e2e +${((Date.now()-suiteStartedAt)/1000).toFixed(1)}s] ${message}`)
-}
 
 function generatedCredentials(slot:1|2):Credentials{
   const nonce=`${Date.now()}-${Math.random().toString(36).slice(2,8)}`
@@ -91,27 +86,19 @@ async function waitForPeerVersion(page:Page,version:number){
 }
 
 async function driveNextAction(pages:[Page,Page]){
-  for(let index=0;index<pages.length;index+=1){
-    const page=pages[index]
+  for(const page of pages){
     const status=await arenaStatus(page)
     if(status.phase==='GAME_OVER')return {acted:false,status}
     if(status.legalActions.length===0)continue
-    const started=Date.now()
-    trace(`action start actor=P${index+1} V${status.version} R${status.round} ${status.phase} ${status.legalActions[0]}`)
     const result=await driveOneHumanAction(page)
-    const localMs=Date.now()-started
     if(!result.advanced)throw new Error(`online action stuck in ${status.phase} at V${status.version}; legal=${status.legalActions.join('|')}`)
     const after=await arenaStatus(page)
     const peer=pages[0]===page?pages[1]:pages[0]
-    const peerStarted=Date.now()
     await waitForPeerVersion(peer,after.version)
-    trace(`action synced V${after.version} local=${localMs}ms peer=${Date.now()-peerStarted}ms total=${Date.now()-started}ms`)
     return {acted:true,status:after}
   }
 
   const before=await Promise.all(pages.map(arenaStatus))
-  const started=Date.now()
-  trace(`waiting for legal action P1=V${before[0].version}/${before[0].phase} P2=V${before[1].version}/${before[1].phase}`)
   await expect.poll(async()=>{
     const current=await Promise.all(pages.map(arenaStatus))
     return current.some((status,index)=>
@@ -121,7 +108,6 @@ async function driveNextAction(pages:[Page,Page]){
       status.phase==='GAME_OVER',
     )
   },{timeout:SYNC_TIMEOUT,intervals:[100,200,400]}).toBe(true)
-  trace(`legal-action wait resolved in ${Date.now()-started}ms`)
   return {acted:false,status:await arenaStatus(pages[0])}
 }
 
@@ -130,7 +116,6 @@ async function playUntil(pages:[Page,Page],predicate:(statuses:[Awaited<ReturnTy
     const statuses=await Promise.all(pages.map(arenaStatus)) as [Awaited<ReturnType<typeof arenaStatus>>,Awaited<ReturnType<typeof arenaStatus>>]
     if(predicate(statuses))return statuses
     if(statuses.every(status=>status.phase==='GAME_OVER'))return statuses
-    if(step%10===0)trace(`play step ${step}/${maxSteps} P1=V${statuses[0].version}/R${statuses[0].round}/${statuses[0].phase} P2=V${statuses[1].version}/R${statuses[1].round}/${statuses[1].phase}`)
     await driveNextAction(pages)
   }
   throw new Error('online match exceeded action budget')
@@ -159,7 +144,6 @@ test('two real online players finish a match and one reconciles after reconnect'
   const errors2=collectPageErrors(page2)
 
   try{
-    trace('establishing two real online sessions')
     const [player1,player2]=await Promise.all([
       establishOnlineSession(page1,credentials(1)),
       establishOnlineSession(page2,credentials(2)),
@@ -170,7 +154,6 @@ test('two real online players finish a match and one reconciles after reconnect'
     await joinRealMatch(page2)
     const matchId=await waitForSameMatch(page1,page2)
     expect(matchId).toBeTruthy()
-    trace(`matched ${matchId}`)
 
     await startRealMatch(page1,matchId)
     await expect.poll(async()=> (await activeMatch(page1))?.status,{timeout:15_000}).toBe('ACTIVE')
@@ -178,11 +161,9 @@ test('two real online players finish a match and one reconciles after reconnect'
 
     await Promise.all([reopenArena(page1),reopenArena(page2)])
     const pages:[Page,Page]=[page1,page2]
-    trace('both arena clients ready')
 
     const preReconnect=await playUntil(pages,statuses=>statuses.every(status=>status.round>=2))
     expect(preReconnect.every(status=>status.round>=2),'both clients must complete at least one normal round before reconnect').toBe(true)
-    trace(`pre-reconnect target reached at V${preReconnect[0].version}/V${preReconnect[1].version}`)
 
     let offlineIndex:0|1=0
     let onlineIndex:0|1=1
@@ -197,7 +178,6 @@ test('two real online players finish a match and one reconciles after reconnect'
 
     const contexts:[BrowserContext,BrowserContext]=[context1,context2]
     const stale=await arenaStatus(pages[offlineIndex])
-    trace(`taking P${offlineIndex+1} offline at V${stale.version}`)
     await contexts[offlineIndex].setOffline(true)
     await pages[offlineIndex].waitForTimeout(2_500)
 
@@ -209,7 +189,6 @@ test('two real online players finish a match and one reconciles after reconnect'
     const authoritative=await arenaStatus(pages[onlineIndex])
     expect(authoritative.version).toBeGreaterThan(stale.version)
 
-    const reconnectStarted=Date.now()
     await contexts[offlineIndex].setOffline(false)
     await expect.poll(async()=>{
       const [recovered,peer,server]=await Promise.all([
@@ -228,7 +207,6 @@ test('two real online players finish a match and one reconciles after reconnect'
         recovered.phase===server.phase&&
         peer.phase===server.phase)
     },{timeout:20_000,intervals:[250,500,1000]}).toBe(true)
-    trace(`offline client reconciled in ${Date.now()-reconnectStarted}ms`)
 
     expect(errors1,`player 1 page errors: ${errors1.join(' | ')}`).toEqual([])
     expect(errors2,`player 2 page errors: ${errors2.join(' | ')}`).toEqual([])
@@ -239,7 +217,6 @@ test('two real online players finish a match and one reconciles after reconnect'
     expect(finished[0].version).toBe(finished[1].version)
     expect(errors1,`player 1 page errors: ${errors1.join(' | ')}`).toEqual([])
     expect(errors2,`player 2 page errors: ${errors2.join(' | ')}`).toEqual([])
-    trace(`match completed at V${finished[0].version}`)
   }finally{
     await context1.close()
     await context2.close()
