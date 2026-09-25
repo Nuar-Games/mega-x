@@ -56,7 +56,7 @@ export type ActiveChallenge = {
 
 const VITE_ENV = (import.meta as any).env ?? {}
 const SUPABASE_URL = VITE_ENV.VITE_SUPABASE_URL || 'https://mmtorfzxnidsczcdygbp.supabase.co'
-const SUPABASE_KEY = 'sb_publishable_fXF7LXgKXeH4p5_Bwai0nQ_d-NWdOk_'
+const SUPABASE_KEY = VITE_ENV.VITE_SUPABASE_ANON_KEY || 'sb_publishable_fXF7LXgKXeH4p5_Bwai0nQ_d-NWdOk_'
 const SUPABASE_ENV = VITE_ENV.VITE_SUPABASE_ENV || 'production'
 const SESSION_KEY = `mega-x-online-session-v1:${SUPABASE_ENV}`
 
