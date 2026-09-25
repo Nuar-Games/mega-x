@@ -1,0 +1,24 @@
+name: Baseline online E2E
+
+on:
+  push:
+    branches: [baseline-beee337-online-e2e]
+
+permissions:
+  contents: read
+
+jobs:
+  baseline-online-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm install
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run original online two-player E2E once
+        run: npx playwright test tests-e2e/arena_online_two_player.spec.ts
