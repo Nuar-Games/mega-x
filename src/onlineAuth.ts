@@ -454,6 +454,7 @@ export async function joinMatchmaking(session: OnlineSession): Promise<string | 
   const result = await rpcAuthed(session, 'join_matchmaking')
   return typeof result === 'string' ? result : null
 }
+
 export async function cancelMatchmaking(session: OnlineSession) {
   await rpcAuthed(session, 'cancel_matchmaking')
 }
