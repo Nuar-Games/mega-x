@@ -20,6 +20,9 @@ jobs:
       MEGA_X_E2E_P2_EMAIL: ${{ secrets.MEGA_X_E2E_P2_EMAIL }}
       MEGA_X_E2E_P2_PASSWORD: ${{ secrets.MEGA_X_E2E_P2_PASSWORD }}
       MEGA_X_E2E_P2_HANDLE: ${{ secrets.MEGA_X_E2E_P2_HANDLE }}
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      VITE_SUPABASE_ENV: ${{ secrets.VITE_SUPABASE_ENV }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
