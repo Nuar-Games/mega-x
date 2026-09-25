@@ -13,6 +13,13 @@ permissions:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    env:
+      MEGA_X_E2E_P1_EMAIL: ${{ secrets.MEGA_X_E2E_P1_EMAIL }}
+      MEGA_X_E2E_P1_PASSWORD: ${{ secrets.MEGA_X_E2E_P1_PASSWORD }}
+      MEGA_X_E2E_P1_HANDLE: ${{ secrets.MEGA_X_E2E_P1_HANDLE }}
+      MEGA_X_E2E_P2_EMAIL: ${{ secrets.MEGA_X_E2E_P2_EMAIL }}
+      MEGA_X_E2E_P2_PASSWORD: ${{ secrets.MEGA_X_E2E_P2_PASSWORD }}
+      MEGA_X_E2E_P2_HANDLE: ${{ secrets.MEGA_X_E2E_P2_HANDLE }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -35,5 +42,11 @@ jobs:
         run: npx tsc -p tsconfig.e2e.json --noEmit
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
-      - name: Browser E2E
-        run: npm run test:e2e
+      - name: Practice browser E2E
+        run: npx playwright test tests-e2e/arena_3d_set_vs_real_pointer.spec.ts
+      - name: Online two-player E2E
+        if: ${{ env.MEGA_X_E2E_P1_EMAIL != '' && env.MEGA_X_E2E_P1_PASSWORD != '' && env.MEGA_X_E2E_P1_HANDLE != '' && env.MEGA_X_E2E_P2_EMAIL != '' && env.MEGA_X_E2E_P2_PASSWORD != '' && env.MEGA_X_E2E_P2_HANDLE != '' }}
+        run: npx playwright test tests-e2e/arena_online_two_player.spec.ts
+      - name: Record skipped online E2E
+        if: ${{ env.MEGA_X_E2E_P1_EMAIL == '' || env.MEGA_X_E2E_P1_PASSWORD == '' || env.MEGA_X_E2E_P1_HANDLE == '' || env.MEGA_X_E2E_P2_EMAIL == '' || env.MEGA_X_E2E_P2_PASSWORD == '' || env.MEGA_X_E2E_P2_HANDLE == '' }}
+        run: echo 'ONLINE_E2E_SKIPPED_FIXED_TEST_ACCOUNTS_NOT_CONFIGURED'
