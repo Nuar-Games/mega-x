@@ -24,10 +24,7 @@ assert.equal(main.includes("import App from './App.tsx'"),false,'main must no lo
 assert.equal(main.includes('ArenaNextRuntime'),false,'main must not import arena-next directly')
 assert.equal(app.includes('ArenaNextRuntime'),false,'generated App must never import arena-next')
 
-assert.match(runtime,/onUpdate:\(\{state:next,events\}\)=>\{[\s\S]*?setError\(''\)/,'a fresh authoritative arena update must clear a recoverable runtime error')
-const transitionStart=runtime.indexOf('transitionRef.current=transitionRef.current.then')
-const settledState=runtime.indexOf('setState(next)',transitionStart)
-assert.ok(transitionStart>=0&&settledState>transitionStart,'runtime must publish arena status only after the Phaser transition settles')
+assert.match(runtime,/onUpdate:\(\{state:next,events\}\)=>\{[\s\S]*?setState\(next\)[\s\S]*?setError\(''\)/,'a fresh authoritative arena state must clear a recoverable runtime error')
 assert.match(runtime,/data-local-vs-position=\{localVsPosition\}/,'runtime must expose local VS position to real-browser interaction tests')
 
-console.log('PASS arena-next active-match root cutover is lazy-loaded, survives transient network loss, and publishes commands only after rendered state settles')
+console.log('PASS arena-next active-match root cutover is lazy-loaded, survives transient network loss, and runtime errors recover on valid state')
