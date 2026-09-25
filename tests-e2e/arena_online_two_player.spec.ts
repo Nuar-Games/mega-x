@@ -56,6 +56,17 @@ async function activeMatch(page:Page){
   })
 }
 
+async function surrenderActiveMatch(page:Page){
+  const match=await activeMatch(page)
+  if(!match||match.status!=='ACTIVE')return
+  await page.evaluate(async(matchId)=>{
+    const auth=await import('/src/onlineAuth.ts')
+    const session=auth.getSavedSession()
+    if(!session)throw new Error('E2E_NO_SAVED_SESSION')
+    await auth.surrenderMatch(session,matchId)
+  },match.id)
+}
+
 async function startRealMatch(page:Page,matchId:string){
   await page.evaluate(async(matchId)=>{
     const auth=await import('/src/onlineAuth.ts')
@@ -206,6 +217,8 @@ test('two real online players reach round 2 and reconcile exactly after reconnec
     expect(errors1,`player 1 page errors: ${errors1.join(' | ')}`).toEqual([])
     expect(errors2,`player 2 page errors: ${errors2.join(' | ')}`).toEqual([])
   }finally{
+    await Promise.allSettled([context1.setOffline(false),context2.setOffline(false)])
+    await Promise.allSettled([surrenderActiveMatch(page1),surrenderActiveMatch(page2)])
     await context1.close()
     await context2.close()
   }
