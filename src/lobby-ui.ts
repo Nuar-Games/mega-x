@@ -1,7 +1,5 @@
 import './practice-mode.css'
-
-const SUPABASE_URL = ((import.meta as any).env?.VITE_SUPABASE_URL || 'https://mmtorfzxnidsczcdygbp.supabase.co') as string
-const SUPABASE_KEY = ((import.meta as any).env?.VITE_SUPABASE_KEY || 'sb_publishable_fXF7LXgKXeH4p5_Bwai0nQ_d-NWdOk_') as string
+import { SUPABASE_KEY, SUPABASE_URL } from './supabaseConfig'
 
 type LobbyMetrics = {
   fights_played: number
