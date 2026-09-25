@@ -22,12 +22,6 @@ jobs:
         run: npm install
       - name: Build and regression tests
         run: npm run build
-      - name: E2E typecheck
-        run: npx tsc -p tsconfig.e2e.json --noEmit
-      - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
-      - name: Browser E2E
-        run: npm run test:e2e
       - name: Verify install and build leave the checkout clean
         run: |
           if [[ -n "$(git status --porcelain)" ]]; then
@@ -37,3 +31,9 @@ jobs:
             exit 1
           fi
           echo 'INSTALL_AND_BUILD_LEFT_CHECKOUT_CLEAN'
+      - name: E2E typecheck
+        run: npx tsc -p tsconfig.e2e.json --noEmit
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Browser E2E
+        run: npm run test:e2e
