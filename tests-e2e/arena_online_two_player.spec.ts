@@ -4,6 +4,13 @@ import { arenaStatus, driveOneHumanAction, waitForArenaReady } from './helpers/a
 type Credentials={email:string;password:string;handle:string}
 
 const SYNC_TIMEOUT=12_000
+const PRODUCTION_SUPABASE_URL='https://mmtorfzxnidsczcdygbp.supabase.co'
+const E2E_SUPABASE_ENV=process.env.VITE_SUPABASE_ENV
+const E2E_SUPABASE_URL=process.env.VITE_SUPABASE_URL
+
+if(E2E_SUPABASE_ENV!=='test'||!E2E_SUPABASE_URL||E2E_SUPABASE_URL===PRODUCTION_SUPABASE_URL){
+  throw new Error('Online E2E refused to run against production: VITE_SUPABASE_ENV must be test and VITE_SUPABASE_URL must be set to a non-production Supabase project.')
+}
 
 function credentials(slot:1|2):Credentials{
   const prefix=`MEGA_X_E2E_P${slot}_`
