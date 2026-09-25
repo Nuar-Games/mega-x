@@ -30,29 +30,14 @@ export function ArenaNextRuntime({allowPracticeBootstrap=true,session=null,match
       matchOverride:match,
       onUpdate:({state:next,events})=>{
         if(cancelled)return
+        setState(next)
         setError('')
         const scene=sceneRef.current
-        if(!scene){
-          setState(next)
-          return
-        }
+        if(!scene)return
         transitionRef.current=transitionRef.current.then(async()=>{
           if(cancelled||sceneRef.current!==scene)return
-          if(events.length===0){
-            scene.rebuildFromState(next)
-            setState(next)
-            return
-          }
-
-          // The first semantic event settles Phaser onto the new authoritative
-          // state. Publish commands at that point so canvas hitboxes and the
-          // advertised legal actions describe the same state. Remaining
-          // presentation-only events may animate together; they must not hold
-          // gameplay input hostage or create a growing animation backlog.
-          await scene.consumeEvent(events[0],next)
-          if(cancelled||sceneRef.current!==scene)return
-          setState(next)
-          if(events.length>1)await Promise.all(events.slice(1).map(event=>scene.consumeEvent(event,next)))
+          if(events.length===0){scene.rebuildFromState(next);return}
+          for(const event of events)await scene.consumeEvent(event,next)
         }).catch((e)=>setError(e instanceof Error?e.message:'ARENA_TRANSITION_FAILED'))
       },
       onError:(message)=>{if(!cancelled)setError(message)},
