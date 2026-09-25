@@ -3,8 +3,9 @@ import { applyEngineAction } from '../supabase/functions/match-action/engine.ts'
 const P1='engine-regression-p1'
 const P2='engine-regression-p2'
 const META={player1_id:P1,player2_id:P2}
-const MATCHES=256
-const MAX_STEPS=320
+const MATCHES=512
+const MAX_STEPS=360
+const DRAW_EFFECTS=new Set([1,16,25])
 
 const TIE_ATK={
   1:600,2:999,3:500,4:500,5:700,6:600,7:700,8:500,9:900,10:600,
@@ -64,8 +65,17 @@ function apply(state,actor,action,payload={}){
   return applyEngineAction({state,meta:META,actorId:actor,action:{action,payload}})
 }
 
-function chooseVs(hand){
-  return hand.find(cardId=>cardId!==26)??hand[0]
+function chooseVs(hand,random){
+  const candidates=hand.filter(cardId=>cardId!==26)
+  const pool=candidates.length?candidates:hand
+  return pool[Math.floor(random()*pool.length)]
+}
+
+function chooseDrawEffect(state,index,random){
+  if(state.effectActionTaken[index])return null
+  const candidates=player(state,index).hand.filter(cardId=>DRAW_EFFECTS.has(cardId))
+  if(!candidates.length)return null
+  return candidates[Math.floor(random()*candidates.length)]
 }
 
 function resolveTieBreakerToGameOver(state,random){
@@ -101,9 +111,10 @@ function driveMatch(seed){
   let state=initialState(random)
   let enteredTieBreaker=false
   let actions=0
+  let drawEffectsPlayed=0
   try{
     for(let step=0;step<MAX_STEPS;step+=1){
-      if(state.phase==='GAME_OVER')return {state,enteredTieBreaker,actions,steps:step}
+      if(state.phase==='GAME_OVER')return {state,enteredTieBreaker,actions,steps:step,drawEffectsPlayed}
       if(state.phase==='TIE_BREAKER'){
         enteredTieBreaker=true
         state=resolveTieBreakerToGameOver(state,random)
@@ -141,7 +152,7 @@ function driveMatch(seed){
         for(const index of [0,1]){
           if(!state.needsVS[index])continue
           const own=player(state,index)
-          const cardId=chooseVs(own.hand)
+          const cardId=chooseVs(own.hand,random)
           if(cardId===undefined)continue
           state=apply(state,actorId(index),'SET_VS',{cardId,position:'ATK'})
           actions+=1
@@ -159,6 +170,15 @@ function driveMatch(seed){
 
       if(state.phase==='EFFECT'){
         if(!state.effectTurn)throw new Error(`seed=${seed} EFFECT has no effectTurn`)
+        const index=actorIndex(state.effectTurn)
+        if(index===null)throw new Error(`seed=${seed} unknown effect actor`)
+        const drawEffect=chooseDrawEffect(state,index,random)
+        if(drawEffect!==null){
+          state=apply(state,state.effectTurn,'PLAY_EFFECT',{cardId:drawEffect})
+          actions+=1
+          drawEffectsPlayed+=1
+          continue
+        }
         state=apply(state,state.effectTurn,'END_EFFECT_TURN')
         actions+=1
         continue
@@ -186,6 +206,7 @@ let directGameOver=0
 let tieBreakerGameOver=0
 let deckExhausted=0
 let actionCount=0
+let drawEffectsPlayed=0
 let maxSteps=0
 
 for(let seed=1;seed<=MATCHES;seed+=1){
@@ -196,11 +217,13 @@ for(let seed=1;seed<=MATCHES;seed+=1){
   if(result.enteredTieBreaker)tieBreakerGameOver+=1
   else directGameOver+=1
   actionCount+=result.actions
+  drawEffectsPlayed+=result.drawEffectsPlayed
   maxSteps=Math.max(maxSteps,result.steps)
 }
 
 if(deckExhausted!==MATCHES)throw new Error(`expected every deterministic full match to exhaust Master Deck; got ${deckExhausted}/${MATCHES}`)
 if(directGameOver===0)throw new Error('seeded full-match coverage never exercised direct deck-exhaustion GAME_OVER')
 if(tieBreakerGameOver===0)throw new Error('seeded full-match coverage never exercised deck-exhaustion tie-breaker')
+if(drawEffectsPlayed===0)throw new Error('seeded full-match coverage never exercised direct-engine draw effects')
 
-console.log(`ENGINE_FULL_MATCH_PASS matches=${MATCHES} directGameOver=${directGameOver} tieBreakerGameOver=${tieBreakerGameOver} deckExhausted=${deckExhausted} actions=${actionCount} maxSteps=${maxSteps}`)
+console.log(`ENGINE_FULL_MATCH_PASS matches=${MATCHES} directGameOver=${directGameOver} tieBreakerGameOver=${tieBreakerGameOver} deckExhausted=${deckExhausted} drawEffects=${drawEffectsPlayed} actions=${actionCount} maxSteps=${maxSteps}`)
