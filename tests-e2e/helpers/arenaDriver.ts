@@ -27,6 +27,8 @@ export type ArenaStatus={
   networkBusy:boolean
   pointerTargetVersion:number
   pointerTargets:PointerTarget[]
+  selfDiscardMode:''|'EXACT'|'ANY'
+  selfDiscardCount:number
 }
 
 function parseTargets(raw:string|null):PointerTarget[]{
@@ -49,10 +51,13 @@ export async function arenaStatus(page:Page):Promise<ArenaStatus>{
   const networkBusy=(await locator.getAttribute('data-network-busy'))==='true'
   const pointerTargetVersion=Number((await locator.getAttribute('data-legal-target-version'))??'-1')
   const pointerTargets=parseTargets(await locator.getAttribute('data-legal-targets'))
-  if(text==='ARENA NEXT · LOADING')return {text,mode:'LOADING',version:-1,round:0,phase:'LOADING',position,legalActions,connectionStatus,networkBusy,pointerTargetVersion,pointerTargets}
+  const mode=(await locator.getAttribute('data-self-discard-mode'))??''
+  const selfDiscardMode=mode==='EXACT'||mode==='ANY'?mode:''
+  const selfDiscardCount=Number((await locator.getAttribute('data-self-discard-count'))??'0')
+  if(text==='ARENA NEXT · LOADING')return {text,mode:'LOADING',version:-1,round:0,phase:'LOADING',position,legalActions,connectionStatus,networkBusy,pointerTargetVersion,pointerTargets,selfDiscardMode,selfDiscardCount}
   const match=text.match(STATUS)
   expect(match,`arena status became an error or invalid state: ${text}`).toBeTruthy()
-  return {text,mode:match![1] as 'PRACTICE'|'ONLINE',version:Number(match![2]),round:Number(match![3]),phase:match![4] as ArenaStatus['phase'],position,legalActions,connectionStatus,networkBusy,pointerTargetVersion,pointerTargets}
+  return {text,mode:match![1] as 'PRACTICE'|'ONLINE',version:Number(match![2]),round:Number(match![3]),phase:match![4] as ArenaStatus['phase'],position,legalActions,connectionStatus,networkBusy,pointerTargetVersion,pointerTargets,selfDiscardMode,selfDiscardCount}
 }
 
 async function arenaVersion(page:Page){
@@ -94,6 +99,7 @@ async function clickTarget(page:Page,target:PointerTarget){
 
 function chooseTarget(status:ArenaStatus){
   const targets=status.pointerTargets
+  if(status.legalActions.includes('RESOLVE_SELF_DISCARD'))return undefined
   if(status.phase==='SET_VS'){
     const setVs=targets.filter(target=>target.action==='SET_VS')
     return setVs.find(target=>target.cardId!==26&&target.position==='ATK')
@@ -104,14 +110,35 @@ function chooseTarget(status:ArenaStatus){
   if(status.phase==='EFFECT'){
     return targets.find(target=>target.action==='END_EFFECT_TURN')
       ??targets.find(target=>target.action==='BEGIN_ROUND')
-      ??targets.find(target=>target.action!=='PLAY_EFFECT'&&target.action!=='SWITCH_POSITION'&&target.action!=='SELECT_SELF_DISCARD')
+      ??targets.find(target=>!['PLAY_EFFECT','SWITCH_POSITION','SELECT_SELF_DISCARD','RESOLVE_SELF_DISCARD'].includes(target.action))
   }
   if(status.phase==='ATTACK'){
     if(status.position!=='DEF')return targets.find(target=>target.action==='ATTACK')??targets.find(target=>target.action==='PASS_ATTACK')
     return targets.find(target=>target.action==='PASS_ATTACK')
   }
   if(status.phase==='TIE_BREAKER')return targets.find(target=>target.action==='TIE_PICK')
-  return targets.find(target=>target.action!=='SELECT_SELF_DISCARD')
+  return targets.find(target=>target.action!=='SELECT_SELF_DISCARD'&&target.action!=='RESOLVE_SELF_DISCARD')
+}
+
+async function resolveSelfDiscard(page:Page,status:ArenaStatus){
+  const selectable=status.pointerTargets.filter(target=>target.action==='SELECT_SELF_DISCARD')
+  const required=status.selfDiscardMode==='EXACT'?status.selfDiscardCount:0
+  if(required>selectable.length)return {advanced:false,action:'RESOLVE_SELF_DISCARD'}
+
+  for(const target of selectable.slice(0,required)){
+    await clickTarget(page,target)
+    await page.waitForTimeout(25)
+  }
+
+  // The scene creates the confirm button after enough exact selections have
+  // been made. Its coordinate is already published from the same layout, so
+  // the driver uses that coordinate and never searches the canvas.
+  const current=await arenaStatus(page)
+  const confirm=current.pointerTargets.find(target=>target.action==='RESOLVE_SELF_DISCARD')
+    ??status.pointerTargets.find(target=>target.action==='RESOLVE_SELF_DISCARD')
+  if(!confirm)return {advanced:false,action:'RESOLVE_SELF_DISCARD'}
+  await clickTarget(page,confirm)
+  return {advanced:await waitForVersionChange(page,status.version),action:'RESOLVE_SELF_DISCARD'}
 }
 
 export async function driveOneHumanAction(page:Page){
@@ -119,27 +146,10 @@ export async function driveOneHumanAction(page:Page){
   if(before.phase==='GAME_OVER')return {advanced:true,action:'GAME_OVER'}
 
   const settled=await waitForSettledTargets(page,before.version)
-  let target=chooseTarget(settled)
+  if(settled.legalActions.includes('RESOLVE_SELF_DISCARD'))return resolveSelfDiscard(page,settled)
 
-  // Self-discard is a two-stage UI action: select the exact card targets first,
-  // then press the exposed confirmation target. No guessed canvas positions are used.
-  if(!target&&settled.pointerTargets.some(candidate=>candidate.action==='SELECT_SELF_DISCARD')){
-    const selectable=settled.pointerTargets.filter(candidate=>candidate.action==='SELECT_SELF_DISCARD')
-    for(const candidate of selectable){
-      await clickTarget(page,candidate)
-      await page.waitForTimeout(25)
-      const current=await arenaStatus(page)
-      target=current.pointerTargets.find(item=>item.action==='RESOLVE_SELF_DISCARD')
-      if(target){
-        await clickTarget(page,target)
-        if(await waitForVersionChange(page,before.version))return {advanced:true,action:'RESOLVE_SELF_DISCARD'}
-      }
-    }
-    return {advanced:false,action:'RESOLVE_SELF_DISCARD'}
-  }
-
+  const target=chooseTarget(settled)
   if(!target)return {advanced:false,action:'NO_EXACT_TARGET'}
   await clickTarget(page,target)
-  const advanced=await waitForVersionChange(page,before.version)
-  return {advanced,action:target.action}
+  return {advanced:await waitForVersionChange(page,before.version),action:target.action}
 }
