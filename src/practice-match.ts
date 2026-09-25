@@ -73,14 +73,55 @@ function meta(): MatchMeta {
   return { player1_id: store.match.player1_id, player2_id: store.match.player2_id }
 }
 
+export function preservePracticeExhaustedDeckTurnCompletion(nextState: any, previousState: any, action: string, actorId: string, player1Id: string, player2Id: string) {
+  if (!previousState.deckExhausted && !nextState.deckExhausted) return
+  const normalized = action.toUpperCase()
+
+  if (previousState.deckExhausted && normalized === 'BEGIN_ROUND' && (nextState.phase === 'GAME_OVER' || nextState.phase === 'TIE_BREAKER')) {
+    nextState.phase = 'EFFECT'
+    nextState.effectTurn = nextState.firstPlayer
+    nextState.attackTurn = null
+    nextState.winner = null
+    nextState.tieBreaker = null
+    const firstLabel = nextState.firstPlayer === player1Id ? 'X Fighter 1' : 'X Fighter 2'
+    nextState.message = `Pusingan ${nextState.round}: giliran Effect ${firstLabel}.`
+    return
+  }
+
+  // ATTACK is the authoritative boundary proving both final Effect turns are
+  // complete. Do not depend on one exact action/actor to notice it: Practice can
+  // arrive here through paced bot ticks, pending-choice resolution, or recovery.
+  if (nextState.phase !== 'ATTACK') return
+  if (nextState.pendingSelfDiscard || nextState.pendingBoardChoice || nextState.pendingChoice) return
+
+  const x1 = nextState.player1.x.length
+  const x2 = nextState.player2.x.length
+  nextState.effectTurn = null
+  nextState.attackTurn = null
+  if (x1 !== x2) {
+    nextState.phase = 'GAME_OVER'
+    nextState.winner = x1 > x2 ? player1Id : player2Id
+    nextState.tieBreaker = null
+    nextState.message = `Master Deck habis. Zon X ${x1}-${x2}.`
+  } else {
+    nextState.phase = 'TIE_BREAKER'
+    nextState.winner = null
+    nextState.tieBreaker = { deck: shuffleDeck(), index: 0, left: null, right: null, status: 'WAITING', pair: 0 }
+    nextState.message = 'PENENTUAN SERI'
+  }
+}
+
 function apply(actorId: string, action: string, payload: Record<string, unknown> = {}) {
   if (!store) throw new Error('PRACTICE_MATCH_NOT_FOUND')
-  store.match.state = applyEngineAction({
-    state: store.match.state,
+  const previousState = store.match.state
+  const nextState = applyEngineAction({
+    state: previousState,
     meta: meta(),
     actorId,
     action: { action, payload } as EngineAction,
   })
+  preservePracticeExhaustedDeckTurnCompletion(nextState, previousState, action, actorId, store.match.player1_id, store.match.player2_id)
+  store.match.state = nextState
 }
 
 function ensureTieHands(state: EngineState) {
@@ -177,7 +218,11 @@ function advanceBot(maxSteps = 24) {
     store.match.state,
     meta(),
     PRACTICE_BOT_ID,
-    (state, actorId, candidate) => applyEngineAction({ state, meta: meta(), actorId, action: candidate as EngineAction }),
+    (state, actorId, candidate) => {
+      const nextState = applyEngineAction({ state, meta: meta(), actorId, action: candidate as EngineAction })
+      preservePracticeExhaustedDeckTurnCompletion(nextState, state, candidate.action, actorId, store!.match.player1_id, store!.match.player2_id)
+      return nextState
+    },
     maxSteps,
   )
   store.match.state = result.state

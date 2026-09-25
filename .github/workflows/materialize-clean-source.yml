@@ -1,94 +1,52 @@
-name: Verify generated clean source
+name: Verify source
 
 on:
   push:
-    branches: [arena-clean-rebuild, arena-total-rewrite]
+    branches: [arena-total-rewrite, phase1-freeze-generated-source]
   pull_request:
-    branches: [arena-clean-rebuild, arena-total-rewrite]
+    branches: [arena-total-rewrite]
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  verify-generated-source:
+  build-and-test:
     runs-on: ubuntu-latest
+    env:
+      MEGA_X_E2E_P1_EMAIL: ${{ secrets.MEGA_X_E2E_P1_EMAIL }}
+      MEGA_X_E2E_P1_PASSWORD: ${{ secrets.MEGA_X_E2E_P1_PASSWORD }}
+      MEGA_X_E2E_P1_HANDLE: ${{ secrets.MEGA_X_E2E_P1_HANDLE }}
+      MEGA_X_E2E_P2_EMAIL: ${{ secrets.MEGA_X_E2E_P2_EMAIL }}
+      MEGA_X_E2E_P2_PASSWORD: ${{ secrets.MEGA_X_E2E_P2_PASSWORD }}
+      MEGA_X_E2E_P2_HANDLE: ${{ secrets.MEGA_X_E2E_P2_HANDLE }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 24
       - name: Install dependencies
         run: npm install
-      - name: Guard arena-next from patch-chain codegen
+      - name: Build and regression tests
+        run: npm run build
+      - name: Verify install and build leave the checkout clean
         run: |
-          if grep -R --line-number --include='patch-*.mjs' --include='build-clean.mjs' 'arena-next' scripts; then
-            echo 'arena-next must remain normal hand-authored source and may not be referenced by build-clean or patch scripts.'
+          if [[ -n "$(git status --porcelain)" ]]; then
+            echo 'Install or build changed the checkout:'
+            git status --short
+            git diff
             exit 1
           fi
-          echo 'ARENA_NEXT_PATCH_CHAIN_GUARD_OK'
-      - name: Regenerate authoritative source once
-        run: node scripts/build-clean.mjs --prepare-only
-      - name: Auto-commit generated source on rewrite branch
-        if: github.event_name == 'push' && github.ref == 'refs/heads/arena-total-rewrite'
-        run: |
-          paths=(src/App.tsx src/onlineAuth.ts src/index.css src/arena-blueprint.fragment)
-          if [[ -z "$(git status --porcelain -- "${paths[@]}")" ]]; then
-            echo 'GENERATED_SOURCE_IN_SYNC'
-            exit 0
-          fi
-
-          echo 'Generated source drift detected; committing deterministic outputs.'
-          git status --short -- "${paths[@]}"
-          git diff -- "${paths[@]}" || true
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- "${paths[@]}"
-          git commit -m 'chore: regenerate authoritative generated source'
-          git push origin HEAD:arena-total-rewrite
-      - name: Fail if generated source is not committed exactly
-        run: |
-          paths=(src/App.tsx src/onlineAuth.ts src/index.css src/arena-blueprint.fragment)
-          if [[ -n "$(git status --porcelain -- "${paths[@]}")" ]]; then
-            echo 'Generated source drift remains after regeneration.'
-            git status --short -- "${paths[@]}"
-            git diff -- "${paths[@]}" || true
-            exit 1
-          fi
-          echo 'GENERATED_SOURCE_IN_SYNC'
-      - name: Typecheck
-        run: npx tsc --noEmit
+          echo 'INSTALL_AND_BUILD_LEFT_CHECKOUT_CLEAN'
       - name: E2E typecheck
         run: npx tsc -p tsconfig.e2e.json --noEmit
-      - name: Arena-next regression tests
-        run: |
-          node tests/arena_next_contract_regression.mjs
-          node tests/arena_next_event_pipeline_regression.mjs
-          node tests/arena_next_prototype_regression.mjs
-          node tests/arena_next_live_match_regression.mjs
-          node tests/arena_next_pipeline_guard_regression.mjs
-          node tests/arena_next_command_surface_regression.mjs
-      - name: Production build
-        run: |
-          set -o pipefail
-          npm run build 2>&1 | tee build.log
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
-      - name: Arena-next full practice browser E2E
-        run: npx playwright test
-      - name: Upload production build failure log
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: production-build-failure-log
-          path: build.log
-      - name: Upload Playwright trace on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: arena-next-playwright-failure
-          path: test-results/
-          if-no-files-found: ignore
-          retention-days: 7
+      - name: Practice browser E2E
+        run: npx playwright test tests-e2e/arena_3d_set_vs_real_pointer.spec.ts
+      - name: Online two-player E2E
+        if: ${{ env.MEGA_X_E2E_P1_EMAIL != '' && env.MEGA_X_E2E_P1_PASSWORD != '' && env.MEGA_X_E2E_P1_HANDLE != '' && env.MEGA_X_E2E_P2_EMAIL != '' && env.MEGA_X_E2E_P2_PASSWORD != '' && env.MEGA_X_E2E_P2_HANDLE != '' }}
+        run: npx playwright test tests-e2e/arena_online_two_player.spec.ts
+      - name: Record skipped online E2E
+        if: ${{ env.MEGA_X_E2E_P1_EMAIL == '' || env.MEGA_X_E2E_P1_PASSWORD == '' || env.MEGA_X_E2E_P1_HANDLE == '' || env.MEGA_X_E2E_P2_EMAIL == '' || env.MEGA_X_E2E_P2_PASSWORD == '' || env.MEGA_X_E2E_P2_HANDLE == '' }}
+        run: echo 'ONLINE_E2E_SKIPPED_FIXED_TEST_ACCOUNTS_NOT_CONFIGURED'

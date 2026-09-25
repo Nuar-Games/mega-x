@@ -1,4 +1,3 @@
-<!-- GENERATED FILE — produced by scripts/build-clean.mjs; do not hand-edit. -->
 <>
   <div className={`mx3-canvas phase-${game.phase.toLowerCase()} ${impactFx ? 'is-combat-live' : ''}`}>
     <div className="mx3-particles" aria-hidden="true">

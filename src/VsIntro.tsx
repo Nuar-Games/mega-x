@@ -1,3 +1,4 @@
+import { getPracticeMatchForUser } from './practice-match'
 import { useEffect, useRef, useState } from 'react'
 import type { ActiveChallenge, ActiveOnlineMatch, OnlineSession } from './onlineAuth'
 import './VsIntro.css'
@@ -28,7 +29,7 @@ async function vsIntroRpc(session: OnlineSession, name: string, body: Record<str
   return payload
 }
 export async function respondToChallengeVsIntro(session: OnlineSession, challengeId: string, accept: boolean): Promise<ActiveChallenge> { return vsIntroRpc(session,'respond_to_challenge_vs_intro',{p_challenge:challengeId,p_accept:accept}) }
-export async function getMyActiveMatchVsIntro(session: OnlineSession): Promise<ActiveOnlineMatch|null> { const rows=await vsIntroRpc(session,'get_my_active_match_vs_intro'); return Array.isArray(rows)&&rows.length?rows[0]:null }
+export async function getMyActiveMatchVsIntro(session: OnlineSession): Promise<ActiveOnlineMatch|null> { const practice=getPracticeMatchForUser(session.userId); if(practice)return practice as ActiveOnlineMatch; const rows=await vsIntroRpc(session,'get_my_active_match_vs_intro'); return Array.isArray(rows)&&rows.length?rows[0]:null }
 export async function startVsIntroMatch(session: OnlineSession, matchId: string) { return vsIntroRpc(session,'start_vs_intro_match',{p_match:matchId}) }
 export async function joinMatchmakingVsIntro(session: OnlineSession): Promise<string|null> { const result=await vsIntroRpc(session,'join_matchmaking_vs_intro'); return typeof result==='string'?result:null }
 
