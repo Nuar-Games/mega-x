@@ -75,10 +75,10 @@ export async function waitForVersionChange(page:Page,version:number,timeout=COMM
   }catch{return false}
 }
 
-async function waitForSettledTargets(page:Page,version:number){
+async function waitForSettledTargets(page:Page){
   await expect.poll(async()=>{
     const status=await arenaStatus(page)
-    return status.pointerTargetVersion===version&&!status.networkBusy
+    return status.pointerTargetVersion===status.version&&!status.networkBusy
   },{timeout:COMMAND_WAIT_MS,intervals:[50,75,100,200,400]}).toBe(true)
   return arenaStatus(page)
 }
@@ -145,11 +145,11 @@ export async function driveOneHumanAction(page:Page){
   const before=await arenaStatus(page)
   if(before.phase==='GAME_OVER')return {advanced:true,action:'GAME_OVER'}
 
-  const settled=await waitForSettledTargets(page,before.version)
+  const settled=await waitForSettledTargets(page)
   if(settled.legalActions.includes('RESOLVE_SELF_DISCARD'))return resolveSelfDiscard(page,settled)
 
   const target=chooseTarget(settled)
   if(!target)return {advanced:false,action:'NO_EXACT_TARGET'}
   await clickTarget(page,target)
-  return {advanced:await waitForVersionChange(page,before.version),action:target.action}
+  return {advanced:await waitForVersionChange(page,settled.version),action:target.action}
 }
