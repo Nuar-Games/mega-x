@@ -30,14 +30,20 @@ export function ArenaNextRuntime({allowPracticeBootstrap=true,session=null,match
       matchOverride:match,
       onUpdate:({state:next,events})=>{
         if(cancelled)return
-        setState(next)
         setError('')
         const scene=sceneRef.current
-        if(!scene)return
+        if(!scene){
+          setState(next)
+          return
+        }
         transitionRef.current=transitionRef.current.then(async()=>{
           if(cancelled||sceneRef.current!==scene)return
-          if(events.length===0){scene.rebuildFromState(next);return}
-          for(const event of events)await scene.consumeEvent(event,next)
+          if(events.length===0)scene.rebuildFromState(next)
+          else for(const event of events)await scene.consumeEvent(event,next)
+          if(cancelled||sceneRef.current!==scene)return
+          // Publish the status/commands only after Phaser has settled to this state.
+          // Otherwise the DOM can advertise a legal action before its canvas hitbox exists.
+          setState(next)
         }).catch((e)=>setError(e instanceof Error?e.message:'ARENA_TRANSITION_FAILED'))
       },
       onError:(message)=>{if(!cancelled)setError(message)},
