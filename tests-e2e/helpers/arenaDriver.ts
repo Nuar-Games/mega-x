@@ -1,9 +1,19 @@
 import { expect, type Page } from 'playwright/test'
-import { createDesktopPrototypeLayout, type ArenaPrototypeRect } from '../../src/game/arena-next/prototype/ArenaPrototypeLayout'
 
 const STATUS=/^ARENA NEXT · (PRACTICE|ONLINE) · V(\d+) · ROUND (\d+) · (SET_VS|EFFECT|ATTACK|TIE_BREAKER|GAME_OVER)$/
 export const COMMAND_WAIT_MS=8_000
-const COMMAND_ACCEPT_MS=700
+
+type PointerTarget={
+  key:string
+  kind:'HAND_CARD'|'TIE_CARD'|'BOARD_CARD'|'SELF_DISCARD_CARD'|'ACTION'
+  action:string
+  label:string
+  x:number
+  y:number
+  cardId?:number
+  position?:'ATK'|'DEF'
+  slot?:number
+}
 
 export type ArenaStatus={
   text:string
@@ -15,6 +25,19 @@ export type ArenaStatus={
   legalActions:string[]
   connectionStatus:string
   networkBusy:boolean
+  pointerTargetVersion:number
+  pointerTargets:PointerTarget[]
+}
+
+function parseTargets(raw:string|null):PointerTarget[]{
+  if(!raw)return []
+  try{
+    const value=JSON.parse(raw)
+    if(!Array.isArray(value))return []
+    return value.filter((target):target is PointerTarget=>
+      Boolean(target&&typeof target==='object'&&typeof target.action==='string'&&Number.isFinite(target.x)&&Number.isFinite(target.y)),
+    )
+  }catch{return []}
 }
 
 export async function arenaStatus(page:Page):Promise<ArenaStatus>{
@@ -24,10 +47,12 @@ export async function arenaStatus(page:Page):Promise<ArenaStatus>{
   const legalActions=((await locator.getAttribute('data-local-legal-actions'))??'').split(',').filter(Boolean)
   const connectionStatus=(await locator.getAttribute('data-connection-status'))??''
   const networkBusy=(await locator.getAttribute('data-network-busy'))==='true'
-  if(text==='ARENA NEXT · LOADING')return {text,mode:'LOADING',version:-1,round:0,phase:'LOADING',position,legalActions,connectionStatus,networkBusy}
+  const pointerTargetVersion=Number((await locator.getAttribute('data-legal-target-version'))??'-1')
+  const pointerTargets=parseTargets(await locator.getAttribute('data-legal-targets'))
+  if(text==='ARENA NEXT · LOADING')return {text,mode:'LOADING',version:-1,round:0,phase:'LOADING',position,legalActions,connectionStatus,networkBusy,pointerTargetVersion,pointerTargets}
   const match=text.match(STATUS)
   expect(match,`arena status became an error or invalid state: ${text}`).toBeTruthy()
-  return {text,mode:match![1] as 'PRACTICE'|'ONLINE',version:Number(match![2]),round:Number(match![3]),phase:match![4] as ArenaStatus['phase'],position,legalActions,connectionStatus,networkBusy}
+  return {text,mode:match![1] as 'PRACTICE'|'ONLINE',version:Number(match![2]),round:Number(match![3]),phase:match![4] as ArenaStatus['phase'],position,legalActions,connectionStatus,networkBusy,pointerTargetVersion,pointerTargets}
 }
 
 async function arenaVersion(page:Page){
@@ -45,109 +70,76 @@ export async function waitForVersionChange(page:Page,version:number,timeout=COMM
   }catch{return false}
 }
 
-export async function waitForArenaReady(page:Page,timeout=20_000){
-  await expect(page.locator('#arena-next-runtime-host canvas')).toBeVisible({timeout})
-  await expect.poll(async()=> (await arenaStatus(page)).phase,{timeout}).not.toBe('LOADING')
+async function waitForSettledTargets(page:Page,version:number){
+  await expect.poll(async()=>{
+    const status=await arenaStatus(page)
+    return status.pointerTargetVersion===version&&!status.networkBusy
+  },{timeout:COMMAND_WAIT_MS,intervals:[50,75,100,200,400]}).toBe(true)
   return arenaStatus(page)
 }
 
-async function canvasBox(page:Page){
+export async function waitForArenaReady(page:Page,timeout=20_000){
+  await expect(page.locator('#arena-next-runtime-host canvas')).toBeVisible({timeout})
+  await expect.poll(async()=> (await arenaStatus(page)).phase,{timeout}).not.toBe('LOADING')
+  const status=await arenaStatus(page)
+  await expect.poll(async()=> (await arenaStatus(page)).pointerTargetVersion,{timeout}).toBe(status.version)
+  return arenaStatus(page)
+}
+
+async function clickTarget(page:Page,target:PointerTarget){
   const box=await page.locator('#arena-next-runtime-host canvas').boundingBox()
   expect(box,'arena canvas is missing').toBeTruthy()
-  return box!
+  await page.mouse.click(box!.x+target.x,box!.y+target.y)
 }
 
-async function clickCanvas(page:Page,box:{x:number;y:number},x:number,y:number){
-  await page.mouse.click(box.x+x,box.y+y)
-}
-
-function actionPoint(layout:{viewport:{width:number;height:number}},index:number){
-  return {x:layout.viewport.width/2+(index-0.5)*118,y:layout.viewport.height*0.72}
-}
-
-function handPoint(layout:{handBand:ArenaPrototypeRect},index:number,count:number){
-  const spacing=Math.min(118,layout.handBand.width/Math.max(1,count))
-  return {x:layout.handBand.x+(index-(count-1)/2)*spacing,y:layout.handBand.y}
-}
-
-async function waitForCommandAcceptance(page:Page,version:number){
-  try{
-    await page.waitForFunction(({version})=>{
-      const element=document.querySelector('[data-arena-status="true"]')
-      const text=element?.textContent?.trim()??''
-      const match=text.match(/ · V(\d+) · /)
-      const currentVersion=match?Number(match[1]):-1
-      return currentVersion!==version||element?.getAttribute('data-network-busy')==='true'
-    },{version},{timeout:COMMAND_ACCEPT_MS})
-    return true
-  }catch{return false}
-}
-
-async function tryPoint(page:Page,box:{x:number;y:number},version:number,point:{x:number;y:number}){
-  await clickCanvas(page,box,point.x,point.y)
-  if(!await waitForCommandAcceptance(page,version))return false
-  if(await arenaVersion(page)!==version)return true
-  return waitForVersionChange(page,version)
+function chooseTarget(status:ArenaStatus){
+  const targets=status.pointerTargets
+  if(status.phase==='SET_VS'){
+    const setVs=targets.filter(target=>target.action==='SET_VS')
+    return setVs.find(target=>target.cardId!==26&&target.position==='ATK')
+      ??setVs.find(target=>target.cardId!==26)
+      ??setVs.find(target=>target.position==='ATK')
+      ??setVs[0]
+  }
+  if(status.phase==='EFFECT'){
+    return targets.find(target=>target.action==='END_EFFECT_TURN')
+      ??targets.find(target=>target.action==='BEGIN_ROUND')
+      ??targets.find(target=>target.action!=='PLAY_EFFECT'&&target.action!=='SWITCH_POSITION'&&target.action!=='SELECT_SELF_DISCARD')
+  }
+  if(status.phase==='ATTACK'){
+    if(status.position!=='DEF')return targets.find(target=>target.action==='ATTACK')??targets.find(target=>target.action==='PASS_ATTACK')
+    return targets.find(target=>target.action==='PASS_ATTACK')
+  }
+  if(status.phase==='TIE_BREAKER')return targets.find(target=>target.action==='TIE_PICK')
+  return targets.find(target=>target.action!=='SELECT_SELF_DISCARD')
 }
 
 export async function driveOneHumanAction(page:Page){
-  const box=await canvasBox(page)
-  const layout=createDesktopPrototypeLayout(box.width,box.height)
   const before=await arenaStatus(page)
-
   if(before.phase==='GAME_OVER')return {advanced:true,action:'GAME_OVER'}
 
-  if(before.phase==='SET_VS'&&before.legalActions.includes('SET_VS')){
-    for(let i=0;i<5;i+=1){
-      const card=handPoint(layout,i,5)
-      if(await tryPoint(page,box,before.version,{x:card.x-23,y:card.y+94}))return {advanced:true,action:'SET_VS'}
-    }
-    return {advanced:false,action:'SET_VS'}
-  }
+  const settled=await waitForSettledTargets(page,before.version)
+  let target=chooseTarget(settled)
 
-  if(before.phase==='ATTACK'){
-    if(await tryPoint(page,box,before.version,actionPoint(layout,0))){
-      return {advanced:true,action:before.position==='DEF'?'PASS':'ATTACK'}
-    }
-    if(before.position!=='DEF'&&await tryPoint(page,box,before.version,actionPoint(layout,1))){
-      return {advanced:true,action:'PASS'}
-    }
-    return {advanced:false,action:before.position==='DEF'?'PASS':'ATTACK'}
-  }
-
-  if(before.phase==='TIE_BREAKER'){
-    for(let i=0;i<5;i+=1){
-      if(await tryPoint(page,box,before.version,handPoint(layout,i,5)))return {advanced:true,action:'TIE_PICK'}
-    }
-    return {advanced:false,action:'TIE_PICK'}
-  }
-
-  if(before.legalActions.includes('RESOLVE_BOARD_CHOICE')){
-    const boardSlots=[...layout.vs,...layout.effectSlots[0],...layout.effectSlots[1]]
-    for(const slot of boardSlots){
-      if(await tryPoint(page,box,before.version,slot))return {advanced:true,action:'BOARD_CHOICE'}
-    }
-    return {advanced:false,action:'BOARD_CHOICE'}
-  }
-
-  if(before.legalActions.includes('RESOLVE_SELF_DISCARD')){
-    for(const count of [5,4,3,2,1,6]){
-      for(let i=0;i<count;i+=1){
-        const point=handPoint(layout,i,count)
-        await clickCanvas(page,box,point.x,point.y)
-        await page.waitForTimeout(40)
-        if(await tryPoint(page,box,before.version,actionPoint(layout,0)))return {advanced:true,action:'SELF_DISCARD'}
+  // Self-discard is a two-stage UI action: select the exact card targets first,
+  // then press the exposed confirmation target. No guessed canvas positions are used.
+  if(!target&&settled.pointerTargets.some(candidate=>candidate.action==='SELECT_SELF_DISCARD')){
+    const selectable=settled.pointerTargets.filter(candidate=>candidate.action==='SELECT_SELF_DISCARD')
+    for(const candidate of selectable){
+      await clickTarget(page,candidate)
+      await page.waitForTimeout(25)
+      const current=await arenaStatus(page)
+      target=current.pointerTargets.find(item=>item.action==='RESOLVE_SELF_DISCARD')
+      if(target){
+        await clickTarget(page,target)
+        if(await waitForVersionChange(page,before.version))return {advanced:true,action:'RESOLVE_SELF_DISCARD'}
       }
     }
-    return {advanced:false,action:'SELF_DISCARD'}
+    return {advanced:false,action:'RESOLVE_SELF_DISCARD'}
   }
 
-  const actionCount=Math.max(1,before.legalActions.length)
-  for(let index=0;index<actionCount;index+=1){
-    const point=actionPoint(layout,index)
-    if(point.x<0||point.x>layout.viewport.width)continue
-    if(await tryPoint(page,box,before.version,point))return {advanced:true,action:before.legalActions[index]??'EFFECT_ACTION'}
-  }
-
-  return {advanced:false,action:'NO_ACTION'}
+  if(!target)return {advanced:false,action:'NO_EXACT_TARGET'}
+  await clickTarget(page,target)
+  const advanced=await waitForVersionChange(page,before.version)
+  return {advanced,action:target.action}
 }
