@@ -1,9 +1,19 @@
 import { expect, type Page } from 'playwright/test'
-import { createDesktopPrototypeLayout, type ArenaPrototypeRect } from '../../src/game/arena-next/prototype/ArenaPrototypeLayout'
 
 const STATUS=/^ARENA NEXT · (PRACTICE|ONLINE) · V(\d+) · ROUND (\d+) · (SET_VS|EFFECT|ATTACK|TIE_BREAKER|GAME_OVER)$/
 export const COMMAND_WAIT_MS=8_000
-const COMMAND_ACCEPT_MS=700
+
+type PointerTarget={
+  key:string
+  kind:'HAND_CARD'|'TIE_CARD'|'BOARD_CARD'|'SELF_DISCARD_CARD'|'ACTION'
+  action:string
+  label:string
+  x:number
+  y:number
+  cardId?:number
+  position?:'ATK'|'DEF'
+  slot?:number
+}
 
 export type ArenaStatus={
   text:string
@@ -15,6 +25,21 @@ export type ArenaStatus={
   legalActions:string[]
   connectionStatus:string
   networkBusy:boolean
+  pointerTargetVersion:number
+  pointerTargets:PointerTarget[]
+  selfDiscardMode:''|'EXACT'|'ANY'
+  selfDiscardCount:number
+}
+
+function parseTargets(raw:string|null):PointerTarget[]{
+  if(!raw)return []
+  try{
+    const value=JSON.parse(raw)
+    if(!Array.isArray(value))return []
+    return value.filter((target):target is PointerTarget=>
+      Boolean(target&&typeof target==='object'&&typeof target.action==='string'&&Number.isFinite(target.x)&&Number.isFinite(target.y)),
+    )
+  }catch{return []}
 }
 
 export async function arenaStatus(page:Page):Promise<ArenaStatus>{
@@ -24,10 +49,15 @@ export async function arenaStatus(page:Page):Promise<ArenaStatus>{
   const legalActions=((await locator.getAttribute('data-local-legal-actions'))??'').split(',').filter(Boolean)
   const connectionStatus=(await locator.getAttribute('data-connection-status'))??''
   const networkBusy=(await locator.getAttribute('data-network-busy'))==='true'
-  if(text==='ARENA NEXT · LOADING')return {text,mode:'LOADING',version:-1,round:0,phase:'LOADING',position,legalActions,connectionStatus,networkBusy}
+  const pointerTargetVersion=Number((await locator.getAttribute('data-legal-target-version'))??'-1')
+  const pointerTargets=parseTargets(await locator.getAttribute('data-legal-targets'))
+  const mode=(await locator.getAttribute('data-self-discard-mode'))??''
+  const selfDiscardMode=mode==='EXACT'||mode==='ANY'?mode:''
+  const selfDiscardCount=Number((await locator.getAttribute('data-self-discard-count'))??'0')
+  if(text==='ARENA NEXT · LOADING')return {text,mode:'LOADING',version:-1,round:0,phase:'LOADING',position,legalActions,connectionStatus,networkBusy,pointerTargetVersion,pointerTargets,selfDiscardMode,selfDiscardCount}
   const match=text.match(STATUS)
   expect(match,`arena status became an error or invalid state: ${text}`).toBeTruthy()
-  return {text,mode:match![1] as 'PRACTICE'|'ONLINE',version:Number(match![2]),round:Number(match![3]),phase:match![4] as ArenaStatus['phase'],position,legalActions,connectionStatus,networkBusy}
+  return {text,mode:match![1] as 'PRACTICE'|'ONLINE',version:Number(match![2]),round:Number(match![3]),phase:match![4] as ArenaStatus['phase'],position,legalActions,connectionStatus,networkBusy,pointerTargetVersion,pointerTargets,selfDiscardMode,selfDiscardCount}
 }
 
 async function arenaVersion(page:Page){
@@ -45,109 +75,81 @@ export async function waitForVersionChange(page:Page,version:number,timeout=COMM
   }catch{return false}
 }
 
-export async function waitForArenaReady(page:Page,timeout=20_000){
-  await expect(page.locator('#arena-next-runtime-host canvas')).toBeVisible({timeout})
-  await expect.poll(async()=> (await arenaStatus(page)).phase,{timeout}).not.toBe('LOADING')
+async function waitForSettledTargets(page:Page){
+  await expect.poll(async()=>{
+    const status=await arenaStatus(page)
+    return status.pointerTargetVersion===status.version&&!status.networkBusy
+  },{timeout:COMMAND_WAIT_MS,intervals:[50,75,100,200,400]}).toBe(true)
   return arenaStatus(page)
 }
 
-async function canvasBox(page:Page){
+export async function waitForArenaReady(page:Page,timeout=20_000){
+  await expect(page.locator('#arena-next-runtime-host canvas')).toBeVisible({timeout})
+  await expect.poll(async()=> (await arenaStatus(page)).phase,{timeout}).not.toBe('LOADING')
+  const status=await arenaStatus(page)
+  await expect.poll(async()=> (await arenaStatus(page)).pointerTargetVersion,{timeout}).toBe(status.version)
+  return arenaStatus(page)
+}
+
+async function clickTarget(page:Page,target:PointerTarget){
   const box=await page.locator('#arena-next-runtime-host canvas').boundingBox()
   expect(box,'arena canvas is missing').toBeTruthy()
-  return box!
+  await page.mouse.click(box!.x+target.x,box!.y+target.y)
 }
 
-async function clickCanvas(page:Page,box:{x:number;y:number},x:number,y:number){
-  await page.mouse.click(box.x+x,box.y+y)
+function chooseTarget(status:ArenaStatus){
+  const targets=status.pointerTargets
+  if(status.legalActions.includes('RESOLVE_SELF_DISCARD'))return undefined
+  if(status.phase==='SET_VS'){
+    const setVs=targets.filter(target=>target.action==='SET_VS')
+    return setVs.find(target=>target.cardId!==26&&target.position==='ATK')
+      ??setVs.find(target=>target.cardId!==26)
+      ??setVs.find(target=>target.position==='ATK')
+      ??setVs[0]
+  }
+  if(status.phase==='EFFECT'){
+    return targets.find(target=>target.action==='END_EFFECT_TURN')
+      ??targets.find(target=>target.action==='BEGIN_ROUND')
+      ??targets.find(target=>!['PLAY_EFFECT','SWITCH_POSITION','SELECT_SELF_DISCARD','RESOLVE_SELF_DISCARD'].includes(target.action))
+  }
+  if(status.phase==='ATTACK'){
+    if(status.position!=='DEF')return targets.find(target=>target.action==='ATTACK')??targets.find(target=>target.action==='PASS_ATTACK')
+    return targets.find(target=>target.action==='PASS_ATTACK')
+  }
+  if(status.phase==='TIE_BREAKER')return targets.find(target=>target.action==='TIE_PICK')
+  return targets.find(target=>target.action!=='SELECT_SELF_DISCARD'&&target.action!=='RESOLVE_SELF_DISCARD')
 }
 
-function actionPoint(layout:{viewport:{width:number;height:number}},index:number){
-  return {x:layout.viewport.width/2+(index-0.5)*118,y:layout.viewport.height*0.72}
-}
+async function resolveSelfDiscard(page:Page,status:ArenaStatus){
+  const selectable=status.pointerTargets.filter(target=>target.action==='SELECT_SELF_DISCARD')
+  const required=status.selfDiscardMode==='EXACT'?status.selfDiscardCount:0
+  if(required>selectable.length)return {advanced:false,action:'RESOLVE_SELF_DISCARD'}
 
-function handPoint(layout:{handBand:ArenaPrototypeRect},index:number,count:number){
-  const spacing=Math.min(118,layout.handBand.width/Math.max(1,count))
-  return {x:layout.handBand.x+(index-(count-1)/2)*spacing,y:layout.handBand.y}
-}
+  for(const target of selectable.slice(0,required)){
+    await clickTarget(page,target)
+    await page.waitForTimeout(25)
+  }
 
-async function waitForCommandAcceptance(page:Page,version:number){
-  try{
-    await page.waitForFunction(({version})=>{
-      const element=document.querySelector('[data-arena-status="true"]')
-      const text=element?.textContent?.trim()??''
-      const match=text.match(/ · V(\d+) · /)
-      const currentVersion=match?Number(match[1]):-1
-      return currentVersion!==version||element?.getAttribute('data-network-busy')==='true'
-    },{version},{timeout:COMMAND_ACCEPT_MS})
-    return true
-  }catch{return false}
-}
-
-async function tryPoint(page:Page,box:{x:number;y:number},version:number,point:{x:number;y:number}){
-  await clickCanvas(page,box,point.x,point.y)
-  if(!await waitForCommandAcceptance(page,version))return false
-  if(await arenaVersion(page)!==version)return true
-  return waitForVersionChange(page,version)
+  // The scene creates the confirm button after enough exact selections have
+  // been made. Its coordinate is already published from the same layout, so
+  // the driver uses that coordinate and never searches the canvas.
+  const current=await arenaStatus(page)
+  const confirm=current.pointerTargets.find(target=>target.action==='RESOLVE_SELF_DISCARD')
+    ??status.pointerTargets.find(target=>target.action==='RESOLVE_SELF_DISCARD')
+  if(!confirm)return {advanced:false,action:'RESOLVE_SELF_DISCARD'}
+  await clickTarget(page,confirm)
+  return {advanced:await waitForVersionChange(page,status.version),action:'RESOLVE_SELF_DISCARD'}
 }
 
 export async function driveOneHumanAction(page:Page){
-  const box=await canvasBox(page)
-  const layout=createDesktopPrototypeLayout(box.width,box.height)
   const before=await arenaStatus(page)
-
   if(before.phase==='GAME_OVER')return {advanced:true,action:'GAME_OVER'}
 
-  if(before.phase==='SET_VS'&&before.legalActions.includes('SET_VS')){
-    for(let i=0;i<5;i+=1){
-      const card=handPoint(layout,i,5)
-      if(await tryPoint(page,box,before.version,{x:card.x-23,y:card.y+94}))return {advanced:true,action:'SET_VS'}
-    }
-    return {advanced:false,action:'SET_VS'}
-  }
+  const settled=await waitForSettledTargets(page)
+  if(settled.legalActions.includes('RESOLVE_SELF_DISCARD'))return resolveSelfDiscard(page,settled)
 
-  if(before.phase==='ATTACK'){
-    if(await tryPoint(page,box,before.version,actionPoint(layout,0))){
-      return {advanced:true,action:before.position==='DEF'?'PASS':'ATTACK'}
-    }
-    if(before.position!=='DEF'&&await tryPoint(page,box,before.version,actionPoint(layout,1))){
-      return {advanced:true,action:'PASS'}
-    }
-    return {advanced:false,action:before.position==='DEF'?'PASS':'ATTACK'}
-  }
-
-  if(before.phase==='TIE_BREAKER'){
-    for(let i=0;i<5;i+=1){
-      if(await tryPoint(page,box,before.version,handPoint(layout,i,5)))return {advanced:true,action:'TIE_PICK'}
-    }
-    return {advanced:false,action:'TIE_PICK'}
-  }
-
-  if(before.legalActions.includes('RESOLVE_BOARD_CHOICE')){
-    const boardSlots=[...layout.vs,...layout.effectSlots[0],...layout.effectSlots[1]]
-    for(const slot of boardSlots){
-      if(await tryPoint(page,box,before.version,slot))return {advanced:true,action:'BOARD_CHOICE'}
-    }
-    return {advanced:false,action:'BOARD_CHOICE'}
-  }
-
-  if(before.legalActions.includes('RESOLVE_SELF_DISCARD')){
-    for(const count of [5,4,3,2,1,6]){
-      for(let i=0;i<count;i+=1){
-        const point=handPoint(layout,i,count)
-        await clickCanvas(page,box,point.x,point.y)
-        await page.waitForTimeout(40)
-        if(await tryPoint(page,box,before.version,actionPoint(layout,0)))return {advanced:true,action:'SELF_DISCARD'}
-      }
-    }
-    return {advanced:false,action:'SELF_DISCARD'}
-  }
-
-  const actionCount=Math.max(1,before.legalActions.length)
-  for(let index=0;index<actionCount;index+=1){
-    const point=actionPoint(layout,index)
-    if(point.x<0||point.x>layout.viewport.width)continue
-    if(await tryPoint(page,box,before.version,point))return {advanced:true,action:before.legalActions[index]??'EFFECT_ACTION'}
-  }
-
-  return {advanced:false,action:'NO_ACTION'}
+  const target=chooseTarget(settled)
+  if(!target)return {advanced:false,action:'NO_EXACT_TARGET'}
+  await clickTarget(page,target)
+  return {advanced:await waitForVersionChange(page,settled.version),action:target.action}
 }
