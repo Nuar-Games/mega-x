@@ -1,5 +1,6 @@
 import { clearPracticeMatch, getPracticeMatchForUser, getPracticeResultSummary, isPracticeMatchId, submitPracticeAction, submitPracticeSpecialAction, surrenderPracticeMatch } from './practice-match'
 import { createClient } from '@supabase/supabase-js'
+import { SUPABASE_ENV, SUPABASE_KEY, SUPABASE_URL } from './supabaseConfig'
 export type OnlineSession = {
   accessToken: string
   refreshToken: string
@@ -54,10 +55,6 @@ export type ActiveChallenge = {
   expires_at: string
 }
 
-const VITE_ENV = (import.meta as any).env ?? {}
-const SUPABASE_URL = VITE_ENV.VITE_SUPABASE_URL || 'https://mmtorfzxnidsczcdygbp.supabase.co'
-const SUPABASE_KEY = VITE_ENV.VITE_SUPABASE_ANON_KEY || 'sb_publishable_fXF7LXgKXeH4p5_Bwai0nQ_d-NWdOk_'
-const SUPABASE_ENV = VITE_ENV.VITE_SUPABASE_ENV || 'production'
 const SESSION_KEY = `mega-x-online-session-v1:${SUPABASE_ENV}`
 
 function headers(accessToken?: string) {
@@ -457,7 +454,6 @@ export async function joinMatchmaking(session: OnlineSession): Promise<string | 
   const result = await rpcAuthed(session, 'join_matchmaking')
   return typeof result === 'string' ? result : null
 }
-
 export async function cancelMatchmaking(session: OnlineSession) {
   await rpcAuthed(session, 'cancel_matchmaking')
 }
