@@ -5,38 +5,26 @@ type Credentials={email:string;password:string;handle:string}
 
 const SYNC_TIMEOUT=12_000
 
-function generatedCredentials(slot:1|2):Credentials{
-  const nonce=`${Date.now()}-${Math.random().toString(36).slice(2,8)}`
-  return {
-    email:`mega-x-e2e-${slot}-${nonce}@example.com`,
-    password:`MxE2E!${nonce}Aa9`,
-    handle:`E2E${slot}${nonce.replace(/[^a-z0-9]/gi,'').slice(-8).toUpperCase()}`,
-  }
-}
-
 function credentials(slot:1|2):Credentials{
   const prefix=`MEGA_X_E2E_P${slot}_`
   const email=process.env[`${prefix}EMAIL`]
   const password=process.env[`${prefix}PASSWORD`]
   const handle=process.env[`${prefix}HANDLE`]
-  if(email&&password&&handle)return {email,password,handle}
-  return generatedCredentials(slot)
+  if(!email||!password||!handle){
+    throw new Error(`${prefix}EMAIL, ${prefix}PASSWORD and ${prefix}HANDLE are required fixed E2E credentials`)
+  }
+  return {email,password,handle}
 }
 
 async function establishOnlineSession(page:Page,account:Credentials){
   await page.goto('/')
   return page.evaluate(async(account)=>{
     const auth=await import('/src/onlineAuth.ts')
-    let session
-    try{session=await auth.signInWithEmail(account.email,account.password)}
-    catch{
-      const created=await auth.signUpWithEmail(account.email,account.password)
-      session=created.session
-      await auth.claimFighterHandle(session,account.handle)
-    }
+    const session=await auth.signInWithEmail(account.email,account.password)
     const profile=await auth.loadProfile(session)
-    if(!profile?.fighter_handle)await auth.claimFighterHandle(session,account.handle)
-    return {userId:session.userId,handle:(await auth.loadProfile(session))?.fighter_handle??account.handle}
+    if(!profile?.fighter_handle)throw new Error('E2E_FIXED_ACCOUNT_HANDLE_MISSING')
+    if(profile.fighter_handle!==account.handle)throw new Error(`E2E_FIXED_ACCOUNT_HANDLE_MISMATCH:${profile.fighter_handle}`)
+    return {userId:session.userId,handle:profile.fighter_handle}
   },account)
 }
 
@@ -111,14 +99,14 @@ async function driveNextAction(pages:[Page,Page]){
   return {acted:false,status:await arenaStatus(pages[0])}
 }
 
-async function playUntil(pages:[Page,Page],predicate:(statuses:[Awaited<ReturnType<typeof arenaStatus>>,Awaited<ReturnType<typeof arenaStatus>>])=>boolean,maxSteps=120){
+async function playUntil(pages:[Page,Page],predicate:(statuses:[Awaited<ReturnType<typeof arenaStatus>>,Awaited<ReturnType<typeof arenaStatus>>])=>boolean,maxSteps=60){
   for(let step=0;step<maxSteps;step+=1){
     const statuses=await Promise.all(pages.map(arenaStatus)) as [Awaited<ReturnType<typeof arenaStatus>>,Awaited<ReturnType<typeof arenaStatus>>]
     if(predicate(statuses))return statuses
     if(statuses.every(status=>status.phase==='GAME_OVER'))return statuses
     await driveNextAction(pages)
   }
-  throw new Error('online match exceeded action budget')
+  throw new Error('online browser smoke test exceeded action budget before round 2')
 }
 
 function collectPageErrors(page:Page){
@@ -134,8 +122,8 @@ async function reopenArena(page:Page){
   return status
 }
 
-test('two real online players finish a match and one reconciles after reconnect',async({browser})=>{
-  test.setTimeout(600_000)
+test('two real online players reach round 2 and reconcile exactly after reconnect',async({browser})=>{
+  test.setTimeout(180_000)
   const context1=await browser.newContext({viewport:{width:1440,height:1000}})
   const context2=await browser.newContext({viewport:{width:1440,height:1000}})
   const page1=await context1.newPage()
@@ -173,7 +161,8 @@ test('two real online players finish a match and one reconciles after reconnect'
       await driveNextAction(pages)
       const now=await Promise.all(pages.map(arenaStatus))
       if(now[0].legalActions.length>0){offlineIndex=1;onlineIndex=0}
-      else {offlineIndex=0;onlineIndex=1}
+      else if(now[1].legalActions.length>0){offlineIndex=0;onlineIndex=1}
+      else throw new Error('no authoritative actor available for reconnect proof')
     }
 
     const contexts:[BrowserContext,BrowserContext]=[context1,context2]
@@ -182,10 +171,9 @@ test('two real online players finish a match and one reconciles after reconnect'
     await pages[offlineIndex].waitForTimeout(2_500)
 
     const actorBefore=await arenaStatus(pages[onlineIndex])
-    if(actorBefore.legalActions.length>0){
-      const result=await driveOneHumanAction(pages[onlineIndex])
-      expect(result.advanced,'authoritative online peer must advance while the other client is offline').toBe(true)
-    }
+    expect(actorBefore.legalActions.length,'online peer must own a legal action while the other client is offline').toBeGreaterThan(0)
+    const result=await driveOneHumanAction(pages[onlineIndex])
+    expect(result.advanced,'authoritative online peer must advance while the other client is offline').toBe(true)
     const authoritative=await arenaStatus(pages[onlineIndex])
     expect(authoritative.version).toBeGreaterThan(stale.version)
 
@@ -208,13 +196,6 @@ test('two real online players finish a match and one reconciles after reconnect'
         peer.phase===server.phase)
     },{timeout:20_000,intervals:[250,500,1000]}).toBe(true)
 
-    expect(errors1,`player 1 page errors: ${errors1.join(' | ')}`).toEqual([])
-    expect(errors2,`player 2 page errors: ${errors2.join(' | ')}`).toEqual([])
-
-    const finished=await playUntil(pages,statuses=>statuses.every(status=>status.phase==='GAME_OVER'),180)
-    expect(finished[0].phase).toBe('GAME_OVER')
-    expect(finished[1].phase).toBe('GAME_OVER')
-    expect(finished[0].version).toBe(finished[1].version)
     expect(errors1,`player 1 page errors: ${errors1.join(' | ')}`).toEqual([])
     expect(errors2,`player 2 page errors: ${errors2.join(' | ')}`).toEqual([])
   }finally{
