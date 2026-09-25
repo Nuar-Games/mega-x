@@ -28,12 +28,12 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Browser E2E
         run: npm run test:e2e
-      - name: Verify build did not modify tracked source
+      - name: Verify install and build leave the checkout clean
         run: |
-          if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
-            echo 'Build changed tracked files:'
-            git status --short --untracked-files=no
+          if [[ -n "$(git status --porcelain)" ]]; then
+            echo 'Install or build changed the checkout:'
+            git status --short
             git diff
             exit 1
           fi
-          echo 'BUILD_LEFT_TRACKED_SOURCE_CLEAN'
+          echo 'INSTALL_AND_BUILD_LEFT_CHECKOUT_CLEAN'
