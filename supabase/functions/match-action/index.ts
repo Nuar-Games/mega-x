@@ -48,55 +48,6 @@ async function rpc(name: string, body: Record<string, unknown>) {
   return data
 }
 
-function shuffleIds() {
-  const out = Array.from({ length: 30 }, (_, i) => i + 1)
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[out[i], out[j]] = [out[j], out[i]]
-  }
-  return out
-}
-
-function preserveExhaustedDeckTurnCompletion(nextState: EngineState, previousState: EngineState, action: string, actorId: string, player1Id: string, player2Id: string) {
-  if (!previousState.deckExhausted) return
-  const normalized = action.toUpperCase()
-
-  // BEGIN_ROUND is not a legal match-ending point once the deck is empty.
-  // Mandatory setup has completed, so the active Effect turn must begin normally.
-  if (normalized === 'BEGIN_ROUND' && (nextState.phase === 'GAME_OVER' || nextState.phase === 'TIE_BREAKER')) {
-    nextState.phase = 'EFFECT'
-    nextState.effectTurn = nextState.firstPlayer
-    nextState.attackTurn = null
-    nextState.winner = null
-    nextState.tieBreaker = null
-    const firstLabel = nextState.firstPlayer === player1Id ? 'X Fighter 1' : 'X Fighter 2'
-    nextState.message = `Pusingan ${nextState.round}: giliran Effect ${firstLabel}.`
-    return
-  }
-
-  // Once the non-active player has completed their Effect turn, the Master Deck
-  // terminates the match before a new attack decision begins.
-  if (normalized !== 'END_EFFECT_TURN' || nextState.phase !== 'ATTACK') return
-  const nonActiveId = nextState.firstPlayer === player1Id ? player2Id : player1Id
-  if (actorId !== nonActiveId) return
-
-  const x1 = nextState.player1.x.length
-  const x2 = nextState.player2.x.length
-  nextState.effectTurn = null
-  nextState.attackTurn = null
-  if (x1 !== x2) {
-    nextState.phase = 'GAME_OVER'
-    nextState.winner = x1 > x2 ? player1Id : player2Id
-    nextState.tieBreaker = null
-    nextState.message = `Master Deck habis. Zon X ${x1}-${x2}.`
-  } else {
-    nextState.phase = 'TIE_BREAKER'
-    nextState.winner = null
-    nextState.tieBreaker = { deck: shuffleIds(), index: 0, left: null, right: null, status: 'WAITING', pair: 0 }
-    nextState.message = 'PENENTUAN SERI'
-  }
-}
-
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders })
   if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405, headers: corsHeaders })
@@ -125,8 +76,6 @@ Deno.serve(async (req: Request) => {
       actorId,
       action: { action, payload },
     })
-
-    preserveExhaustedDeckTurnCompletion(nextState, previousState, action, actorId, match.player1_id, match.player2_id)
 
     const commitRows = await rpc('commit_match_engine_state', {
       p_match: matchId,
