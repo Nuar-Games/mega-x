@@ -35,7 +35,11 @@ function makeState(options = {}) {
   }
 }
 
-const act = (state, actorId, action, payload = {}) => applyEngineAction({ state, meta, actorId, action: { action, payload } })
+const act = (state, actorId, action, payload = {}) => {
+  const result = applyEngineAction({ state, meta, actorId, action: { action, payload } })
+  if (Object.prototype.hasOwnProperty.call(result, 'masterDeckDrawFailed')) throw new Error('internal draw-failure flag leaked into returned state')
+  return result
+}
 const assert = (ok, message) => { if (!ok) throw new Error(message) }
 const tests = []
 const test = (name, fn) => tests.push([name, fn])
@@ -68,7 +72,8 @@ test('partial refill takes remaining cards then ends', () => {
 test('drawing the exact last card completes normally', () => {
   const s = act(makeState({ deck: [2], p1Hand: [1], p1Vs: vs(22), p2Vs: vs(20), p1X: [], p2X: [] }), P1, 'PLAY_EFFECT', { cardId: 1 })
   assert(s.player1.hand.length === 1 && s.player1.hand[0] === 2 && s.deck.length === 0, 'exact final draw did not complete')
-  assert(s.phase === 'EFFECT' && s.winner === null && !s.deckExhausted, 'exact final draw incorrectly ended the match')
+  assert(s.deckExhausted === true, 'exact final draw did not preserve empty-deck state')
+  assert(s.phase === 'EFFECT' && s.winner === null, 'exact final draw incorrectly ended the match')
 })
 
 test('failed winner refill prevents loser refill', () => {
