@@ -109,6 +109,7 @@ function chooseTarget(status:ArenaStatus){
       ??setVs.find(target=>target.cardId!==26)
       ??setVs.find(target=>target.position==='ATK')
       ??setVs[0]
+      ??targets.find(target=>target.action==='BEGIN_ROUND')
   }
   if(status.phase==='EFFECT'){
     return targets.find(target=>target.action==='END_EFFECT_TURN')

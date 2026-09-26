@@ -56,6 +56,60 @@ async function activeMatch(page:Page){
   })
 }
 
+function isMatchNotActive(error:unknown){
+  return error instanceof Error&&error.message.includes('MATCH_NOT_ACTIVE')
+}
+
+async function cleanupExistingMatches(page:Page){
+  for(let attempt=0;attempt<5;attempt+=1){
+    const match=await activeMatch(page)
+    if(!match)return
+    if(match.status==='ACTIVE'||match.status==='PAUSED'||match.status==='COIN_TOSS'){
+      try{
+        await page.evaluate(async(matchId)=>{
+          const auth=await import('/src/onlineAuth.ts')
+          const session=auth.getSavedSession()
+          if(!session)throw new Error('E2E_NO_SAVED_SESSION')
+          await auth.surrenderMatch(session,matchId)
+        },match.id)
+      }catch(error){
+        if(!isMatchNotActive(error))throw error
+        await activeMatch(page)
+        continue
+      }
+      try{
+        await page.evaluate(async(matchId)=>{
+          const auth=await import('/src/onlineAuth.ts')
+          const session=auth.getSavedSession()
+          if(!session)throw new Error('E2E_NO_SAVED_SESSION')
+          await auth.leaveMatchResult(session,matchId)
+        },match.id)
+      }catch(error){
+        if(!isMatchNotActive(error))throw error
+        await activeMatch(page)
+      }
+      continue
+    }
+    if(match.status==='ABANDONED'||match.phase==='GAME_OVER'){
+      try{
+        await page.evaluate(async(matchId)=>{
+          const auth=await import('/src/onlineAuth.ts')
+          const session=auth.getSavedSession()
+          if(!session)throw new Error('E2E_NO_SAVED_SESSION')
+          await auth.leaveMatchResult(session,matchId)
+        },match.id)
+      }catch(error){
+        if(!isMatchNotActive(error))throw error
+        await activeMatch(page)
+      }
+      continue
+    }
+    throw new Error(`E2E_CLEANUP_UNSUPPORTED_MATCH_STATUS:${match.status}:phase=${match.phase}:version=${match.stateVersion}`)
+  }
+  const remaining=await activeMatch(page)
+  if(remaining)throw new Error(`E2E_CLEANUP_MATCH_STILL_PRESENT_AFTER_5_LOOPS:${remaining.status}:phase=${remaining.phase}:version=${remaining.stateVersion}`)
+}
+
 async function startRealMatch(page:Page,matchId:string){
   await page.evaluate(async(matchId)=>{
     const auth=await import('/src/onlineAuth.ts')
@@ -137,6 +191,7 @@ test('two real online players reach round 2 and reconcile exactly after reconnec
   const page2=await context2.newPage()
   const errors1=collectPageErrors(page1)
   const errors2=collectPageErrors(page2)
+  let originalError:unknown
 
   try{
     const [player1,player2]=await Promise.all([
@@ -144,6 +199,9 @@ test('two real online players reach round 2 and reconcile exactly after reconnec
       establishOnlineSession(page2,credentials(2)),
     ])
     expect(player1.userId).not.toBe(player2.userId)
+
+    await cleanupExistingMatches(page1)
+    await cleanupExistingMatches(page2)
 
     await joinRealMatch(page1)
     await joinRealMatch(page2)
@@ -205,8 +263,21 @@ test('two real online players reach round 2 and reconcile exactly after reconnec
 
     expect(errors1,`player 1 page errors: ${errors1.join(' | ')}`).toEqual([])
     expect(errors2,`player 2 page errors: ${errors2.join(' | ')}`).toEqual([])
+  }catch(error){
+    originalError=error
   }finally{
+    await Promise.allSettled([context1.setOffline(false),context2.setOffline(false)])
+    let cleanupError:unknown
+    try{
+      await cleanupExistingMatches(page1)
+      await cleanupExistingMatches(page2)
+    }catch(error){
+      cleanupError=error
+      console.error('ONLINE_E2E_CLEANUP_ERROR',error)
+    }
     await context1.close()
     await context2.close()
+    if(originalError)throw originalError
+    if(cleanupError)throw cleanupError
   }
 })
