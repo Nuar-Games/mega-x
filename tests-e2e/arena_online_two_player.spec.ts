@@ -56,26 +56,33 @@ async function activeMatch(page:Page){
   })
 }
 
-async function surrenderActiveMatch(page:Page){
-  const match=await activeMatch(page)
-  if(!match||match.status!=='ACTIVE')return
-  await page.evaluate(async(matchId)=>{
-    const auth=await import('/src/onlineAuth.ts')
-    const session=auth.getSavedSession()
-    if(!session)throw new Error('E2E_NO_SAVED_SESSION')
-    await auth.surrenderMatch(session,matchId)
-  },match.id)
-}
-
-async function surrenderExistingMatch(page:Page){
-  const match=await activeMatch(page)
-  if(!match)return
-  await page.evaluate(async(matchId)=>{
-    const auth=await import('/src/onlineAuth.ts')
-    const session=auth.getSavedSession()
-    if(!session)throw new Error('E2E_NO_SAVED_SESSION')
-    await auth.surrenderMatch(session,matchId)
-  },match.id)
+async function cleanupExistingMatches(page:Page){
+  for(let attempt=0;attempt<5;attempt+=1){
+    const match=await activeMatch(page)
+    if(!match)return
+    if(match.status==='ACTIVE'||match.status==='PAUSED'||match.status==='COIN_TOSS'){
+      await page.evaluate(async(matchId)=>{
+        const auth=await import('/src/onlineAuth.ts')
+        const session=auth.getSavedSession()
+        if(!session)throw new Error('E2E_NO_SAVED_SESSION')
+        await auth.surrenderMatch(session,matchId)
+        await auth.leaveMatchResult(session,matchId)
+      },match.id)
+      continue
+    }
+    if(match.status==='ABANDONED'||match.phase==='GAME_OVER'){
+      await page.evaluate(async(matchId)=>{
+        const auth=await import('/src/onlineAuth.ts')
+        const session=auth.getSavedSession()
+        if(!session)throw new Error('E2E_NO_SAVED_SESSION')
+        await auth.leaveMatchResult(session,matchId)
+      },match.id)
+      continue
+    }
+    throw new Error(`E2E_CLEANUP_UNSUPPORTED_MATCH_STATUS:${match.status}:phase=${match.phase}:version=${match.stateVersion}`)
+  }
+  const remaining=await activeMatch(page)
+  if(remaining)throw new Error(`E2E_CLEANUP_MATCH_STILL_PRESENT_AFTER_5_LOOPS:${remaining.status}:phase=${remaining.phase}:version=${remaining.stateVersion}`)
 }
 
 async function startRealMatch(page:Page,matchId:string){
@@ -167,8 +174,8 @@ test('two real online players reach round 2 and reconcile exactly after reconnec
     ])
     expect(player1.userId).not.toBe(player2.userId)
 
-    await surrenderExistingMatch(page1)
-    await surrenderExistingMatch(page2)
+    await cleanupExistingMatches(page1)
+    await cleanupExistingMatches(page2)
 
     await joinRealMatch(page1)
     await joinRealMatch(page2)
@@ -232,8 +239,10 @@ test('two real online players reach round 2 and reconcile exactly after reconnec
     expect(errors2,`player 2 page errors: ${errors2.join(' | ')}`).toEqual([])
   }finally{
     await Promise.allSettled([context1.setOffline(false),context2.setOffline(false)])
-    await Promise.allSettled([surrenderActiveMatch(page1),surrenderActiveMatch(page2)])
+    const cleanupResults=await Promise.allSettled([cleanupExistingMatches(page1),cleanupExistingMatches(page2)])
     await context1.close()
     await context2.close()
+    const cleanupFailure=cleanupResults.find((result):result is PromiseRejectedResult=>result.status==='rejected')
+    if(cleanupFailure)throw cleanupFailure.reason
   }
 })
