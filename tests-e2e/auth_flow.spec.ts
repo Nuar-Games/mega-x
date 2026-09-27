@@ -17,6 +17,19 @@ function collectConsoleErrors(page:Page){
   return lines
 }
 
+function collectAuthResponses(page:Page){
+  page.on('response',async(response)=>{
+    const url=response.url()
+    if(!url.includes('/auth/v1/signup')&&!url.includes('/auth/v1/token')&&!url.includes('/rest/v1/profiles'))return
+    try{
+      const body=await response.text()
+      console.log(`[AUTH_FLOW_RESPONSE] ${response.status()} ${url} BODY=${body}`)
+    }catch(error){
+      console.log(`[AUTH_FLOW_RESPONSE] ${response.status()} ${url} BODY_READ_ERROR=${error instanceof Error?error.message:String(error)}`)
+    }
+  })
+}
+
 async function renderedOnlineScreen(page:Page){
   return page.evaluate(()=>{
     const visible=(selector:string)=>{
@@ -49,17 +62,20 @@ async function landingOverlayState(page:Page){
 async function captureFailureEvidence(page:Page,testInfo:TestInfo,consoleErrors:string[]){
   const screen=await renderedOnlineScreen(page)
   const landing=await landingOverlayState(page)
+  const onlineMessage=(await page.locator('.mx-online-message').textContent().catch(()=>null))?.trim()??''
   const screenshotPath=testInfo.outputPath('signup-failure.png')
   await page.screenshot({path:screenshotPath,fullPage:true})
   await testInfo.attach('signup-failure',{path:screenshotPath,contentType:'image/png'})
   console.log(`[AUTH_FLOW_DIAGNOSTIC] onlineScreen=${screen}`)
   console.log(`[AUTH_FLOW_DIAGNOSTIC] landing=${JSON.stringify(landing)}`)
+  console.log(`[AUTH_FLOW_DIAGNOSTIC] onlineMessage=${JSON.stringify(onlineMessage)}`)
   console.log(`[AUTH_FLOW_DIAGNOSTIC] consoleErrors=${JSON.stringify(consoleErrors)}`)
   return {screen,landing}
 }
 
 test('new email signup reaches Claim X Fighter Name without reload',async({page},testInfo)=>{
   const consoleErrors=collectConsoleErrors(page)
+  collectAuthResponses(page)
   const unique=`mx-auth-e2e-${Date.now()}-${Math.random().toString(36).slice(2,10)}@example.com`
   const password='MegaX-E2E-2026!'
 
