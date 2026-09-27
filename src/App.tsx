@@ -1881,7 +1881,6 @@ function App() {
             }}>FORGOT PASSWORD?</button>}
           <div className="mx-online-message">{onlineMessage}</div>
           <button className="mx-online-primary" disabled={onlineBusy} onClick={submitEmailAuth}>{onlineBusy ? 'CONNECTING…' : authMode === 'SIGN_IN' ? 'SIGN IN' : 'CREATE ACCOUNT'}</button>
-          <button className="mx-auth-google" disabled={onlineBusy} onClick={signInWithGoogle}>CONTINUE WITH GOOGLE</button>
           <button className="mx-back-link" onClick={() => setOnlineScreen('LANDING')}>BACK</button>
         </section>
       </main>
