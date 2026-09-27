@@ -59,16 +59,37 @@ async function landingOverlayState(page:Page){
   })
 }
 
-async function captureFailureEvidence(page:Page,testInfo:TestInfo,consoleErrors:string[]){
+async function nonBlockingOnlineMessage(page:Page){
+  const locator=page.locator('.mx-online-message')
+  return await locator.count()>0?(await locator.first().textContent())?.trim()??'':''
+}
+
+async function captureFailureEvidence(page:Page,testInfo:TestInfo,consoleErrors:string[],reloadNavigations:string[]){
   const screen=await renderedOnlineScreen(page)
   const landing=await landingOverlayState(page)
-  const onlineMessage=(await page.locator('.mx-online-message').textContent().catch(()=>null))?.trim()??''
+  const onlineMessage=await nonBlockingOnlineMessage(page)
+  const dom=await page.evaluate(()=>{
+    const bodyText=document.body?.innerText??''
+    const root=document.querySelector('#root')
+    const onlineScreens=Array.from(document.querySelectorAll<HTMLElement>('.mx-online-screen')).map((element)=>element.className)
+    return {
+      bodyInnerTextLength:bodyText.length,
+      bodyInnerTextFirst300:bodyText.slice(0,300),
+      rootChildCount:root?.children.length??0,
+      onlineScreenClasses:onlineScreens,
+      documentElementClassName:document.documentElement.className,
+      currentUrl:window.location.href,
+    }
+  })
   const screenshotPath=testInfo.outputPath('signup-failure.png')
   await page.screenshot({path:screenshotPath,fullPage:true})
   await testInfo.attach('signup-failure',{path:screenshotPath,contentType:'image/png'})
   console.log(`[AUTH_FLOW_DIAGNOSTIC] onlineScreen=${screen}`)
   console.log(`[AUTH_FLOW_DIAGNOSTIC] landing=${JSON.stringify(landing)}`)
   console.log(`[AUTH_FLOW_DIAGNOSTIC] onlineMessage=${JSON.stringify(onlineMessage)}`)
+  console.log(`[AUTH_FLOW_DIAGNOSTIC] dom=${JSON.stringify(dom)}`)
+  console.log(`[AUTH_FLOW_DIAGNOSTIC] reloadOccurred=${reloadNavigations.length>0}`)
+  console.log(`[AUTH_FLOW_DIAGNOSTIC] framenavigated=${JSON.stringify(reloadNavigations)}`)
   console.log(`[AUTH_FLOW_DIAGNOSTIC] consoleErrors=${JSON.stringify(consoleErrors)}`)
   return {screen,landing}
 }
@@ -76,6 +97,7 @@ async function captureFailureEvidence(page:Page,testInfo:TestInfo,consoleErrors:
 test('new email signup reaches Claim X Fighter Name without reload',async({page},testInfo)=>{
   const consoleErrors=collectConsoleErrors(page)
   collectAuthResponses(page)
+  const reloadNavigations:string[]=[]
   const unique=`mx-auth-e2e-${Date.now()}-${Math.random().toString(36).slice(2,10)}@example.com`
   const password='MegaX-E2E-2026!'
 
@@ -85,16 +107,19 @@ test('new email signup reaches Claim X Fighter Name without reload',async({page}
   await page.getByRole('button',{name:'SIGN UP',exact:true}).click()
   await page.getByPlaceholder('EMAIL').fill(unique)
   await page.getByPlaceholder('PASSWORD').fill(password)
+  page.on('framenavigated',(frame)=>{
+    if(frame===page.mainFrame())reloadNavigations.push(frame.url())
+  })
   await page.getByRole('button',{name:'CREATE ACCOUNT',exact:true}).click()
 
   await page.waitForTimeout(4000)
 
-  const confirmationMessage=await page.locator('.mx-online-message').textContent().catch(()=>null)
+  const confirmationMessage=await nonBlockingOnlineMessage(page)
   if(confirmationMessage?.toUpperCase().includes('CONFIRM')){
     throw new Error(`E2E_SIGNUP_REQUIRES_EMAIL_CONFIRMATION:${confirmationMessage.trim()}`)
   }
 
-  const evidence=await captureFailureEvidence(page,testInfo,consoleErrors)
+  const evidence=await captureFailureEvidence(page,testInfo,consoleErrors,reloadNavigations)
   expect(evidence.screen,'successful signup must render the handle-claim screen').toBe('HANDLE')
   expect(evidence.landing.visible,'landing overlay must not remain visible over the handle-claim screen').toBe(false)
   await expect(page.getByRole('heading',{name:'CREATE X FIGHTER NAME'})).toBeVisible()
