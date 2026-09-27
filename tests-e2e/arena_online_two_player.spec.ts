@@ -176,6 +176,24 @@ function collectPageErrors(page:Page){
   return errors
 }
 
+function collectArenaOnlineConsole(page:Page){
+  const lines:string[]=[]
+  page.on('console',message=>{
+    const text=message.text()
+    if(text.startsWith('[arena-online]'))lines.push(text)
+  })
+  return lines
+}
+
+function printArenaOnlineSummary(player:string,lines:string[]){
+  const realtimeChanges=lines.filter(line=>line.startsWith('[arena-online] realtime-change')).length
+  const fallbackRefreshes=lines.filter(line=>line.startsWith('[arena-online] fallback-refresh')).length
+  const statuses=[...new Set(lines
+    .filter(line=>line.startsWith('[arena-online] realtime-status'))
+    .map(line=>line.slice('[arena-online] realtime-status'.length).trim()))]
+  console.log(`ONLINE_REALTIME_SUMMARY ${player} realtime-change=${realtimeChanges} fallback-refresh=${fallbackRefreshes} realtime-status=${statuses.join('|')||'NONE'}`)
+}
+
 async function reopenArena(page:Page){
   await page.reload()
   const status=await waitForArenaReady(page,30_000)
@@ -191,6 +209,8 @@ test('two real online players reach round 2 and reconcile exactly after reconnec
   const page2=await context2.newPage()
   const errors1=collectPageErrors(page1)
   const errors2=collectPageErrors(page2)
+  const arenaOnline1=collectArenaOnlineConsole(page1)
+  const arenaOnline2=collectArenaOnlineConsole(page2)
   let originalError:unknown
 
   try{
@@ -275,6 +295,8 @@ test('two real online players reach round 2 and reconcile exactly after reconnec
       cleanupError=error
       console.error('ONLINE_E2E_CLEANUP_ERROR',error)
     }
+    printArenaOnlineSummary('P1',arenaOnline1)
+    printArenaOnlineSummary('P2',arenaOnline2)
     await context1.close()
     await context2.close()
     if(originalError)throw originalError
