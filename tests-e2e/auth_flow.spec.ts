@@ -3,9 +3,15 @@ import { expect, test, type Page, type TestInfo } from 'playwright/test'
 const PRODUCTION_SUPABASE_URL='https://mmtorfzxnidsczcdygbp.supabase.co'
 const E2E_SUPABASE_ENV=process.env.VITE_SUPABASE_ENV
 const E2E_SUPABASE_URL=process.env.VITE_SUPABASE_URL
+const E2E_P1_EMAIL=process.env.MEGA_X_E2E_P1_EMAIL
+const E2E_P1_PASSWORD=process.env.MEGA_X_E2E_P1_PASSWORD
+const E2E_P1_HANDLE=process.env.MEGA_X_E2E_P1_HANDLE
 
 if(E2E_SUPABASE_ENV!=='test'||!E2E_SUPABASE_URL||E2E_SUPABASE_URL===PRODUCTION_SUPABASE_URL){
   throw new Error('Auth E2E refused to run against production: VITE_SUPABASE_ENV must be test and VITE_SUPABASE_URL must be set to a non-production Supabase project.')
+}
+if(!E2E_P1_EMAIL||!E2E_P1_PASSWORD||!E2E_P1_HANDLE){
+  throw new Error('MEGA_X_E2E_P1_EMAIL, MEGA_X_E2E_P1_PASSWORD and MEGA_X_E2E_P1_HANDLE are required fixed E2E credentials')
 }
 
 function collectConsoleErrors(page:Page){
@@ -123,4 +129,26 @@ test('new email signup reaches Claim X Fighter Name without reload',async({page}
   expect(evidence.screen,'successful signup must render the handle-claim screen').toBe('HANDLE')
   expect(evidence.landing.visible,'landing overlay must not remain visible over the handle-claim screen').toBe(false)
   await expect(page.getByRole('heading',{name:'CREATE X FIGHTER NAME'})).toBeVisible()
+})
+
+test('sign out removes lobby-only injected extras before returning to sign in',async({page})=>{
+  await page.goto('/')
+  await page.locator('#mx-main-practice-cta').click()
+  await expect(page.locator('.mx-online-screen.mx-auth')).toBeVisible()
+  await page.getByPlaceholder('EMAIL').fill(E2E_P1_EMAIL)
+  await page.getByPlaceholder('PASSWORD').fill(E2E_P1_PASSWORD)
+  await page.locator('.mx-online-primary').click()
+  await expect(page.locator('.mx-online-screen.mx-lobby-shell')).toBeVisible({timeout:15_000})
+  await expect(page.locator('header.mx-lobby-player strong').first()).toHaveText(E2E_P1_HANDLE,{timeout:15_000})
+  await expect(page.locator('[data-mx-metrics]')).toBeVisible({timeout:15_000})
+  await expect(page.locator('[data-mx-banner-slot]')).toBeVisible({timeout:15_000})
+
+  await page.getByRole('button',{name:'SIGN OUT',exact:true}).click()
+  await expect(page.locator('.mx-online-screen.mx-landing')).toBeVisible({timeout:15_000})
+  await page.locator('#mx-main-practice-cta').click()
+  await expect(page.locator('.mx-online-screen.mx-auth')).toBeVisible({timeout:15_000})
+
+  for(const selector of ['[data-mx-metrics]','[data-mx-banner-slot]','[data-mx-sponsor]','[data-mx-news]','.mx-practice-entry[data-practice-entry="true"]']){
+    await expect(page.locator(selector),`${selector} must not survive lobby -> sign-out -> AUTH`).toHaveCount(0)
+  }
 })
