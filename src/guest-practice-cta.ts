@@ -22,8 +22,8 @@ function mountGuestFirstLanding(){
       if(isSignedIn())return
       event.preventDefault()
       event.stopImmediatePropagation()
-      console.log('[MX_QA] guest-practice-cta dispatch enter-guest-lobby')
-      window.dispatchEvent(new CustomEvent('mega-x:enter-guest-lobby'))
+      console.log('[MX_QA] guest-practice-cta dispatch open-sign-in')
+      window.dispatchEvent(new CustomEvent('mega-x:open-sign-in'))
     },true)
   }
 
@@ -40,7 +40,7 @@ function mountGuestFirstLanding(){
   signIn.setAttribute('aria-label','Sign in to earn leaderboard points')
   Object.assign(signIn.style,{
     position:'absolute',
-    zIndex:'13',
+    zIndex:'21',
     right:'5%',
     top:'2.5%',
     padding:'8px 12px',
