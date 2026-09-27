@@ -56,7 +56,7 @@ test('signed-in practice match runs through ArenaNextRuntime from SET_VS to GAME
     await testInfo.attach('practice-auth-failure',{path:screenshotPath,contentType:'image/png'})
     throw error
   }
-  await expect(page.getByText(handle,{exact:true})).toBeVisible({timeout:15_000})
+  await expect(page.locator('header.mx-lobby-player strong').first()).toHaveText(handle,{timeout:15_000})
   const practiceEntry=page.locator('.mx-practice-entry[data-practice-entry="true"]')
   await expect(practiceEntry).toBeVisible({timeout:15_000})
   await practiceEntry.click()
