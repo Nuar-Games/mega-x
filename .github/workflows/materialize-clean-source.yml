@@ -46,6 +46,7 @@ jobs:
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
       - name: Practice browser E2E
+        if: ${{ env.MEGA_X_E2E_P1_EMAIL != '' && env.MEGA_X_E2E_P1_PASSWORD != '' && env.MEGA_X_E2E_P1_HANDLE != '' && env.MEGA_X_E2E_P2_EMAIL != '' && env.MEGA_X_E2E_P2_PASSWORD != '' && env.MEGA_X_E2E_P2_HANDLE != '' && env.VITE_SUPABASE_URL != '' && env.VITE_SUPABASE_ANON_KEY != '' && env.VITE_SUPABASE_ENV != '' }}
         run: npx playwright test tests-e2e/arena_3d_set_vs_real_pointer.spec.ts
       - name: Online two-player E2E
         if: ${{ env.MEGA_X_E2E_P1_EMAIL != '' && env.MEGA_X_E2E_P1_PASSWORD != '' && env.MEGA_X_E2E_P1_HANDLE != '' && env.MEGA_X_E2E_P2_EMAIL != '' && env.MEGA_X_E2E_P2_PASSWORD != '' && env.MEGA_X_E2E_P2_HANDLE != '' && env.VITE_SUPABASE_URL != '' && env.VITE_SUPABASE_ANON_KEY != '' && env.VITE_SUPABASE_ENV != '' }}
