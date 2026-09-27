@@ -723,25 +723,9 @@ function App() {
     const openGuestSignIn = () => {
       setOnlineScreen('AUTH')
     }
-    const enterGuestLobby = () => {
-      const guestKey = 'mega-x-practice-guest-id-v1'
-      let guestId = onlineSession?.userId || window.localStorage.getItem(guestKey)
-      if (!guestId) {
-        guestId = 'practice-guest:' + crypto.randomUUID()
-        window.localStorage.setItem(guestKey, guestId)
-      }
-      if (!onlineSession) setOnlineSession({
-        accessToken: 'practice-local',
-        refreshToken: 'practice-local',
-        expiresAt: Number.MAX_SAFE_INTEGER,
-        userId: guestId,
-      })
-      setOnlineScreen('LOBBY')
-    }
     window.addEventListener('mega-x:open-sign-in', openGuestSignIn)
-    window.addEventListener('mega-x:enter-guest-lobby', enterGuestLobby)
     window.addEventListener('mega-x:start-practice-match', startPractice)
-    return () => { window.removeEventListener('mega-x:open-sign-in', openGuestSignIn); window.removeEventListener('mega-x:enter-guest-lobby', enterGuestLobby); window.removeEventListener('mega-x:start-practice-match', startPractice) }
+    return () => { window.removeEventListener('mega-x:open-sign-in', openGuestSignIn); window.removeEventListener('mega-x:start-practice-match', startPractice) }
   }, [onlineSession?.userId, fighterProfile?.fighter_handle])
 
   useEffect(() => {
