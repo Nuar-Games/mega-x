@@ -50,6 +50,9 @@ jobs:
       - name: Online two-player E2E
         if: ${{ env.MEGA_X_E2E_P1_EMAIL != '' && env.MEGA_X_E2E_P1_PASSWORD != '' && env.MEGA_X_E2E_P1_HANDLE != '' && env.MEGA_X_E2E_P2_EMAIL != '' && env.MEGA_X_E2E_P2_PASSWORD != '' && env.MEGA_X_E2E_P2_HANDLE != '' && env.VITE_SUPABASE_URL != '' && env.VITE_SUPABASE_ANON_KEY != '' && env.VITE_SUPABASE_ENV != '' }}
         run: npx playwright test tests-e2e/arena_online_two_player.spec.ts
+      - name: Auth flow E2E
+        if: ${{ env.MEGA_X_E2E_P1_EMAIL != '' && env.MEGA_X_E2E_P1_PASSWORD != '' && env.MEGA_X_E2E_P1_HANDLE != '' && env.MEGA_X_E2E_P2_EMAIL != '' && env.MEGA_X_E2E_P2_PASSWORD != '' && env.MEGA_X_E2E_P2_HANDLE != '' && env.VITE_SUPABASE_URL != '' && env.VITE_SUPABASE_ANON_KEY != '' && env.VITE_SUPABASE_ENV != '' }}
+        run: npx playwright test tests-e2e/auth_flow.spec.ts
       - name: Record skipped online E2E
         if: ${{ env.MEGA_X_E2E_P1_EMAIL == '' || env.MEGA_X_E2E_P1_PASSWORD == '' || env.MEGA_X_E2E_P1_HANDLE == '' || env.MEGA_X_E2E_P2_EMAIL == '' || env.MEGA_X_E2E_P2_PASSWORD == '' || env.MEGA_X_E2E_P2_HANDLE == '' || env.VITE_SUPABASE_URL == '' || env.VITE_SUPABASE_ANON_KEY == '' || env.VITE_SUPABASE_ENV == '' }}
         run: echo 'ONLINE_E2E_SKIPPED_FIXED_TEST_ACCOUNTS_OR_TEST_SUPABASE_NOT_CONFIGURED'
