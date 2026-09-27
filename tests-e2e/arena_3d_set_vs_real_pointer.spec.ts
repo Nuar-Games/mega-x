@@ -57,12 +57,37 @@ test('signed-in practice match runs through ArenaNextRuntime from SET_VS to GAME
     throw error
   }
   await expect(page.locator('header.mx-lobby-player strong').first()).toHaveText(handle,{timeout:15_000})
+  await page.evaluate((expectedHandle)=>{
+    const probe=document.createElement('div')
+    probe.dataset.practiceRenderedName='true'
+    probe.style.display='none'
+    document.body.appendChild(probe)
+    const contextPrototype=CanvasRenderingContext2D.prototype
+    const originalFillText=contextPrototype.fillText
+    const originalStrokeText=contextPrototype.strokeText
+    const capture=(text:unknown)=>{
+      const value=String(text)
+      if(value.includes(expectedHandle))probe.textContent=value
+    }
+    contextPrototype.fillText=function(text:string,x:number,y:number,maxWidth?:number){
+      capture(text)
+      return maxWidth===undefined?originalFillText.call(this,text,x,y):originalFillText.call(this,text,x,y,maxWidth)
+    }
+    contextPrototype.strokeText=function(text:string,x:number,y:number,maxWidth?:number){
+      capture(text)
+      return maxWidth===undefined?originalStrokeText.call(this,text,x,y):originalStrokeText.call(this,text,x,y,maxWidth)
+    }
+  },handle)
   const practiceEntry=page.locator('.mx-practice-entry[data-practice-entry="true"]')
   await expect(practiceEntry).toBeVisible({timeout:15_000})
   await practiceEntry.click()
 
   const ready=await waitForArenaReady(page)
   expect(ready.mode).toBe('PRACTICE')
+  const renderedPracticeName=page.locator('[data-practice-rendered-name="true"]')
+  await expect(renderedPracticeName).toHaveCount(1)
+  await expect(renderedPracticeName).toContainText(handle,{timeout:15_000})
+  console.log(`[PRACTICE_NAME] ${await renderedPracticeName.textContent()}`)
 
   let sawSetVs=false
   let sawAttackPhase=false
