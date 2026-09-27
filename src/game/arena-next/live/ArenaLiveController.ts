@@ -53,6 +53,8 @@ export class ArenaLiveController{
   private refreshing=false
   private busy=false
   private sequence=0
+  private readonly handleOnline=()=>{this.recoverConnection()}
+  private readonly handleVisibilityChange=()=>{if(document.visibilityState==='visible')this.recoverConnection()}
 
   constructor(private readonly options:ArenaLiveOptions={}){}
 
@@ -89,6 +91,8 @@ export class ArenaLiveController{
     window.clearTimeout(this.fallbackTimer)
     window.clearTimeout(this.signalTimer)
     window.clearTimeout(this.practiceBotTimer)
+    window.removeEventListener('online',this.handleOnline)
+    document.removeEventListener('visibilitychange',this.handleVisibilityChange)
   }
 
   async dispatch(command:ArenaLegalCommand){
@@ -137,7 +141,9 @@ export class ArenaLiveController{
       console.info('[arena-online] realtime-status',healthy?'SUBSCRIBED':'NOT_SUBSCRIBED')
     })
     void heartbeatMatch(session,matchId).catch(()=>undefined)
-    this.heartbeatTimer=window.setInterval(()=>{void heartbeatMatch(session,matchId).catch(()=>undefined)},20_000)
+    this.heartbeatTimer=window.setInterval(()=>{void heartbeatMatch(session,matchId).catch(()=>undefined)},5_000)
+    window.addEventListener('online',this.handleOnline)
+    document.addEventListener('visibilitychange',this.handleVisibilityChange)
     const schedule=()=>{
       const delay=document.visibilityState==='hidden'?30_000:5_000
       this.fallbackTimer=window.setTimeout(async()=>{
@@ -149,6 +155,12 @@ export class ArenaLiveController{
       },delay)
     }
     schedule()
+  }
+
+  private recoverConnection(){
+    if(this.stopped||!this.session||!this.match)return
+    void heartbeatMatch(this.session,this.match.id).catch(()=>undefined)
+    void this.refresh('RECOVERY').catch(()=>undefined)
   }
 
   private schedulePracticeBot(){
