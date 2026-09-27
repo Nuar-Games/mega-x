@@ -27,7 +27,7 @@ test('signed-in practice match runs through ArenaNextRuntime from SET_VS to GAME
   await expect(page.locator('.mx-online-screen.mx-auth')).toBeVisible()
   await page.getByPlaceholder('EMAIL').fill(email)
   await page.getByPlaceholder('PASSWORD').fill(password)
-  await page.getByRole('button',{name:'SIGN IN',exact:true}).click()
+  await page.locator('.mx-online-primary').click()
   await expect(page.locator('.mx-lobby-shell')).toBeVisible({timeout:15_000})
   await expect(page.getByText(handle,{exact:true})).toBeVisible({timeout:15_000})
   const practiceEntry=page.locator('.mx-practice-entry[data-practice-entry="true"]')
