@@ -1845,7 +1845,7 @@ function App() {
 
   if (onlineScreen === 'LANDING') {
     return (
-      <main className="mx-online-screen mx-landing">
+      <main key="landing" className="mx-online-screen mx-landing">
         <div className="mx-landing-hero" aria-hidden="true" />
         <section className="mx-landing-copy">
           <img className="mx-resume-official-logo" src="/ui/landing/logo.avif" alt="MEGA-X" />
@@ -1859,7 +1859,7 @@ function App() {
 
   if (onlineScreen === 'AUTH') {
     return (
-      <main className="mx-online-screen mx-auth">
+      <main key="auth" className="mx-online-screen mx-auth">
         <section className="mx-auth-card">
           <span>MEGA-X ONLINE</span>
           <h1>{authMode === 'SIGN_IN' ? 'SIGN IN' : 'SIGN UP'}</h1>
@@ -1889,7 +1889,7 @@ function App() {
 
   if (onlineScreen === 'HANDLE') {
     return (
-      <main className="mx-online-screen mx-handle">
+      <main key="handle" className="mx-online-screen mx-handle">
         <section className="mx-handle-card">
           <span>IDENTITY SETUP</span>
           <h1>CREATE X FIGHTER NAME</h1>
@@ -1906,7 +1906,7 @@ function App() {
     const podium = leaderboardRows.slice(0, 3)
     const stack = leaderboardRows.slice(3, 20)
     return (
-      <main className="mx-online-screen mx-lobby-shell">
+      <main key="lobby" className="mx-online-screen mx-lobby-shell">
         <header className="mx-lobby-player">
           <span className="mx-lobby-season">GEN 1 · SEASON 1</span>
           <div className="mx-lobby-identity">
