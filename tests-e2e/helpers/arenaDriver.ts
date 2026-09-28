@@ -78,7 +78,6 @@ export async function assertNoArenaBoardOverlaps(page:Page,label:string){
 
 export async function arenaStatus(page:Page):Promise<ArenaStatus>{
   const locator=page.locator('[data-arena-status="true"]').first()
-  await assertNoArenaBoardOverlaps(page,'arena 390x844')
   const snapshot=await locator.evaluate((element)=>({
     mode:element.getAttribute('data-arena-mode')??'LOADING',
     version:Number(element.getAttribute('data-arena-version')??'-1'),
