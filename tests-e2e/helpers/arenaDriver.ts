@@ -14,6 +14,8 @@ type PointerTarget={
   slot?:number
 }
 
+type BoardBox={name:string;allow:string;left:number;top:number;right:number;bottom:number}
+
 export type ArenaStatus={
   text:string
   mode:'PRACTICE'|'ONLINE'|'LOADING'
@@ -41,8 +43,42 @@ function parseTargets(raw:string|null):PointerTarget[]{
   }catch{return []}
 }
 
+export async function assertNoArenaBoardOverlaps(page:Page,label:string){
+  const viewport=page.viewportSize()
+  if(!viewport||viewport.width!==390||viewport.height!==844)return
+  if(await page.locator('[data-arena-chrome="true"]').count()===0)return
+  const boxes=await page.locator('[data-board-element]').evaluateAll((elements)=>elements.flatMap((element)=>{
+    const node=element as HTMLElement
+    const style=getComputedStyle(node)
+    const rect=node.getBoundingClientRect()
+    if(style.display==='none'||style.visibility==='hidden'||rect.width<1||rect.height<1)return []
+    return [{
+      name:node.dataset.boardElement??node.className,
+      allow:node.dataset.boardAllowOverlap??'',
+      left:rect.left,
+      top:rect.top,
+      right:rect.right,
+      bottom:rect.bottom,
+    }]
+  })) as BoardBox[]
+  expect(boxes.length,`${label}: board geometry probes missing`).toBeGreaterThan(10)
+  const overlaps:string[]=[]
+  for(let aIndex=0;aIndex<boxes.length;aIndex+=1){
+    for(let bIndex=aIndex+1;bIndex<boxes.length;bIndex+=1){
+      const a=boxes[aIndex]
+      const b=boxes[bIndex]
+      if(a.allow==='timer'||b.allow==='timer')continue
+      const overlapWidth=Math.min(a.right,b.right)-Math.max(a.left,b.left)
+      const overlapHeight=Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)
+      if(overlapWidth>0.5&&overlapHeight>0.5)overlaps.push(`${a.name} x ${b.name} (${overlapWidth.toFixed(1)}×${overlapHeight.toFixed(1)})`)
+    }
+  }
+  expect(overlaps,`${label}: unexpected board overlaps`).toEqual([])
+}
+
 export async function arenaStatus(page:Page):Promise<ArenaStatus>{
   const locator=page.locator('[data-arena-status="true"]').first()
+  await assertNoArenaBoardOverlaps(page,'arena 390x844')
   const snapshot=await locator.evaluate((element)=>({
     mode:element.getAttribute('data-arena-mode')??'LOADING',
     version:Number(element.getAttribute('data-arena-version')??'-1'),

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ActiveOnlineMatch, OnlineSession } from '../../onlineAuth'
+import { ArenaBoardChrome } from './ArenaBoardChrome'
 import { ArenaCardInspect, type ArenaInspectSelection } from './ArenaCardInspect'
 import type { ArenaLegalCommand, ArenaState } from './ArenaState'
 import { deriveArenaPointerTargets, type ArenaPointerTarget } from './ArenaPointerTargets'
@@ -149,8 +150,12 @@ export function ArenaNextRuntime({allowPracticeBootstrap=true,session=null,match
   const opponentVsY=layout?.vs[opponent].y??-1
   const timerProgress=Math.max(0,Math.min(1,timerSeconds/PRESENTATION_TIMER_SECONDS))
 
-  return <main data-arena-board-version="2" style={{position:'fixed',inset:0,overflow:'hidden',background:'#03050a',zIndex:99999}}>
-    <div id={RUNTIME_HOST_ID} ref={hostRef} style={{position:'absolute',inset:0,transition:'filter .16s ease',filter:pinnedInspect?'blur(5px) brightness(.72)':'none'}} />
+  return <main data-arena-board-version="2" style={{position:'fixed',inset:0,overflow:'hidden',background:'#020308',zIndex:99999}}>
+    {layout&&state&&<div style={{position:'absolute',inset:0,zIndex:10,transition:'filter .16s ease',filter:pinnedInspect?'blur(5px) brightness(.72)':'none'}}>
+      <ArenaBoardChrome state={state} layout={layout} timerSeconds={timerSeconds} timerProgress={timerProgress}/>
+    </div>}
+
+    <div id={RUNTIME_HOST_ID} ref={hostRef} aria-hidden="true" style={{position:'absolute',inset:0,zIndex:20,opacity:.001}} />
 
     <div
       data-arena-status="true"
@@ -173,14 +178,7 @@ export function ArenaNextRuntime({allowPracticeBootstrap=true,session=null,match
       style={{display:'none'}}
     />
 
-    {layout&&state&&<div
-      data-arena-timer="true"
-      data-arena-timer-layer="70"
-      data-arena-timer-seconds={timerSeconds}
-      style={{position:'absolute',left:layout.timer.x,top:layout.timer.y,transform:'translate(-50%,-50%)',width:layout.timer.width,height:layout.timer.height,zIndex:70,pointerEvents:'none',borderRadius:'50%',background:`conic-gradient(#ffd448 ${timerProgress*360}deg, rgba(255,255,255,.12) 0deg)`,display:'grid',placeItems:'center',boxShadow:'0 0 24px rgba(255,212,72,.18)'}}
-    >
-      <div style={{width:'78%',height:'78%',borderRadius:'50%',background:'#08111f',display:'grid',placeItems:'center',border:'2px solid #26364f',color:'#fff',font:'900 15px/1 system-ui'}}>{timerSeconds}<span style={{display:'block',fontSize:7,letterSpacing:'.12em',color:'#ffd448'}}>SAAT</span></div>
-    </div>}
+    {error&&<div data-arena-error-banner="true" style={{position:'absolute',left:'50%',top:12,transform:'translateX(-50%)',zIndex:95,padding:'8px 12px',border:'1px solid #ff5f5f',borderRadius:8,background:'rgba(30,3,8,.94)',color:'#fff',font:'700 12px/1.2 system-ui'}}>{error}</div>}
 
     {activeInspect&&<ArenaCardInspect
       selection={activeInspect}
