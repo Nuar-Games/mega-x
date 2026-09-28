@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import App from './App.tsx'
-import { getMyActiveMatch, getSavedSession, type ActiveOnlineMatch, type OnlineSession } from './onlineAuth'
+import { getMyActiveMatch, getSavedSession, loadProfile, type ActiveOnlineMatch, type OnlineSession } from './onlineAuth'
 import { getPracticeMatchForUser, startPracticeMatch } from './practice-match'
 
 type ArenaRoute={session:OnlineSession;match:ActiveOnlineMatch}|null
@@ -52,13 +52,14 @@ export default function Root(){
     }
 
     const startPractice=()=>{
-      window.setTimeout(()=>{
+      window.setTimeout(async()=>{
         if(cancelled)return
         const current=practiceRoute()
         if(current){setArenaRoute(current);return}
         const session=getSavedSession()??guestSession()
         if(!session)return
-        const match=startPracticeMatch(session.userId,'GUEST X FIGHTER') as ActiveOnlineMatch
+        const profile=session.accessToken==='practice-local'?null:await loadProfile(session).catch(()=>null)
+        const match=startPracticeMatch(session.userId,profile?.fighter_handle||'GUEST X FIGHTER') as ActiveOnlineMatch
         setArenaRoute({session,match})
       },0)
     }

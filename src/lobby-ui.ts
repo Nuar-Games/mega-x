@@ -22,15 +22,6 @@ function closeAudioPanel(event?: Event) {
   panel.hidden = true
 }
 
-function removeGoogleSignIn() {
-  const controls = Array.from(document.querySelectorAll<HTMLElement>('button, a, [role="button"]'))
-  for (const control of controls) {
-    const text = (control.textContent ?? '').replace(/\s+/g, ' ').trim().toUpperCase()
-    const aria = (control.getAttribute('aria-label') ?? '').trim().toUpperCase()
-    if (text.includes('GOOGLE') || aria.includes('GOOGLE')) control.remove()
-  }
-}
-
 function markSignOut() {
   const controls = Array.from(document.querySelectorAll<HTMLElement>('button, a, [role="button"]'))
   for (const control of controls) {
@@ -320,7 +311,6 @@ async function refreshLobbyMetrics(force = false) {
 }
 
 function enhanceLobby() {
-  removeGoogleSignIn()
   markSignOut()
   enhanceLeaderboard()
   enhanceGlobalChat()
