@@ -1,4 +1,4 @@
-import { test, expect, type BrowserContext, type Page } from 'playwright/test'
+import { test, expect, type BrowserContext, type Page, type TestInfo } from 'playwright/test'
 import { arenaStatus, driveOneHumanAction, waitForArenaReady } from './helpers/arenaDriver'
 
 type Credentials={email:string;password:string;handle:string}
@@ -17,9 +17,7 @@ function credentials(slot:1|2):Credentials{
   const email=process.env[`${prefix}EMAIL`]
   const password=process.env[`${prefix}PASSWORD`]
   const handle=process.env[`${prefix}HANDLE`]
-  if(!email||!password||!handle){
-    throw new Error(`${prefix}EMAIL, ${prefix}PASSWORD and ${prefix}HANDLE are required fixed E2E credentials`)
-  }
+  if(!email||!password||!handle)throw new Error(`${prefix}EMAIL, ${prefix}PASSWORD and ${prefix}HANDLE are required fixed E2E credentials`)
   return {email,password,handle}
 }
 
@@ -56,9 +54,7 @@ async function activeMatch(page:Page){
   })
 }
 
-function isMatchNotActive(error:unknown){
-  return error instanceof Error&&error.message.includes('MATCH_NOT_ACTIVE')
-}
+function isMatchNotActive(error:unknown){return error instanceof Error&&error.message.includes('MATCH_NOT_ACTIVE')}
 
 async function cleanupExistingMatches(page:Page){
   for(let attempt=0;attempt<5;attempt+=1){
@@ -72,11 +68,7 @@ async function cleanupExistingMatches(page:Page){
           if(!session)throw new Error('E2E_NO_SAVED_SESSION')
           await auth.surrenderMatch(session,matchId)
         },match.id)
-      }catch(error){
-        if(!isMatchNotActive(error))throw error
-        await activeMatch(page)
-        continue
-      }
+      }catch(error){if(!isMatchNotActive(error))throw error;await activeMatch(page);continue}
       try{
         await page.evaluate(async(matchId)=>{
           const auth=await import('/src/onlineAuth.ts')
@@ -84,10 +76,7 @@ async function cleanupExistingMatches(page:Page){
           if(!session)throw new Error('E2E_NO_SAVED_SESSION')
           await auth.leaveMatchResult(session,matchId)
         },match.id)
-      }catch(error){
-        if(!isMatchNotActive(error))throw error
-        await activeMatch(page)
-      }
+      }catch(error){if(!isMatchNotActive(error))throw error;await activeMatch(page)}
       continue
     }
     if(match.status==='ABANDONED'||match.phase==='GAME_OVER'){
@@ -98,10 +87,7 @@ async function cleanupExistingMatches(page:Page){
           if(!session)throw new Error('E2E_NO_SAVED_SESSION')
           await auth.leaveMatchResult(session,matchId)
         },match.id)
-      }catch(error){
-        if(!isMatchNotActive(error))throw error
-        await activeMatch(page)
-      }
+      }catch(error){if(!isMatchNotActive(error))throw error;await activeMatch(page)}
       continue
     }
     throw new Error(`E2E_CLEANUP_UNSUPPORTED_MATCH_STATUS:${match.status}:phase=${match.phase}:version=${match.stateVersion}`)
@@ -150,12 +136,7 @@ async function driveNextAction(pages:[Page,Page]){
   const before=await Promise.all(pages.map(arenaStatus))
   await expect.poll(async()=>{
     const current=await Promise.all(pages.map(arenaStatus))
-    return current.some((status,index)=>
-      status.version!==before[index].version||
-      status.connectionStatus!==before[index].connectionStatus||
-      status.legalActions.length>0||
-      status.phase==='GAME_OVER',
-    )
+    return current.some((status,index)=>status.version!==before[index].version||status.connectionStatus!==before[index].connectionStatus||status.legalActions.length>0||status.phase==='GAME_OVER')
   },{timeout:SYNC_TIMEOUT,intervals:[100,200,400]}).toBe(true)
   return {acted:false,status:await arenaStatus(pages[0])}
 }
@@ -167,7 +148,7 @@ async function playUntil(pages:[Page,Page],predicate:(statuses:[Awaited<ReturnTy
     if(statuses.every(status=>status.phase==='GAME_OVER'))return statuses
     await driveNextAction(pages)
   }
-  throw new Error('online browser smoke test exceeded action budget before round 2')
+  throw new Error('online browser smoke test exceeded action budget before target state')
 }
 
 function collectPageErrors(page:Page){
@@ -178,19 +159,14 @@ function collectPageErrors(page:Page){
 
 function collectArenaOnlineConsole(page:Page){
   const lines:string[]=[]
-  page.on('console',message=>{
-    const text=message.text()
-    if(text.startsWith('[arena-online]'))lines.push(text)
-  })
+  page.on('console',message=>{const text=message.text();if(text.startsWith('[arena-online]'))lines.push(text)})
   return lines
 }
 
 function printArenaOnlineSummary(player:string,lines:string[]){
   const realtimeChanges=lines.filter(line=>line.startsWith('[arena-online] realtime-change')).length
   const fallbackRefreshes=lines.filter(line=>line.startsWith('[arena-online] fallback-refresh')).length
-  const statuses=[...new Set(lines
-    .filter(line=>line.startsWith('[arena-online] realtime-status'))
-    .map(line=>line.slice('[arena-online] realtime-status'.length).trim()))]
+  const statuses=[...new Set(lines.filter(line=>line.startsWith('[arena-online] realtime-status')).map(line=>line.slice('[arena-online] realtime-status'.length).trim()))]
   console.log(`ONLINE_REALTIME_SUMMARY ${player} realtime-change=${realtimeChanges} fallback-refresh=${fallbackRefreshes} realtime-status=${statuses.join('|')||'NONE'}`)
 }
 
@@ -201,10 +177,26 @@ async function reopenArena(page:Page){
   return status
 }
 
-test('two real online players reach round 2 and reconcile exactly after reconnect',async({browser})=>{
+async function assertViewerRelativeBoard(page:Page,label:string){
+  const geometry=await page.locator('[data-arena-status="true"]').first().evaluate((element)=>({
+    localY:Number(element.getAttribute('data-local-vs-y')),
+    opponentY:Number(element.getAttribute('data-opponent-vs-y')),
+    height:Number(element.getAttribute('data-arena-viewport-height')),
+  }))
+  expect(geometry.localY,`${label}: own KAD VS must be bottom`).toBeGreaterThan(geometry.height/2)
+  expect(geometry.opponentY,`${label}: opponent KAD VS must be top`).toBeLessThan(geometry.height/2)
+}
+
+async function attachScreenshot(page:Page,testInfo:TestInfo,name:string){
+  const path=testInfo.outputPath(`${name}.png`)
+  await page.screenshot({path,fullPage:true})
+  await testInfo.attach(name,{path,contentType:'image/png'})
+}
+
+test('two real online players reach round 2 and reconcile exactly after reconnect',async({browser},testInfo)=>{
   test.setTimeout(180_000)
-  const context1=await browser.newContext({viewport:{width:1440,height:1000}})
-  const context2=await browser.newContext({viewport:{width:1440,height:1000}})
+  const context1=await browser.newContext({viewport:{width:390,height:844}})
+  const context2=await browser.newContext({viewport:{width:390,height:844}})
   const page1=await context1.newPage()
   const page2=await context2.newPage()
   const errors1=collectPageErrors(page1)
@@ -214,10 +206,7 @@ test('two real online players reach round 2 and reconcile exactly after reconnec
   let originalError:unknown
 
   try{
-    const [player1,player2]=await Promise.all([
-      establishOnlineSession(page1,credentials(1)),
-      establishOnlineSession(page2,credentials(2)),
-    ])
+    const [player1,player2]=await Promise.all([establishOnlineSession(page1,credentials(1)),establishOnlineSession(page2,credentials(2))])
     expect(player1.userId).not.toBe(player2.userId)
 
     await cleanupExistingMatches(page1)
@@ -234,6 +223,13 @@ test('two real online players reach round 2 and reconcile exactly after reconnec
 
     await Promise.all([reopenArena(page1),reopenArena(page2)])
     const pages:[Page,Page]=[page1,page2]
+
+    const ownershipState=await playUntil(pages,statuses=>statuses.every(status=>status.round>=1&&status.phase!=='SET_VS'&&status.phase!=='TIE_BREAKER'),30)
+    expect(ownershipState.every(status=>status.phase!=='GAME_OVER'),'ownership proof must happen during a live round').toBe(true)
+    await assertViewerRelativeBoard(page1,'player 1')
+    await assertViewerRelativeBoard(page2,'player 2')
+    await attachScreenshot(page1,testInfo,'online-player-1')
+    await attachScreenshot(page2,testInfo,'online-player-2')
 
     const preReconnect=await playUntil(pages,statuses=>statuses.every(status=>status.round>=2))
     expect(preReconnect.every(status=>status.round>=2),'both clients must complete at least one normal round before reconnect').toBe(true)
@@ -264,21 +260,8 @@ test('two real online players reach round 2 and reconcile exactly after reconnec
 
     await contexts[offlineIndex].setOffline(false)
     await expect.poll(async()=>{
-      const [recovered,peer,server]=await Promise.all([
-        arenaStatus(pages[offlineIndex]),
-        arenaStatus(pages[onlineIndex]),
-        activeMatch(pages[onlineIndex]),
-      ])
-      return Boolean(server&&
-        server.status==='ACTIVE'&&
-        recovered.connectionStatus==='online'&&
-        peer.connectionStatus==='online'&&
-        recovered.version===server.stateVersion&&
-        peer.version===server.stateVersion&&
-        recovered.round===server.round&&
-        peer.round===server.round&&
-        recovered.phase===server.phase&&
-        peer.phase===server.phase)
+      const [recovered,peer,server]=await Promise.all([arenaStatus(pages[offlineIndex]),arenaStatus(pages[onlineIndex]),activeMatch(pages[onlineIndex])])
+      return Boolean(server&&server.status==='ACTIVE'&&recovered.connectionStatus==='online'&&peer.connectionStatus==='online'&&recovered.version===server.stateVersion&&peer.version===server.stateVersion&&recovered.round===server.round&&peer.round===server.round&&recovered.phase===server.phase&&peer.phase===server.phase)
     },{timeout:20_000,intervals:[250,500,1000]}).toBe(true)
 
     expect(errors1,`player 1 page errors: ${errors1.join(' | ')}`).toEqual([])
@@ -288,13 +271,7 @@ test('two real online players reach round 2 and reconcile exactly after reconnec
   }finally{
     await Promise.allSettled([context1.setOffline(false),context2.setOffline(false)])
     let cleanupError:unknown
-    try{
-      await cleanupExistingMatches(page1)
-      await cleanupExistingMatches(page2)
-    }catch(error){
-      cleanupError=error
-      console.error('ONLINE_E2E_CLEANUP_ERROR',error)
-    }
+    try{await cleanupExistingMatches(page1);await cleanupExistingMatches(page2)}catch(error){cleanupError=error;console.error('ONLINE_E2E_CLEANUP_ERROR',error)}
     printArenaOnlineSummary('P1',arenaOnline1)
     printArenaOnlineSummary('P2',arenaOnline2)
     await context1.close()
