@@ -1,4 +1,5 @@
-import { test, expect, type TestInfo } from 'playwright/test'
+import { mkdir } from 'node:fs/promises'
+import { test, expect, type Page, type TestInfo } from 'playwright/test'
 import { arenaStatus, driveOneHumanAction, waitForArenaReady, waitForVersionChange } from './helpers/arenaDriver'
 
 const BOT_WAIT_MS=4_000
@@ -10,8 +11,10 @@ if(E2E_SUPABASE_ENV!=='test'||!E2E_SUPABASE_URL||E2E_SUPABASE_URL===PRODUCTION_S
   throw new Error('Practice E2E refused to run against production: VITE_SUPABASE_ENV must be test and VITE_SUPABASE_URL must be set to a non-production Supabase project.')
 }
 
-async function attachScreenshot(page:Parameters<typeof test>[0] extends never?never:any,testInfo:TestInfo,name:string){
-  const path=testInfo.outputPath(`${name}.png`)
+async function attachScreenshot(page:Page,testInfo:TestInfo,name:string){
+  const dir='e2e-artifacts/arena-board-v2'
+  await mkdir(dir,{recursive:true})
+  const path=`${dir}/${name}.png`
   await page.screenshot({path,fullPage:true})
   await testInfo.attach(name,{path,contentType:'image/png'})
 }
