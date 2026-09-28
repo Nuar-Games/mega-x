@@ -18,12 +18,14 @@ for(const marker of ['createArenaBoardLayout','arenaHandPoint','arenaActionPoint
 }
 if(!commands.includes("case 'PLAY_EFFECT'" )||!commands.includes("const key=`hand:${command.cardId}`")||!commands.includes("kind:'HAND_CARD'"))throw new Error('PLAY_EFFECT must route through the hand-card inspect surface')
 if(!driver.includes('playEffectThroughInspect')||!driver.includes("target.action==='PLAY_EFFECT'"))throw new Error('E2E driver must follow PLAY_EFFECT through card inspect')
+if(driver.includes("locator('#arena-next-runtime-host canvas').boundingBox()"))throw new Error('E2E driver must use full-screen arena pointer coordinates directly')
 for(const marker of ['card.artSrc','/cards/back-game.webp','KAD KAMU','KAD LAWAN','GILIRAN\\nKAMU','setInspectDispatcher','ZON_X','ZON_TEPI']){
   if(!scene.includes(marker))throw new Error(`arena v2 scene missing: ${marker}`)
 }
-for(const marker of ['ArenaCardInspect','data-arena-board-version="2"','data-local-vs-y','data-opponent-vs-y','data-arena-timer="true"',"style={{display:'none'}}"]){
+for(const marker of ['ArenaCardInspect','data-arena-board-version="2"','data-local-vs-y','data-opponent-vs-y','data-arena-timer="true"','data-arena-mode','data-arena-version','data-arena-round','data-arena-phase','data-arena-error',"style={{display:'none'}}"]){
   if(!runtime.includes(marker))throw new Error(`arena v2 runtime missing: ${marker}`)
 }
+if(runtime.includes('ARENA NEXT ·'))throw new Error('arena debug banner survived v2')
 for(const marker of ['/cards/inspect/','KAD DI TANGAN','MAIN KAD INI','TUTUP','ZON X','ZON TEPI']){
   if(!inspect.includes(marker))throw new Error(`arena inspect missing: ${marker}`)
 }
