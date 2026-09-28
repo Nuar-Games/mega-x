@@ -71,8 +71,8 @@ export function createArenaBoardLayout(width:number,height:number,localPlayerInd
   const gap=6
   const slotWidth=(gridWidth-gap*5)/6
   const slotLeft=(index:number)=>gridLeft+index*(slotWidth+gap)
-  effectSlots[opponentPlayerIndex]=Array.from({length:5},(_,index)=>phoneRect(slotLeft(index),58,slotWidth,78))
-  effectSlots[localPlayerIndex]=Array.from({length:5},(_,index)=>phoneRect(slotLeft(index),542,slotWidth,78))
+  effectSlots[opponentPlayerIndex]=Array.from({ length: 5 },(_,index)=>phoneRect(slotLeft(index),58,slotWidth,78))
+  effectSlots[localPlayerIndex]=Array.from({ length: 5 },(_,index)=>phoneRect(slotLeft(index),542,slotWidth,78))
   zonTepi[opponentPlayerIndex]=phoneRect(slotLeft(5),58,slotWidth,78)
   zonTepi[localPlayerIndex]=phoneRect(slotLeft(5),542,slotWidth,78)
 
