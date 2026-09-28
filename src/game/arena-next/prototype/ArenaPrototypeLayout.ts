@@ -62,7 +62,7 @@ export function createArenaBoardLayout(width:number,height:number,localPlayerInd
   captured[0]=zonX[0]
   captured[1]=zonX[1]
 
-  const slotFractions=[0.10,0.265,0.43,0.595,0.76]
+  const slotFractions=Array.from({ length: 5 },(_,index)=>0.10+index*0.165)
   effectSlots[opponentPlayerIndex]=slotFractions.map(fraction=>rect(x(fraction),y(0.158),effectWidth,effectHeight))
   effectSlots[localPlayerIndex]=slotFractions.map(fraction=>rect(x(fraction),y(0.705),effectWidth,effectHeight))
   zonTepi[opponentPlayerIndex]=rect(x(0.91),y(0.158),zoneWidth,zoneHeight)
