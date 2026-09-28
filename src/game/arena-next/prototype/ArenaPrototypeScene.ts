@@ -29,10 +29,7 @@ export class ArenaPrototypeScene extends Phaser.Scene {
   private loadingTextures=new Set<string>()
 
   constructor(){super('arena-prototype')}
-
-  init(data:{state?:ArenaState}){
-    this.currentState=data?.state??null
-  }
+  init(data:{state?:ArenaState}){this.currentState=data?.state??null}
 
   setCommandDispatcher(dispatcher:((command:ArenaLegalCommand)=>void)|null){
     this.commandDispatcher=dispatcher
@@ -48,9 +45,7 @@ export class ArenaPrototypeScene extends Phaser.Scene {
     const registryState=this.registry.get('arena-prototype-initial-state') as ArenaState|undefined
     if(!this.currentState&&registryState)this.currentState=registryState
     if(this.currentState)this.rebuildFromState(this.currentState)
-    this.scale.on(Phaser.Scale.Events.RESIZE,()=>{
-      if(this.currentState)this.rebuildFromState(this.currentState)
-    })
+    this.scale.on(Phaser.Scale.Events.RESIZE,()=>{if(this.currentState)this.rebuildFromState(this.currentState)})
   }
 
   rebuildFromState(state:ArenaState){
@@ -124,20 +119,16 @@ export class ArenaPrototypeScene extends Phaser.Scene {
 
   private animateVsSet(player:0|1,cardId:number){
     const layout=this.layout()
-    const current=this.currentState
-    const hand=current?.players[player].hand??[]
+    const hand=this.currentState?.players[player].hand??[]
     const cardIndex=Math.max(0,hand.findIndex(card=>card.id===cardId))
-    const start=arenaHandPoint(cardIndex,Math.max(1,hand.length),layout)
-    return this.animateToken(start,layout.vs[player],this.cardName(cardId),420)
+    return this.animateToken(arenaHandPoint(cardIndex,Math.max(1,hand.length),layout),layout.vs[player],this.cardName(cardId),420)
   }
 
   private animateDraw(player:0|1,cardId:number|null,count:number){
     const layout=this.layout()
     const current=this.currentState
     const hand=current?.players[player].hand??[]
-    const destination=player===current?.identity.localPlayerIndex
-      ? arenaHandPoint(hand.length,Math.max(1,hand.length+1),layout)
-      : layout.opponentHand
+    const destination=player===current?.identity.localPlayerIndex?arenaHandPoint(hand.length,Math.max(1,hand.length+1),layout):layout.opponentHand
     return this.animateToken(layout.masterDeck,destination,cardId===null?`DRAW ×${count}`:this.cardName(cardId),360)
   }
 
@@ -163,9 +154,7 @@ export class ArenaPrototypeScene extends Phaser.Scene {
     const from=layout.vs[attacker]
     const toward=layout.vs[defender]
     const body=this.add.rectangle(from.x,from.y,from.width*0.74,from.height*0.74,PANEL,1).setStrokeStyle(3,FLASH).setDepth(150)
-    return new Promise<void>(resolve=>{
-      this.tweens.add({targets:body,x:Phaser.Math.Linear(from.x,toward.x,0.35),y:Phaser.Math.Linear(from.y,toward.y,0.35),duration:160,ease:'Cubic.easeIn',yoyo:true,hold:60,onComplete:()=>{body.destroy();resolve()}})
-    })
+    return new Promise<void>(resolve=>this.tweens.add({targets:body,x:Phaser.Math.Linear(from.x,toward.x,0.35),y:Phaser.Math.Linear(from.y,toward.y,0.35),duration:160,ease:'Cubic.easeIn',yoyo:true,hold:60,onComplete:()=>{body.destroy();resolve()}}))
   }
 
   private animateZoneMove(fromPlayer:0|1,fromZone:'VS'|'EFFECT'|'HAND',toPlayer:0|1,toZone:'ZON_TEPI'|'ZON_X',cardId:number|null){
@@ -234,7 +223,6 @@ export class ArenaPrototypeScene extends Phaser.Scene {
   }
 
   private textureKey(src:string){return `arena-card:${src}`}
-
   private ensureTexture(src:string){
     const key=this.textureKey(src)
     if(this.textures.exists(key))return key
@@ -291,10 +279,7 @@ export class ArenaPrototypeScene extends Phaser.Scene {
     const texture=this.ensureTexture(BACK_SRC)
     const body=this.add.rectangle(slot.x,slot.y,slot.width,slot.height,0x07111f,1).setStrokeStyle(2,GOLD,0.7)
     root.add(body)
-    if(texture){
-      const image=this.add.image(slot.x,slot.y,texture).setDisplaySize(slot.width,slot.height)
-      root.add(image)
-    }
+    if(texture){const image=this.add.image(slot.x,slot.y,texture).setDisplaySize(slot.width,slot.height);root.add(image)}
   }
 
   private drawVs(root:Phaser.GameObjects.Container,slot:ArenaPrototypeRect,card:ArenaCardState|null,position:'ATK'|'DEF'|null,player:0|1,own:boolean){
@@ -303,10 +288,7 @@ export class ArenaPrototypeScene extends Phaser.Scene {
     root.add(tag)
     if(card)this.drawArtCard(root,slot,card,own?BLUE:RED,{owner:player,source:'VS',cards:[card],index:0})
     else this.drawCardPlaceholder(root,slot,'KAD VS',own?BLUE:RED)
-    if(position){
-      const pos=this.add.text(slot.x+slot.width*0.46,slot.y-slot.height*0.44,position,{fontFamily:'Arial, sans-serif',fontSize:'10px',color:'#fff',fontStyle:'bold',backgroundColor:own?'#136dd2':'#c41f29',padding:{x:5,y:3}}).setOrigin(0.5)
-      root.add(pos)
-    }
+    if(position){const pos=this.add.text(slot.x+slot.width*0.46,slot.y-slot.height*0.44,position,{fontFamily:'Arial, sans-serif',fontSize:'10px',color:'#fff',fontStyle:'bold',backgroundColor:own?'#136dd2':'#c41f29',padding:{x:5,y:3}}).setOrigin(0.5);root.add(pos)}
   }
 
   private drawStats(root:Phaser.GameObjects.Container,slot:ArenaPrototypeRect,stats:ArenaStats|null,position:'ATK'|'DEF'|null,own:boolean){
@@ -325,13 +307,10 @@ export class ArenaPrototypeScene extends Phaser.Scene {
     const body=isZonX
       ? this.add.circle(slot.x,slot.y,Math.min(slot.width,slot.height)*0.46,0x08101c,0.95).setStrokeStyle(2,color)
       : this.add.rectangle(slot.x,slot.y,slot.width,slot.height,0x17150a,0.9).setStrokeStyle(2,0xd8aa1e)
-    const value=this.add.text(slot.x,slot.y-isZonX?4:-8,`${cards.length}`,{fontFamily:'Arial, sans-serif',fontSize:isZonX?'20px':'18px',color:isZonX?TEXT:'#ffe58c',fontStyle:'bold'}).setOrigin(0.5)
-    const caption=this.add.text(slot.x,slot.y+(isZonX?18:18),label,{fontFamily:'Arial, sans-serif',fontSize:'8px',color:isZonX?(own?'#79bcff':'#ff8d92'):'#ffe58c',fontStyle:'bold',align:'center'}).setOrigin(0.5)
+    const value=this.add.text(slot.x,slot.y+(isZonX?-4:-8),`${cards.length}`,{fontFamily:'Arial, sans-serif',fontSize:isZonX?'20px':'18px',color:isZonX?TEXT:'#ffe58c',fontStyle:'bold'}).setOrigin(0.5)
+    const caption=this.add.text(slot.x,slot.y+18,label,{fontFamily:'Arial, sans-serif',fontSize:'8px',color:isZonX?(own?'#79bcff':'#ff8d92'):'#ffe58c',fontStyle:'bold',align:'center'}).setOrigin(0.5)
     root.add([body,value,caption])
-    if(cards.length>0){
-      const newestFirst=[...cards].reverse()
-      this.bindInspect(body,{owner:player,source,cards:newestFirst,index:0})
-    }
+    if(cards.length>0){const newestFirst=[...cards].reverse();this.bindInspect(body,{owner:player,source,cards:newestFirst,index:0})}
   }
 
   private drawArtCard(root:Phaser.GameObjects.Container,slot:ArenaPrototypeRect,card:ArenaCardState,borderColor:number,selection:ArenaInspectSelection,angle=0){
@@ -339,14 +318,8 @@ export class ArenaPrototypeScene extends Phaser.Scene {
     root.add(body)
     const texture=this.ensureTexture(card.artSrc)
     let target:Phaser.GameObjects.GameObject=body
-    if(texture){
-      const image=this.add.image(slot.x,slot.y,texture).setDisplaySize(slot.width,slot.height).setRotation(angle)
-      root.add(image)
-      target=image
-    }else{
-      const text=this.add.text(slot.x,slot.y,card.name,{fontFamily:'Arial, sans-serif',fontSize:'10px',color:TEXT,align:'center',wordWrap:{width:slot.width*0.82}}).setOrigin(0.5).setRotation(angle)
-      root.add(text)
-    }
+    if(texture){const image=this.add.image(slot.x,slot.y,texture).setDisplaySize(slot.width,slot.height).setRotation(angle);root.add(image);target=image}
+    else{const text=this.add.text(slot.x,slot.y,card.name,{fontFamily:'Arial, sans-serif',fontSize:'10px',color:TEXT,align:'center',wordWrap:{width:slot.width*0.82}}).setOrigin(0.5).setRotation(angle);root.add(text)}
     this.bindInspect(target,selection)
   }
 
@@ -368,10 +341,7 @@ export class ArenaPrototypeScene extends Phaser.Scene {
     const cards=state.players[local].hand??[]
     const width=Math.max(62,Math.min(92,layout.handBand.width/Math.max(4.5,cards.length+0.6)))
     const height=width*1.42
-    cards.forEach((card,index)=>{
-      const point=arenaHandPoint(index,Math.max(1,cards.length),layout)
-      this.drawArtCard(root,{x:point.x,y:point.y,width,height},card,BLUE,{owner:local,source:'HAND',cards,index},point.angle)
-    })
+    cards.forEach((card,index)=>{const point=arenaHandPoint(index,Math.max(1,cards.length),layout);this.drawArtCard(root,{x:point.x,y:point.y,width,height},card,BLUE,{owner:local,source:'HAND',cards,index},point.angle)})
     const caption=this.add.text(layout.handBand.x-layout.handBand.width*0.48,layout.handBand.y-layout.handBand.height*0.56,`KAD DI TANGAN · ${state.players[local].handCount}`,{fontFamily:'Arial, sans-serif',fontSize:'10px',color:'#ffd448',fontStyle:'bold'}).setOrigin(0,0.5)
     root.add(caption)
   }
@@ -382,10 +352,7 @@ export class ArenaPrototypeScene extends Phaser.Scene {
     const tie=state.pendingChoice.value
     const width=Math.max(62,Math.min(92,layout.handBand.width/Math.max(4.5,tie.hand.length+0.6)))
     const height=width*1.42
-    tie.hand.forEach((card,index)=>{
-      const point=arenaHandPoint(index,Math.max(1,tie.hand.length),layout)
-      this.drawArtCard(root,{x:point.x,y:point.y,width,height},card,BLUE,{owner:local,source:'HAND',cards:tie.hand,index},point.angle)
-    })
+    tie.hand.forEach((card,index)=>{const point=arenaHandPoint(index,Math.max(1,tie.hand.length),layout);this.drawArtCard(root,{x:point.x,y:point.y,width,height},card,BLUE,{owner:local,source:'HAND',cards:tie.hand,index},point.angle)})
     const status=tie.picked?'CHOICE LOCKED — WAITING FOR OPPONENT':`TIE BREAKER · CHOOSE 1 OF ${tie.hand.length}`
     const caption=this.add.text(layout.handBand.x,layout.handBand.y-layout.handBand.height*0.56,status,{fontFamily:'Arial, sans-serif',fontSize:'11px',color:TEXT,fontStyle:'bold'}).setOrigin(0.5)
     root.add(caption)
@@ -444,8 +411,7 @@ export class ArenaPrototypeScene extends Phaser.Scene {
           const y=point.y-Math.max(58,layout.handBand.height*0.48)
           const body=this.add.rectangle(x,y,38,24,0x111928,0.98).setStrokeStyle(1,BLUE).setInteractive({useHandCursor:true})
           const text=this.add.text(x,y,command.position??'VS',{fontFamily:'Arial, sans-serif',fontSize:'10px',color:TEXT,fontStyle:'bold'}).setOrigin(0.5)
-          body.on('pointerdown',()=>this.commandDispatcher?.(command))
-          root.add([body,text])
+          body.on('pointerdown',()=>this.commandDispatcher?.(command));root.add([body,text])
         })
       }else if(target.kind==='TIE_CARD'){
         const cardIndex=tieHand.findIndex(card=>card.id===target.cardId)
@@ -479,10 +445,7 @@ export class ArenaPrototypeScene extends Phaser.Scene {
         const width=Math.max(78,Math.min(112,layout.actionArea.width/Math.max(1,actionTargets.length)-5))
         const body=this.add.rectangle(point.x,point.y,width,40,0xc71921,0.96).setStrokeStyle(1,0xffb33d).setInteractive({useHandCursor:true})
         const text=this.add.text(point.x,point.y,target.label,{fontFamily:'Arial, sans-serif',fontSize:'10px',color:TEXT,fontStyle:'bold',align:'center',wordWrap:{width:width-8}}).setOrigin(0.5)
-        body.on('pointerdown',()=>{
-          if(command.action==='RESOLVE_SELF_DISCARD')this.commandDispatcher?.({...command,cardIds:[...this.selectedSelfDiscardIds]})
-          else this.commandDispatcher?.(command)
-        })
+        body.on('pointerdown',()=>{if(command.action==='RESOLVE_SELF_DISCARD')this.commandDispatcher?.({...command,cardIds:[...this.selectedSelfDiscardIds]});else this.commandDispatcher?.(command)})
         root.add([body,text])
       }
     }
