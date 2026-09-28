@@ -10,9 +10,15 @@ if(E2E_SUPABASE_ENV!=='test'||!E2E_SUPABASE_URL||E2E_SUPABASE_URL===PRODUCTION_S
   throw new Error('Practice E2E refused to run against production: VITE_SUPABASE_ENV must be test and VITE_SUPABASE_URL must be set to a non-production Supabase project.')
 }
 
+async function attachScreenshot(page:Parameters<typeof test>[0] extends never?never:any,testInfo:TestInfo,name:string){
+  const path=testInfo.outputPath(`${name}.png`)
+  await page.screenshot({path,fullPage:true})
+  await testInfo.attach(name,{path,contentType:'image/png'})
+}
+
 test('signed-in practice match runs through ArenaNextRuntime from SET_VS to GAME_OVER',async({page},testInfo:TestInfo)=>{
   test.setTimeout(300_000)
-  await page.setViewportSize({width:1440,height:1000})
+  await page.setViewportSize({width:390,height:844})
 
   const pageErrors:string[]=[]
   page.on('pageerror',(error)=>pageErrors.push(error.message))
@@ -89,8 +95,37 @@ test('signed-in practice match runs through ArenaNextRuntime from SET_VS to GAME
   await expect(renderedPracticeName).toContainText(handle,{timeout:15_000})
   console.log(`[PRACTICE_NAME] ${await renderedPracticeName.textContent()}`)
 
+  const beforeInspect=await arenaStatus(page)
+  const setTargets=beforeInspect.pointerTargets.filter(target=>target.action==='SET_VS')
+  expect(setTargets.length,'SET_VS pointer targets are required to locate a hand card').toBeGreaterThan(0)
+  const firstCardId=setTargets[0].cardId
+  const firstCardTargets=setTargets.filter(target=>target.cardId===firstCardId)
+  const handX=firstCardTargets.reduce((sum,target)=>sum+target.x,0)/firstCardTargets.length
+  const handY=Math.max(...firstCardTargets.map(target=>target.y))+74
+  const canvasBox=await page.locator('#arena-next-runtime-host canvas').boundingBox()
+  expect(canvasBox,'arena canvas is missing').toBeTruthy()
+  await page.mouse.click(canvasBox!.x+handX,canvasBox!.y+handY)
+  await expect(page.locator('[data-arena-inspect="true"]')).toBeVisible({timeout:5_000})
+  expect((await arenaStatus(page)).version,'opening inspect must not play the card').toBe(beforeInspect.version)
+  await attachScreenshot(page,testInfo,'practice-inspect')
+  await page.locator('[data-arena-inspect-close="true"]').click()
+  await expect(page.locator('[data-arena-inspect="true"]')).toHaveCount(0)
+  expect((await arenaStatus(page)).version,'closing inspect must not play the card').toBe(beforeInspect.version)
+
+  const statusProbe=page.locator('[data-arena-status="true"]').first()
+  const layoutProbe=await statusProbe.evaluate((element)=>({
+    localY:Number(element.getAttribute('data-local-vs-y')),
+    opponentY:Number(element.getAttribute('data-opponent-vs-y')),
+    viewportHeight:Number(element.getAttribute('data-arena-viewport-height')),
+  }))
+  expect(layoutProbe.localY,'viewer KAD VS must be in bottom half').toBeGreaterThan(layoutProbe.viewportHeight/2)
+  expect(layoutProbe.opponentY,'opponent KAD VS must be in top half').toBeLessThan(layoutProbe.viewportHeight/2)
+  const timerZ=Number(await page.locator('[data-arena-timer="true"]').getAttribute('data-arena-timer-layer'))
+  expect(timerZ,'timer layer must be above card/canvas layer').toBeGreaterThan(20)
+
   let sawSetVs=false
   let sawAttackPhase=false
+  let phoneBoardCaptured=false
 
   for(let step=0;step<80;step+=1){
     expect(pageErrors,`browser page errors: ${pageErrors.join(' | ')}`).toEqual([])
@@ -105,19 +140,25 @@ test('signed-in practice match runs through ArenaNextRuntime from SET_VS to GAME
     }
 
     const result=await driveOneHumanAction(page)
-    if(result.action==='SET_VS'&&result.advanced)sawSetVs=true
+    if(result.action==='SET_VS'&&result.advanced){
+      sawSetVs=true
+      if(!phoneBoardCaptured){
+        await page.waitForTimeout(250)
+        await attachScreenshot(page,testInfo,'practice-phone-board')
+        phoneBoardCaptured=true
+      }
+    }
 
     if(!result.advanced){
       const after=await arenaStatus(page)
-      if(after.version===status.version){
-        throw new Error(`practice match stuck in ${status.phase} at V${status.version}; legal=${status.legalActions.join('|')}`)
-      }
+      if(after.version===status.version)throw new Error(`practice match stuck in ${status.phase} at V${status.version}; legal=${status.legalActions.join('|')}`)
     }
   }
 
   const finalStatus=await arenaStatus(page)
   expect(finalStatus.phase).toBe('GAME_OVER')
   expect(sawSetVs,'practice match never completed a real SET_VS action').toBe(true)
+  expect(phoneBoardCaptured,'phone board screenshot was not captured after SET_VS').toBe(true)
   expect(sawAttackPhase,'practice match never reached a real ATTACK phase').toBe(true)
   expect(pageErrors,`browser page errors: ${pageErrors.join(' | ')}`).toEqual([])
   await expect(page.getByText('LEADERBOARD POINTS WERE NOT RECORDED')).toBeVisible({timeout:10_000})
