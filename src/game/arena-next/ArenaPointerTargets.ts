@@ -42,19 +42,26 @@ export function deriveArenaPointerTargets(state:ArenaState,width:number,height:n
       const cardIndex=hand.findIndex(card=>card.id===target.cardId)
       if(cardIndex<0)continue
       const point=arenaHandPoint(cardIndex,Math.max(1,hand.length),layout)
-      const commands=target.commands.filter(command=>command.action==='SET_VS')
-      commands.forEach((command,index)=>{
-        output.push({
-          key:`${target.key}:${command.position??index}`,
-          kind:target.kind,
-          action:command.action,
-          label:`${target.label} ${command.position??''}`.trim(),
-          x:point.x+(index-(commands.length-1)/2)*42,
-          y:point.y-Math.max(58,layout.handBand.height*0.48),
-          cardId:target.cardId,
-          position:command.position,
+      const setVsCommands=target.commands.filter(command=>command.action==='SET_VS')
+      if(setVsCommands.length>0){
+        setVsCommands.forEach((command,index)=>{
+          output.push({
+            key:`${target.key}:${command.position??index}`,
+            kind:target.kind,
+            action:command.action,
+            label:`${target.label} ${command.position??''}`.trim(),
+            x:point.x+(index-(setVsCommands.length-1)/2)*42,
+            y:point.y-Math.max(58,layout.handBand.height*0.48),
+            cardId:target.cardId,
+            position:command.position,
+          })
         })
-      })
+        continue
+      }
+      const playEffect=target.commands.find(command=>command.action==='PLAY_EFFECT')
+      if(playEffect){
+        output.push({key:target.key,kind:target.kind,action:playEffect.action,label:target.label,x:point.x,y:point.y,cardId:target.cardId})
+      }
       continue
     }
 
