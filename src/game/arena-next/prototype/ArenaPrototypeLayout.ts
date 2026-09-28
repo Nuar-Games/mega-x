@@ -4,6 +4,9 @@ export type ArenaPrototypeRect = ArenaPrototypePoint & { width:number; height:nu
 export type ArenaPrototypeLayout = {
   viewport:{ width:number; height:number }
   board:ArenaPrototypeRect
+  scale:number
+  boardLeft:number
+  boardTop:number
   localPlayerIndex:0|1
   opponentPlayerIndex:0|1
   nameplates:[ArenaPrototypeRect,ArenaPrototypeRect]
@@ -22,30 +25,31 @@ export type ArenaPrototypeLayout = {
   centerLineY:number
 }
 
+export const PHONE_WIDTH=390
+export const PHONE_HEIGHT=844
+
 const rect=(x:number,y:number,width:number,height:number):ArenaPrototypeRect=>({x,y,width,height})
-const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,value))
 
 /**
- * Arena Board v2 is portrait-first. Arrays stay indexed by authoritative
- * player index, while physical positions are mapped from localPlayerIndex so
- * the viewer is always bottom/blue and the opponent top/red.
+ * Arena Board v2 uses the owner-approved 390x844 portrait composition as its
+ * source geometry. Rendering and pointer targets both consume these scaled
+ * rectangles so the viewer stays bottom/blue regardless of player index.
  */
 export function createArenaBoardLayout(width:number,height:number,localPlayerIndex:0|1):ArenaPrototypeLayout {
   const opponentPlayerIndex=(localPlayerIndex===0?1:0) as 0|1
-  const boardWidth=Math.min(width,width<=520?width:clamp(width*0.58,520,760))
-  const boardX=width/2
-  const boardLeft=boardX-boardWidth/2
-  const board=rect(boardX,height/2,boardWidth,height)
-  const x=(fraction:number)=>boardLeft+boardWidth*fraction
-  const y=(fraction:number)=>height*fraction
-
-  const vsWidth=clamp(boardWidth*0.255,92,150)
-  const vsHeight=vsWidth*1.42
-  const effectWidth=clamp(boardWidth*0.13,46,82)
-  const effectHeight=effectWidth*1.42
-  const zoneWidth=clamp(boardWidth*0.145,54,90)
-  const zoneHeight=clamp(effectHeight,66,116)
-  const centerLineY=y(0.46)
+  const desktop=width>520
+  const targetWidth=desktop?Math.min(width*0.58,520):width
+  const scale=Math.min(targetWidth/PHONE_WIDTH,height/PHONE_HEIGHT,desktop?1.25:1)
+  const boardWidth=PHONE_WIDTH*scale
+  const boardHeight=PHONE_HEIGHT*scale
+  const boardLeft=(width-boardWidth)/2
+  const boardTop=(height-boardHeight)/2
+  const phoneRect=(left:number,top:number,w:number,h:number)=>rect(
+    boardLeft+(left+w/2)*scale,
+    boardTop+(top+h/2)*scale,
+    w*scale,
+    h*scale,
+  )
 
   const nameplates=[rect(0,0,0,0),rect(0,0,0,0)] as [ArenaPrototypeRect,ArenaPrototypeRect]
   const captured=[rect(0,0,0,0),rect(0,0,0,0)] as [ArenaPrototypeRect,ArenaPrototypeRect]
@@ -55,61 +59,70 @@ export function createArenaBoardLayout(width:number,height:number,localPlayerInd
   const zonTepi=[rect(0,0,0,0),rect(0,0,0,0)] as [ArenaPrototypeRect,ArenaPrototypeRect]
   const effectSlots=[[],[]] as [ArenaPrototypeRect[],ArenaPrototypeRect[]]
 
-  nameplates[opponentPlayerIndex]=rect(x(0.47),y(0.055),boardWidth*0.55,clamp(height*0.066,48,70))
-  nameplates[localPlayerIndex]=rect(x(0.47),y(0.825),boardWidth*0.55,clamp(height*0.066,48,70))
-  zonX[opponentPlayerIndex]=rect(x(0.095),y(0.055),zoneWidth,clamp(height*0.068,50,72))
-  zonX[localPlayerIndex]=rect(x(0.095),y(0.825),zoneWidth,clamp(height*0.068,50,72))
+  nameplates[opponentPlayerIndex]=phoneRect(64,8,160,44)
+  nameplates[localPlayerIndex]=phoneRect(64,628,160,44)
+  zonX[opponentPlayerIndex]=phoneRect(10,8,46,46)
+  zonX[localPlayerIndex]=phoneRect(10,628,46,46)
   captured[0]=zonX[0]
   captured[1]=zonX[1]
 
-  const slotFractions=Array.from({ length: 5 },(_,index)=>0.10+index*0.165)
-  effectSlots[opponentPlayerIndex]=slotFractions.map(fraction=>rect(x(fraction),y(0.158),effectWidth,effectHeight))
-  effectSlots[localPlayerIndex]=slotFractions.map(fraction=>rect(x(fraction),y(0.705),effectWidth,effectHeight))
-  zonTepi[opponentPlayerIndex]=rect(x(0.91),y(0.158),zoneWidth,zoneHeight)
-  zonTepi[localPlayerIndex]=rect(x(0.91),y(0.705),zoneWidth,zoneHeight)
+  const gridLeft=10
+  const gridWidth=370
+  const gap=6
+  const slotWidth=(gridWidth-gap*5)/6
+  const slotLeft=(index:number)=>gridLeft+index*(slotWidth+gap)
+  effectSlots[opponentPlayerIndex]=Array.from({length:5},(_,index)=>phoneRect(slotLeft(index),58,slotWidth,78))
+  effectSlots[localPlayerIndex]=Array.from({length:5},(_,index)=>phoneRect(slotLeft(index),542,slotWidth,78))
+  zonTepi[opponentPlayerIndex]=phoneRect(slotLeft(5),58,slotWidth,78)
+  zonTepi[localPlayerIndex]=phoneRect(slotLeft(5),542,slotWidth,78)
 
-  vs[opponentPlayerIndex]=rect(x(0.50),y(0.325),vsWidth,vsHeight)
-  vs[localPlayerIndex]=rect(x(0.50),y(0.565),vsWidth,vsHeight)
-  stats[opponentPlayerIndex]=rect(x(0.20),y(0.325),boardWidth*0.22,clamp(height*0.12,82,118))
-  stats[localPlayerIndex]=rect(x(0.20),y(0.565),boardWidth*0.22,clamp(height*0.12,82,118))
+  const vsWidth=120*scale
+  const vsHeight=170*scale
+  vs[opponentPlayerIndex]=rect(boardLeft+195*scale,boardTop+239*scale,vsWidth,vsHeight)
+  vs[localPlayerIndex]=rect(boardLeft+195*scale,boardTop+433*scale,vsWidth,vsHeight)
+  stats[opponentPlayerIndex]=phoneRect(12,172,108,115)
+  stats[localPlayerIndex]=phoneRect(12,396,108,115)
+
+  const centerLineY=boardTop+334*scale
 
   return {
     viewport:{width,height},
-    board,
+    board:rect(width/2,height/2,boardWidth,boardHeight),
+    scale,
+    boardLeft,
+    boardTop,
     localPlayerIndex,
     opponentPlayerIndex,
     nameplates,
-    opponentHand:rect(x(0.84),y(0.055),boardWidth*0.20,clamp(height*0.07,52,76)),
-    masterDeck:rect(x(0.095),centerLineY,clamp(boardWidth*0.12,54,84),clamp(boardWidth*0.17,76,118)),
+    opponentHand:phoneRect(276,10,58,36),
+    masterDeck:phoneRect(12,295,58,91),
     captured,
     vs,
     stats,
     effectSlots,
     zonX,
     zonTepi,
-    handBand:rect(x(0.50),y(0.94),boardWidth*0.88,clamp(height*0.18,120,180)),
-    timer:rect(x(0.50),centerLineY,clamp(boardWidth*0.15,58,88),clamp(boardWidth*0.15,58,88)),
-    turnIndicator:rect(x(0.84),centerLineY,clamp(boardWidth*0.22,78,126),clamp(boardWidth*0.22,78,126)),
-    actionArea:rect(x(0.66),y(0.825),boardWidth*0.58,clamp(height*0.065,46,64)),
+    handBand:phoneRect(0,680,390,164),
+    timer:phoneRect(161,301,68,68),
+    turnIndicator:phoneRect(290,290,90,90),
+    actionArea:phoneRect(232,628,148,44),
     centerLineY,
   }
 }
 
 export function arenaHandPoint(index:number,count:number,layout:ArenaPrototypeLayout){
   const cards=Math.max(1,count)
-  const spacing=Math.min(layout.handBand.width/Math.max(3,cards+0.7),88)
   const normalized=index-(cards-1)/2
-  const angle=normalized*0.055
   return {
-    x:layout.handBand.x+normalized*spacing,
-    y:layout.handBand.y-Math.abs(normalized)*4,
-    angle,
+    x:layout.boardLeft+(195+normalized*62)*layout.scale,
+    y:layout.boardTop+(754+Math.abs(normalized)*9)*layout.scale,
+    angle:normalized*0.087,
   }
 }
 
 export function arenaActionPoint(index:number,count:number,layout:ArenaPrototypeLayout){
   const actions=Math.max(1,count)
-  const spacing=Math.min(118,layout.actionArea.width/actions)
+  const spacing=Math.min(44*layout.scale,layout.actionArea.width/actions)
   return {
     x:layout.actionArea.x+(index-(actions-1)/2)*spacing,
     y:layout.actionArea.y,
