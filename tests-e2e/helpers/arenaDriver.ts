@@ -134,15 +134,19 @@ async function resolveSelfDiscard(page:Page,status:ArenaStatus){
     await page.waitForTimeout(25)
   }
 
-  // The scene creates the confirm button after enough exact selections have
-  // been made. Its coordinate is already published from the same layout, so
-  // the driver uses that coordinate and never searches the canvas.
   const current=await arenaStatus(page)
   const confirm=current.pointerTargets.find(target=>target.action==='RESOLVE_SELF_DISCARD')
     ??status.pointerTargets.find(target=>target.action==='RESOLVE_SELF_DISCARD')
   if(!confirm)return {advanced:false,action:'RESOLVE_SELF_DISCARD'}
   await clickTarget(page,confirm)
   return {advanced:await waitForVersionChange(page,status.version),action:'RESOLVE_SELF_DISCARD'}
+}
+
+async function playEffectThroughInspect(page:Page,target:PointerTarget,version:number){
+  await clickTarget(page,target)
+  await expect(page.locator('[data-arena-inspect="true"]')).toBeVisible({timeout:COMMAND_WAIT_MS})
+  await page.locator('[data-arena-inspect-play="true"]').click()
+  return {advanced:await waitForVersionChange(page,version),action:'PLAY_EFFECT'}
 }
 
 export async function driveOneHumanAction(page:Page){
@@ -154,6 +158,7 @@ export async function driveOneHumanAction(page:Page){
 
   const target=chooseTarget(settled)
   if(!target)return {advanced:false,action:'NO_EXACT_TARGET'}
+  if(target.action==='PLAY_EFFECT')return playEffectThroughInspect(page,target,settled.version)
   await clickTarget(page,target)
   return {advanced:await waitForVersionChange(page,settled.version),action:target.action}
 }
