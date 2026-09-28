@@ -1,6 +1,5 @@
 import { expect, type Page } from 'playwright/test'
 
-const STATUS=/^ARENA NEXT · (PRACTICE|ONLINE) · V(\d+) · ROUND (\d+) · (SET_VS|EFFECT|ATTACK|TIE_BREAKER|GAME_OVER)$/
 export const COMMAND_WAIT_MS=8_000
 
 type PointerTarget={
@@ -45,7 +44,11 @@ function parseTargets(raw:string|null):PointerTarget[]{
 export async function arenaStatus(page:Page):Promise<ArenaStatus>{
   const locator=page.locator('[data-arena-status="true"]').first()
   const snapshot=await locator.evaluate((element)=>({
-    text:element.textContent?.trim()??'',
+    mode:element.getAttribute('data-arena-mode')??'LOADING',
+    version:Number(element.getAttribute('data-arena-version')??'-1'),
+    round:Number(element.getAttribute('data-arena-round')??'0'),
+    phase:element.getAttribute('data-arena-phase')??'LOADING',
+    error:element.getAttribute('data-arena-error')??'',
     position:element.getAttribute('data-local-vs-position')??'',
     legalActions:(element.getAttribute('data-local-legal-actions')??'').split(',').filter(Boolean),
     connectionStatus:element.getAttribute('data-connection-status')??'',
@@ -57,18 +60,24 @@ export async function arenaStatus(page:Page):Promise<ArenaStatus>{
   }))
   const pointerTargets=parseTargets(snapshot.pointerTargets)
   const selfDiscardMode=snapshot.selfDiscardMode==='EXACT'||snapshot.selfDiscardMode==='ANY'?snapshot.selfDiscardMode:''
-  if(snapshot.text==='ARENA NEXT · LOADING')return {text:snapshot.text,mode:'LOADING',version:-1,round:0,phase:'LOADING',position:snapshot.position,legalActions:snapshot.legalActions,connectionStatus:snapshot.connectionStatus,networkBusy:snapshot.networkBusy,pointerTargetVersion:snapshot.pointerTargetVersion,pointerTargets,selfDiscardMode,selfDiscardCount:snapshot.selfDiscardCount}
-  const match=snapshot.text.match(STATUS)
-  expect(match,`arena status became an error or invalid state: ${snapshot.text}`).toBeTruthy()
-  return {text:snapshot.text,mode:match![1] as 'PRACTICE'|'ONLINE',version:Number(match![2]),round:Number(match![3]),phase:match![4] as ArenaStatus['phase'],position:snapshot.position,legalActions:snapshot.legalActions,connectionStatus:snapshot.connectionStatus,networkBusy:snapshot.networkBusy,pointerTargetVersion:snapshot.pointerTargetVersion,pointerTargets,selfDiscardMode,selfDiscardCount:snapshot.selfDiscardCount}
+  expect(snapshot.error,`arena status became an error: ${snapshot.error}`).toBe('')
+  if(snapshot.mode==='LOADING'||snapshot.phase==='LOADING')return {text:'LOADING',mode:'LOADING',version:-1,round:0,phase:'LOADING',position:snapshot.position,legalActions:snapshot.legalActions,connectionStatus:snapshot.connectionStatus,networkBusy:snapshot.networkBusy,pointerTargetVersion:snapshot.pointerTargetVersion,pointerTargets,selfDiscardMode,selfDiscardCount:snapshot.selfDiscardCount}
+  expect(['PRACTICE','ONLINE'],`invalid arena mode: ${snapshot.mode}`).toContain(snapshot.mode)
+  expect(['SET_VS','EFFECT','ATTACK','TIE_BREAKER','GAME_OVER'],`invalid arena phase: ${snapshot.phase}`).toContain(snapshot.phase)
+  const mode=snapshot.mode as 'PRACTICE'|'ONLINE'
+  const phase=snapshot.phase as ArenaStatus['phase']
+  const text=`${mode} · V${snapshot.version} · ROUND ${snapshot.round} · ${phase}`
+  return {text,mode,version:snapshot.version,round:snapshot.round,phase,position:snapshot.position,legalActions:snapshot.legalActions,connectionStatus:snapshot.connectionStatus,networkBusy:snapshot.networkBusy,pointerTargetVersion:snapshot.pointerTargetVersion,pointerTargets,selfDiscardMode,selfDiscardCount:snapshot.selfDiscardCount}
 }
 
 async function arenaVersion(page:Page){
-  const text=(await page.locator('[data-arena-status="true"]').first().textContent())?.trim()??''
-  if(text==='ARENA NEXT · LOADING')return -1
-  const match=text.match(STATUS)
-  expect(match,`arena status became an error or invalid state: ${text}`).toBeTruthy()
-  return Number(match![2])
+  const snapshot=await page.locator('[data-arena-status="true"]').first().evaluate((element)=>({
+    version:Number(element.getAttribute('data-arena-version')??'-1'),
+    phase:element.getAttribute('data-arena-phase')??'LOADING',
+    error:element.getAttribute('data-arena-error')??'',
+  }))
+  expect(snapshot.error,`arena status became an error: ${snapshot.error}`).toBe('')
+  return snapshot.phase==='LOADING'?-1:snapshot.version
 }
 
 export async function waitForVersionChange(page:Page,version:number,timeout=COMMAND_WAIT_MS){
@@ -95,9 +104,7 @@ export async function waitForArenaReady(page:Page,timeout=20_000){
 }
 
 async function clickTarget(page:Page,target:PointerTarget){
-  const box=await page.locator('#arena-next-runtime-host canvas').boundingBox()
-  expect(box,'arena canvas is missing').toBeTruthy()
-  await page.mouse.click(box!.x+target.x,box!.y+target.y)
+  await page.mouse.click(target.x,target.y)
 }
 
 function chooseTarget(status:ArenaStatus){
