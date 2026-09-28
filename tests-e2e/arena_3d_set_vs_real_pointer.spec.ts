@@ -1,6 +1,6 @@
 import { mkdir } from 'node:fs/promises'
 import { test, expect, type Page, type TestInfo } from 'playwright/test'
-import { arenaStatus, driveOneHumanAction, waitForArenaReady, waitForVersionChange } from './helpers/arenaDriver'
+import { arenaStatus, assertNoArenaBoardOverlaps, driveOneHumanAction, waitForArenaReady, waitForVersionChange } from './helpers/arenaDriver'
 
 const BOT_WAIT_MS=4_000
 const PRODUCTION_SUPABASE_URL='https://mmtorfzxnidsczcdygbp.supabase.co'
@@ -147,6 +147,7 @@ test('signed-in practice match runs through ArenaNextRuntime from SET_VS to GAME
       sawSetVs=true
       if(!phoneBoardCaptured){
         await page.waitForTimeout(250)
+        await assertNoArenaBoardOverlaps(page,'practice board')
         await attachScreenshot(page,testInfo,'practice-phone-board')
         phoneBoardCaptured=true
       }
