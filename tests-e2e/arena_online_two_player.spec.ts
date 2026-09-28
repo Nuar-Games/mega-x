@@ -1,6 +1,6 @@
 import { mkdir } from 'node:fs/promises'
 import { test, expect, type BrowserContext, type Page, type TestInfo } from 'playwright/test'
-import { arenaStatus, driveOneHumanAction, waitForArenaReady } from './helpers/arenaDriver'
+import { arenaStatus, assertNoArenaBoardOverlaps, driveOneHumanAction, waitForArenaReady } from './helpers/arenaDriver'
 
 type Credentials={email:string;password:string;handle:string}
 
@@ -231,6 +231,8 @@ test('two real online players reach round 2 and reconcile exactly after reconnec
     expect(ownershipState.every(status=>status.phase!=='GAME_OVER'),'ownership proof must happen during a live round').toBe(true)
     await assertViewerRelativeBoard(page1,'player 1')
     await assertViewerRelativeBoard(page2,'player 2')
+    await assertNoArenaBoardOverlaps(page1,'online player 1 board')
+    await assertNoArenaBoardOverlaps(page2,'online player 2 board')
     await attachScreenshot(page1,testInfo,'online-player-1')
     await attachScreenshot(page2,testInfo,'online-player-2')
 
