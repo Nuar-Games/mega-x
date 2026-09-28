@@ -1,3 +1,4 @@
+import { mkdir } from 'node:fs/promises'
 import { test, expect, type BrowserContext, type Page, type TestInfo } from 'playwright/test'
 import { arenaStatus, driveOneHumanAction, waitForArenaReady } from './helpers/arenaDriver'
 
@@ -188,7 +189,9 @@ async function assertViewerRelativeBoard(page:Page,label:string){
 }
 
 async function attachScreenshot(page:Page,testInfo:TestInfo,name:string){
-  const path=testInfo.outputPath(`${name}.png`)
+  const dir='e2e-artifacts/arena-board-v2'
+  await mkdir(dir,{recursive:true})
+  const path=`${dir}/${name}.png`
   await page.screenshot({path,fullPage:true})
   await testInfo.attach(name,{path,contentType:'image/png'})
 }
