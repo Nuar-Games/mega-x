@@ -154,6 +154,11 @@ export function ArenaNextRuntime({allowPracticeBootstrap=true,session=null,match
 
     <div
       data-arena-status="true"
+      data-arena-mode={state?.identity.mode.toUpperCase()??'LOADING'}
+      data-arena-version={state?.stateVersion??-1}
+      data-arena-round={state?.round??0}
+      data-arena-phase={state?.phase??'LOADING'}
+      data-arena-error={error}
       data-local-vs-position={localVsPosition}
       data-local-legal-actions={localLegalActions}
       data-connection-status={connectionStatus}
@@ -166,9 +171,7 @@ export function ArenaNextRuntime({allowPracticeBootstrap=true,session=null,match
       data-opponent-vs-y={opponentVsY}
       data-arena-viewport-height={viewport.height}
       style={{display:'none'}}
-    >
-      {error?`ARENA NEXT · ${error.replaceAll('_',' ')}`:state?`ARENA NEXT · ${state.identity.mode.toUpperCase()} · V${state.stateVersion} · ROUND ${state.round} · ${state.phase}`:'ARENA NEXT · LOADING'}
-    </div>
+    />
 
     {layout&&state&&<div
       data-arena-timer="true"
