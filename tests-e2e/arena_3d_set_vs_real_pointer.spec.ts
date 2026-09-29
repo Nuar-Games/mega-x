@@ -78,14 +78,8 @@ test('signed-in practice match runs through ArenaNextRuntime from SET_VS to GAME
       const value=String(text)
       if(value.includes(expectedHandle))probe.textContent=value
     }
-    contextPrototype.fillText=function(text:string,x:number,y:number,maxWidth?:number){
-      capture(text)
-      return maxWidth===undefined?originalFillText.call(this,text,x,y):originalFillText.call(this,text,x,y,maxWidth)
-    }
-    contextPrototype.strokeText=function(text:string,x:number,y:number,maxWidth?:number){
-      capture(text)
-      return maxWidth===undefined?originalStrokeText.call(this,text,x,y):originalStrokeText.call(this,text,x,y,maxWidth)
-    }
+    contextPrototype.fillText=function(text:string,x:number,y:number,maxWidth?:number){capture(text);return maxWidth===undefined?originalFillText.call(this,text,x,y):originalFillText.call(this,text,x,y,maxWidth)}
+    contextPrototype.strokeText=function(text:string,x:number,y:number,maxWidth?:number){capture(text);return maxWidth===undefined?originalStrokeText.call(this,text,x,y):originalStrokeText.call(this,text,x,y,maxWidth)}
   },handle)
   const practiceEntry=page.locator('.mx-practice-entry[data-practice-entry="true"]')
   await expect(practiceEntry).toBeVisible({timeout:15_000})
@@ -121,11 +115,7 @@ test('signed-in practice match runs through ArenaNextRuntime from SET_VS to GAME
   expect((await arenaStatus(page)).version,'closing inspect must not play the card').toBe(beforeInspect.version)
 
   const statusProbe=page.locator('[data-arena-status="true"]').first()
-  const layoutProbe=await statusProbe.evaluate((element)=>({
-    localY:Number(element.getAttribute('data-local-vs-y')),
-    opponentY:Number(element.getAttribute('data-opponent-vs-y')),
-    viewportHeight:Number(element.getAttribute('data-arena-viewport-height')),
-  }))
+  const layoutProbe=await statusProbe.evaluate((element)=>({localY:Number(element.getAttribute('data-local-vs-y')),opponentY:Number(element.getAttribute('data-opponent-vs-y')),viewportHeight:Number(element.getAttribute('data-arena-viewport-height'))}))
   expect(layoutProbe.localY,'viewer KAD VS must be in bottom half').toBeGreaterThan(layoutProbe.viewportHeight/2)
   expect(layoutProbe.opponentY,'opponent KAD VS must be in top half').toBeLessThan(layoutProbe.viewportHeight/2)
   const timerZ=Number(await page.locator('[data-arena-timer="true"]').getAttribute('data-arena-timer-layer'))
@@ -134,6 +124,8 @@ test('signed-in practice match runs through ArenaNextRuntime from SET_VS to GAME
   let sawSetVs=false
   let sawAttackPhase=false
   let phoneBoardCaptured=false
+  let sawExactTwoDiscard=false
+  let sawAnyDiscard=false
 
   for(let step=0;step<80;step+=1){
     expect(pageErrors,`browser page errors: ${pageErrors.join(' | ')}`).toEqual([])
@@ -148,6 +140,10 @@ test('signed-in practice match runs through ArenaNextRuntime from SET_VS to GAME
     }
 
     const result=await driveOneHumanAction(page)
+    if(result.action==='RESOLVE_SELF_DISCARD'&&'selfDiscardMode' in result){
+      if(result.selfDiscardMode==='EXACT'&&result.selfDiscardCount===2)sawExactTwoDiscard=true
+      if(result.selfDiscardMode==='ANY')sawAnyDiscard=true
+    }
     if(result.action==='SET_VS'&&result.advanced){
       sawSetVs=true
       if(!phoneBoardCaptured){
@@ -169,6 +165,8 @@ test('signed-in practice match runs through ArenaNextRuntime from SET_VS to GAME
   expect(sawSetVs,'practice match never completed a real SET_VS action').toBe(true)
   expect(phoneBoardCaptured,'phone board screenshot was not captured after SET_VS').toBe(true)
   expect(sawAttackPhase,'practice match never reached a real ATTACK phase').toBe(true)
+  expect(sawExactTwoDiscard,'Practice never exercised Pipit/EXACT 2 through the visible React discard UI').toBe(true)
+  expect(sawAnyDiscard,'Practice never exercised an ANY discard (SPUDUR) through the visible React discard UI').toBe(true)
   expect(pageErrors,`browser page errors: ${pageErrors.join(' | ')}`).toEqual([])
   await expect(page.getByText('LEADERBOARD POINTS WERE NOT RECORDED')).toBeVisible({timeout:10_000})
 })
