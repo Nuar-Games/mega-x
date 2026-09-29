@@ -13,6 +13,7 @@ type ArenaCardInspectProps={
   selection:ArenaInspectSelection
   localPlayerIndex:0|1
   legalCommands:ArenaLegalCommand[]
+  timerSeconds:number
   hoverOnly?:boolean
   onIndex:(index:number)=>void
   onClose:()=>void
@@ -31,7 +32,7 @@ function sourceLabel(selection:ArenaInspectSelection){
   return 'KAD EFFECT'
 }
 
-export function ArenaCardInspect({selection,localPlayerIndex,legalCommands,hoverOnly=false,onIndex,onClose,onPlay}:ArenaCardInspectProps){
+export function ArenaCardInspect({selection,localPlayerIndex,legalCommands,timerSeconds,hoverOnly=false,onIndex,onClose,onPlay}:ArenaCardInspectProps){
   const [choosePosition,setChoosePosition]=useState(false)
   const touchStartX=useRef<number|null>(null)
   const card=selection.cards[selection.index]??selection.cards[0]
@@ -79,6 +80,7 @@ export function ArenaCardInspect({selection,localPlayerIndex,legalCommands,hover
     <section style={{width:'min(94vw,460px)',display:'flex',flexDirection:'column',alignItems:'center',gap:14}}>
       <header style={{width:'100%',display:'flex',justifyContent:'space-between',alignItems:'center',font:'800 13px/1.1 system-ui',letterSpacing:'.12em'}}>
         <span style={{padding:'10px 14px',border:'1px solid rgba(255,214,72,.55)',borderRadius:999,background:'rgba(14,18,30,.9)',color:'#ffd448'}}>{sourceLabel(selection)}</span>
+        <span data-arena-inspect-timer="true" style={{padding:'10px 14px',border:'1px solid rgba(255,214,72,.7)',borderRadius:999,background:'rgba(14,18,30,.92)',color:'#fff',font:'900 13px/1 "Barlow Condensed",system-ui',letterSpacing:'.08em'}}>{Math.max(0,timerSeconds)} SAAT</span>
       </header>
 
       <div style={{display:'grid',gridTemplateColumns:'46px 1fr 46px',alignItems:'center',gap:8}}>
