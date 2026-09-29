@@ -1,6 +1,6 @@
 import type { ArenaState } from './ArenaState'
 import { deriveArenaCommandTargets } from './ArenaCommandSurface'
-import { createDesktopPrototypeLayout, type ArenaPrototypeLayout } from './prototype/ArenaPrototypeLayout'
+import { arenaActionPoint, arenaHandPoint, createArenaBoardLayout, type ArenaPrototypeLayout } from './prototype/ArenaPrototypeLayout'
 
 export type ArenaPointerTarget = {
   key:string
@@ -14,11 +14,6 @@ export type ArenaPointerTarget = {
   slot?:number
 }
 
-function handPoint(index:number,count:number,layout:ArenaPrototypeLayout){
-  const spacing=Math.min(118,layout.handBand.width/Math.max(1,count))
-  return {x:layout.handBand.x+(index-(count-1)/2)*spacing,y:layout.handBand.y}
-}
-
 function boardPoint(state:ArenaState,cardId:number,layout:ArenaPrototypeLayout){
   if(state.pendingChoice?.kind!=='BOARD')return null
   const player=state.pendingChoice.value.target
@@ -29,37 +24,44 @@ function boardPoint(state:ArenaState,cardId:number,layout:ArenaPrototypeLayout){
 
 /**
  * Coordinates are CSS-pixel coordinates inside the full-screen Phaser canvas.
- * The browser E2E adds the canvas bounding-box origin before clicking, so the
- * test uses the same layout positions as the live arena instead of guessing.
+ * The same viewer-relative layout drives both visible rendering and these
+ * targets so player 0/player 1 ownership never changes screen geometry.
  */
 export function deriveArenaPointerTargets(state:ArenaState,width:number,height:number):ArenaPointerTarget[]{
   if(state.phase==='GAME_OVER'||state.connection.networkBusy)return []
-  const layout=createDesktopPrototypeLayout(width,height)
-  const targets=deriveArenaCommandTargets(state)
   const local=state.identity.localPlayerIndex
+  const layout=createArenaBoardLayout(width,height,local)
+  const targets=deriveArenaCommandTargets(state)
+  const actionTargets=targets.filter(target=>target.kind==='ACTION')
   const hand=state.players[local].hand??[]
   const tieHand=state.pendingChoice?.kind==='TIE'?state.pendingChoice.value.hand:[]
   const output:ArenaPointerTarget[]=[]
-  let actionIndex=0
 
   for(const target of targets){
     if(target.kind==='HAND_CARD'){
       const cardIndex=hand.findIndex(card=>card.id===target.cardId)
       if(cardIndex<0)continue
-      const point=handPoint(cardIndex,Math.max(1,hand.length),layout)
-      const commands=target.commands.filter(command=>command.action==='SET_VS')
-      commands.forEach((command,index)=>{
-        output.push({
-          key:`${target.key}:${command.position??index}`,
-          kind:target.kind,
-          action:command.action,
-          label:`${target.label} ${command.position??''}`.trim(),
-          x:point.x+(index-(commands.length-1)/2)*46,
-          y:point.y+94,
-          cardId:target.cardId,
-          position:command.position,
+      const point=arenaHandPoint(cardIndex,Math.max(1,hand.length),layout)
+      const setVsCommands=target.commands.filter(command=>command.action==='SET_VS')
+      if(setVsCommands.length>0){
+        setVsCommands.forEach((command,index)=>{
+          output.push({
+            key:`${target.key}:${command.position??index}`,
+            kind:target.kind,
+            action:command.action,
+            label:`${target.label} ${command.position??''}`.trim(),
+            x:point.x+(index-(setVsCommands.length-1)/2)*42,
+            y:point.y-Math.max(58,layout.handBand.height*0.48),
+            cardId:target.cardId,
+            position:command.position,
+          })
         })
-      })
+        continue
+      }
+      const playEffect=target.commands.find(command=>command.action==='PLAY_EFFECT')
+      if(playEffect){
+        output.push({key:target.key,kind:target.kind,action:playEffect.action,label:target.label,x:point.x,y:point.y,cardId:target.cardId})
+      }
       continue
     }
 
@@ -67,7 +69,7 @@ export function deriveArenaPointerTargets(state:ArenaState,width:number,height:n
       const cardIndex=tieHand.findIndex(card=>card.id===target.cardId)
       const command=target.commands.find(candidate=>candidate.action==='TIE_PICK')
       if(cardIndex<0||!command)continue
-      const point=handPoint(cardIndex,Math.max(1,tieHand.length),layout)
+      const point=arenaHandPoint(cardIndex,Math.max(1,tieHand.length),layout)
       output.push({key:target.key,kind:target.kind,action:command.action,label:target.label,x:point.x,y:point.y,cardId:target.cardId})
       continue
     }
@@ -85,22 +87,22 @@ export function deriveArenaPointerTargets(state:ArenaState,width:number,height:n
       if(target.cardId===undefined)continue
       const cardIndex=hand.findIndex(card=>card.id===target.cardId)
       if(cardIndex<0)continue
-      const point=handPoint(cardIndex,Math.max(1,hand.length),layout)
+      const point=arenaHandPoint(cardIndex,Math.max(1,hand.length),layout)
       output.push({key:target.key,kind:target.kind,action:'SELECT_SELF_DISCARD',label:target.label,x:point.x,y:point.y,cardId:target.cardId})
       continue
     }
 
     const command=target.commands[0]
     if(!command)continue
-    const x=layout.viewport.width/2+(actionIndex-0.5)*118
-    const y=layout.viewport.height*0.72
-    actionIndex+=1
+    const actionIndex=actionTargets.indexOf(target)
+    const point=arenaActionPoint(Math.max(0,actionIndex),Math.max(1,actionTargets.length),layout)
     output.push({
       key:target.key,
       kind:target.kind,
       action:command.action,
       label:target.label,
-      x,y,
+      x:point.x,
+      y:point.y,
       cardId:command.cardId,
       position:command.position,
       slot:command.slot,

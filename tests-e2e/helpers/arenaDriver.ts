@@ -1,6 +1,5 @@
 import { expect, type Page } from 'playwright/test'
 
-const STATUS=/^ARENA NEXT · (PRACTICE|ONLINE) · V(\d+) · ROUND (\d+) · (SET_VS|EFFECT|ATTACK|TIE_BREAKER|GAME_OVER)$/
 export const COMMAND_WAIT_MS=8_000
 
 type PointerTarget={
@@ -14,6 +13,8 @@ type PointerTarget={
   position?:'ATK'|'DEF'
   slot?:number
 }
+
+type BoardBox={name:string;allow:string;left:number;top:number;right:number;bottom:number}
 
 export type ArenaStatus={
   text:string
@@ -42,10 +43,47 @@ function parseTargets(raw:string|null):PointerTarget[]{
   }catch{return []}
 }
 
+export async function assertNoArenaBoardOverlaps(page:Page,label:string){
+  const viewport=page.viewportSize()
+  if(!viewport||viewport.width!==390||viewport.height!==844)return
+  if(await page.locator('[data-arena-chrome="true"]').count()===0)return
+  const boxes=await page.locator('[data-board-element]').evaluateAll((elements)=>elements.flatMap((element)=>{
+    const node=element as HTMLElement
+    const style=getComputedStyle(node)
+    const rect=node.getBoundingClientRect()
+    if(style.display==='none'||style.visibility==='hidden'||rect.width<1||rect.height<1)return []
+    return [{
+      name:node.dataset.boardElement??node.className,
+      allow:node.dataset.boardAllowOverlap??'',
+      left:rect.left,
+      top:rect.top,
+      right:rect.right,
+      bottom:rect.bottom,
+    }]
+  })) as BoardBox[]
+  expect(boxes.length,`${label}: board geometry probes missing`).toBeGreaterThan(10)
+  const overlaps:string[]=[]
+  for(let aIndex=0;aIndex<boxes.length;aIndex+=1){
+    for(let bIndex=aIndex+1;bIndex<boxes.length;bIndex+=1){
+      const a=boxes[aIndex]
+      const b=boxes[bIndex]
+      if(a.allow==='timer'||b.allow==='timer')continue
+      const overlapWidth=Math.min(a.right,b.right)-Math.max(a.left,b.left)
+      const overlapHeight=Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)
+      if(overlapWidth>0.5&&overlapHeight>0.5)overlaps.push(`${a.name} x ${b.name} (${overlapWidth.toFixed(1)}×${overlapHeight.toFixed(1)})`)
+    }
+  }
+  expect(overlaps,`${label}: unexpected board overlaps`).toEqual([])
+}
+
 export async function arenaStatus(page:Page):Promise<ArenaStatus>{
   const locator=page.locator('[data-arena-status="true"]').first()
   const snapshot=await locator.evaluate((element)=>({
-    text:element.textContent?.trim()??'',
+    mode:element.getAttribute('data-arena-mode')??'LOADING',
+    version:Number(element.getAttribute('data-arena-version')??'-1'),
+    round:Number(element.getAttribute('data-arena-round')??'0'),
+    phase:element.getAttribute('data-arena-phase')??'LOADING',
+    error:element.getAttribute('data-arena-error')??'',
     position:element.getAttribute('data-local-vs-position')??'',
     legalActions:(element.getAttribute('data-local-legal-actions')??'').split(',').filter(Boolean),
     connectionStatus:element.getAttribute('data-connection-status')??'',
@@ -57,18 +95,24 @@ export async function arenaStatus(page:Page):Promise<ArenaStatus>{
   }))
   const pointerTargets=parseTargets(snapshot.pointerTargets)
   const selfDiscardMode=snapshot.selfDiscardMode==='EXACT'||snapshot.selfDiscardMode==='ANY'?snapshot.selfDiscardMode:''
-  if(snapshot.text==='ARENA NEXT · LOADING')return {text:snapshot.text,mode:'LOADING',version:-1,round:0,phase:'LOADING',position:snapshot.position,legalActions:snapshot.legalActions,connectionStatus:snapshot.connectionStatus,networkBusy:snapshot.networkBusy,pointerTargetVersion:snapshot.pointerTargetVersion,pointerTargets,selfDiscardMode,selfDiscardCount:snapshot.selfDiscardCount}
-  const match=snapshot.text.match(STATUS)
-  expect(match,`arena status became an error or invalid state: ${snapshot.text}`).toBeTruthy()
-  return {text:snapshot.text,mode:match![1] as 'PRACTICE'|'ONLINE',version:Number(match![2]),round:Number(match![3]),phase:match![4] as ArenaStatus['phase'],position:snapshot.position,legalActions:snapshot.legalActions,connectionStatus:snapshot.connectionStatus,networkBusy:snapshot.networkBusy,pointerTargetVersion:snapshot.pointerTargetVersion,pointerTargets,selfDiscardMode,selfDiscardCount:snapshot.selfDiscardCount}
+  expect(snapshot.error,`arena status became an error: ${snapshot.error}`).toBe('')
+  if(snapshot.mode==='LOADING'||snapshot.phase==='LOADING')return {text:'LOADING',mode:'LOADING',version:-1,round:0,phase:'LOADING',position:snapshot.position,legalActions:snapshot.legalActions,connectionStatus:snapshot.connectionStatus,networkBusy:snapshot.networkBusy,pointerTargetVersion:snapshot.pointerTargetVersion,pointerTargets,selfDiscardMode,selfDiscardCount:snapshot.selfDiscardCount}
+  expect(['PRACTICE','ONLINE'],`invalid arena mode: ${snapshot.mode}`).toContain(snapshot.mode)
+  expect(['SET_VS','EFFECT','ATTACK','TIE_BREAKER','GAME_OVER'],`invalid arena phase: ${snapshot.phase}`).toContain(snapshot.phase)
+  const mode=snapshot.mode as 'PRACTICE'|'ONLINE'
+  const phase=snapshot.phase as ArenaStatus['phase']
+  const text=`${mode} · V${snapshot.version} · ROUND ${snapshot.round} · ${phase}`
+  return {text,mode,version:snapshot.version,round:snapshot.round,phase,position:snapshot.position,legalActions:snapshot.legalActions,connectionStatus:snapshot.connectionStatus,networkBusy:snapshot.networkBusy,pointerTargetVersion:snapshot.pointerTargetVersion,pointerTargets,selfDiscardMode,selfDiscardCount:snapshot.selfDiscardCount}
 }
 
 async function arenaVersion(page:Page){
-  const text=(await page.locator('[data-arena-status="true"]').first().textContent())?.trim()??''
-  if(text==='ARENA NEXT · LOADING')return -1
-  const match=text.match(STATUS)
-  expect(match,`arena status became an error or invalid state: ${text}`).toBeTruthy()
-  return Number(match![2])
+  const snapshot=await page.locator('[data-arena-status="true"]').first().evaluate((element)=>({
+    version:Number(element.getAttribute('data-arena-version')??'-1'),
+    phase:element.getAttribute('data-arena-phase')??'LOADING',
+    error:element.getAttribute('data-arena-error')??'',
+  }))
+  expect(snapshot.error,`arena status became an error: ${snapshot.error}`).toBe('')
+  return snapshot.phase==='LOADING'?-1:snapshot.version
 }
 
 export async function waitForVersionChange(page:Page,version:number,timeout=COMMAND_WAIT_MS){
@@ -95,9 +139,7 @@ export async function waitForArenaReady(page:Page,timeout=20_000){
 }
 
 async function clickTarget(page:Page,target:PointerTarget){
-  const box=await page.locator('#arena-next-runtime-host canvas').boundingBox()
-  expect(box,'arena canvas is missing').toBeTruthy()
-  await page.mouse.click(box!.x+target.x,box!.y+target.y)
+  await page.mouse.click(target.x,target.y)
 }
 
 function chooseTarget(status:ArenaStatus){
@@ -134,15 +176,19 @@ async function resolveSelfDiscard(page:Page,status:ArenaStatus){
     await page.waitForTimeout(25)
   }
 
-  // The scene creates the confirm button after enough exact selections have
-  // been made. Its coordinate is already published from the same layout, so
-  // the driver uses that coordinate and never searches the canvas.
   const current=await arenaStatus(page)
   const confirm=current.pointerTargets.find(target=>target.action==='RESOLVE_SELF_DISCARD')
     ??status.pointerTargets.find(target=>target.action==='RESOLVE_SELF_DISCARD')
   if(!confirm)return {advanced:false,action:'RESOLVE_SELF_DISCARD'}
   await clickTarget(page,confirm)
   return {advanced:await waitForVersionChange(page,status.version),action:'RESOLVE_SELF_DISCARD'}
+}
+
+async function playEffectThroughInspect(page:Page,target:PointerTarget,version:number){
+  await clickTarget(page,target)
+  await expect(page.locator('[data-arena-inspect="true"]')).toBeVisible({timeout:COMMAND_WAIT_MS})
+  await page.locator('[data-arena-inspect-play="true"]').click()
+  return {advanced:await waitForVersionChange(page,version),action:'PLAY_EFFECT'}
 }
 
 export async function driveOneHumanAction(page:Page){
@@ -154,6 +200,7 @@ export async function driveOneHumanAction(page:Page){
 
   const target=chooseTarget(settled)
   if(!target)return {advanced:false,action:'NO_EXACT_TARGET'}
+  if(target.action==='PLAY_EFFECT')return playEffectThroughInspect(page,target,settled.version)
   await clickTarget(page,target)
   return {advanced:await waitForVersionChange(page,settled.version),action:target.action}
 }

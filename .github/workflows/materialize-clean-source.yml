@@ -59,7 +59,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: e2e-test-results
-          path: test-results/
+          path: |
+            test-results/
+            e2e-artifacts/
           retention-days: 7
       - name: Record skipped online E2E
         if: ${{ env.MEGA_X_E2E_P1_EMAIL == '' || env.MEGA_X_E2E_P1_PASSWORD == '' || env.MEGA_X_E2E_P1_HANDLE == '' || env.MEGA_X_E2E_P2_EMAIL == '' || env.MEGA_X_E2E_P2_PASSWORD == '' || env.MEGA_X_E2E_P2_HANDLE == '' || env.VITE_SUPABASE_URL == '' || env.VITE_SUPABASE_ANON_KEY == '' || env.VITE_SUPABASE_ENV == '' }}

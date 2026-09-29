@@ -30,6 +30,7 @@ export default function Root(){
   const [arenaRoute,setArenaRoute]=useState<ArenaRoute>(practiceRoute)
   const routeRef=useRef<ArenaRoute>(arenaRoute)
   const forwardingSignIn=useRef(false)
+  const startingPractice=useRef(false)
   routeRef.current=arenaRoute
 
   useEffect(()=>{
@@ -52,15 +53,21 @@ export default function Root(){
     }
 
     const startPractice=()=>{
+      if(startingPractice.current)return
+      startingPractice.current=true
       window.setTimeout(async()=>{
-        if(cancelled)return
-        const current=practiceRoute()
-        if(current){setArenaRoute(current);return}
-        const session=getSavedSession()??guestSession()
-        if(!session)return
-        const profile=session.accessToken==='practice-local'?null:await loadProfile(session).catch(()=>null)
-        const match=startPracticeMatch(session.userId,profile?.fighter_handle||'GUEST X FIGHTER') as ActiveOnlineMatch
-        setArenaRoute({session,match})
+        try{
+          if(cancelled)return
+          const current=practiceRoute()
+          if(current){setArenaRoute(current);return}
+          const session=getSavedSession()??guestSession()
+          if(!session)return
+          const profile=session.accessToken==='practice-local'?null:await loadProfile(session).catch(()=>null)
+          const match=startPracticeMatch(session.userId,profile?.fighter_handle||'GUEST X FIGHTER') as ActiveOnlineMatch
+          setArenaRoute({session,match})
+        }finally{
+          startingPractice.current=false
+        }
       },0)
     }
 

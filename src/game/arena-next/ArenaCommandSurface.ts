@@ -112,12 +112,12 @@ export function deriveArenaCommandTargets(state:ArenaState):ArenaCommandTarget[]
       }
       case 'PLAY_EFFECT': {
         if(command.cardId===undefined)break
-        const key=`action:PLAY_EFFECT:${command.cardId}`
+        const key=`hand:${command.cardId}`
         targets.set(key,{
-          kind:'ACTION',
+          kind:'HAND_CARD',
           key,
           cardId:command.cardId,
-          label:`PLAY ${cardLabel(state,command.cardId)}`,
+          label:cardLabel(state,command.cardId),
           commands:[command],
         })
         break
