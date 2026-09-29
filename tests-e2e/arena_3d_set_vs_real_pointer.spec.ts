@@ -80,6 +80,10 @@ test('signed-in practice match runs through ArenaNextRuntime from SET_VS to GAME
   },handle)
   const practiceEntry=page.locator('.mx-practice-entry[data-practice-entry="true"]')
   await expect(practiceEntry).toBeVisible({timeout:15_000})
+  await page.evaluate(()=>{
+    let state=73>>>0
+    Math.random=()=>{state=(Math.imul(1664525,state)+1013904223)>>>0;return state/4294967296}
+  })
   await practiceEntry.click()
 
   const ready=await waitForArenaReady(page)
