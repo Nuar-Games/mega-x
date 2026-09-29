@@ -1,5 +1,5 @@
-import type { CSSProperties } from 'react'
-import type { ArenaState } from './ArenaState'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import type { ArenaCardState, ArenaState } from './ArenaState'
 import type { ArenaPrototypeLayout } from './prototype/ArenaPrototypeLayout'
 import './ArenaBoardChrome.css'
 
@@ -10,6 +10,16 @@ type ArenaBoardChromeProps={
   layout:ArenaPrototypeLayout
   timerSeconds:number
   timerProgress:number
+  hoveredHandCardId:number|null
+  touchLiftedHandCardId:number|null
+}
+
+type LeavingHandCard={
+  card:ArenaCardState
+  sourceX:number
+  sourceY:number
+  deltaX:number
+  deltaY:number
 }
 
 function statValue(value:number|undefined){return Number.isFinite(value)?String(value):'—'}
@@ -101,24 +111,100 @@ function FighterHeader({state,player,own}:{state:ArenaState;player:0|1;own:boole
   </div>
 }
 
-function HandFan({state,player}:{state:ArenaState;player:0|1}){
+function fanCardLeft(index:number,count:number){
+  const step=62
+  const totalWidth=88+Math.max(0,count-1)*step
+  return (390-totalWidth)/2+index*step
+}
+
+function HandFan({state,player,hoveredCardId,touchLiftedCardId}:{state:ArenaState;player:0|1;hoveredCardId:number|null;touchLiftedCardId:number|null}){
   const hand=state.players[player].hand??[]
   const count=Math.max(1,hand.length)
+  const handKey=hand.map(card=>card.id).join(',')
+  const previousHandRef=useRef<ArenaCardState[]|null>(null)
+  const [enteringIds,setEnteringIds]=useState<Set<number>>(()=>new Set())
+  const [leavingCards,setLeavingCards]=useState<LeavingHandCard[]>([])
+  const activeLiftedId=touchLiftedCardId??hoveredCardId
+  const liftedIndex=hand.findIndex(card=>card.id===activeLiftedId)
+  const playableIds=useMemo(()=>new Set(state.legalCommands
+    .filter(command=>(command.action==='SET_VS'||command.action==='PLAY_EFFECT')&&Number.isFinite(command.cardId))
+    .map(command=>command.cardId as number)),[state.legalCommands])
+  const showPlayability=playableIds.size>0
+
+  useEffect(()=>{
+    const previous=previousHandRef.current
+    previousHandRef.current=hand
+    if(!previous)return
+    const currentIds=new Set(hand.map(card=>card.id))
+    const previousIds=new Set(previous.map(card=>card.id))
+    const entered=hand.filter(card=>!previousIds.has(card.id)).map(card=>card.id)
+    if(entered.length){
+      setEnteringIds(new Set(entered))
+      window.setTimeout(()=>setEnteringIds(new Set()),260)
+    }
+    const removed=previous.filter(card=>!currentIds.has(card.id))
+    if(!removed.length)return
+    const nextLeaving=removed.map(card=>{
+      const sourceIndex=Math.max(0,previous.findIndex(candidate=>candidate.id===card.id))
+      const previousCount=Math.max(1,previous.length)
+      const offset=sourceIndex-(previousCount-1)/2
+      const sourceX=fanCardLeft(sourceIndex,previousCount)
+      const sourceY=24+Math.abs(offset)*5
+      const effectIndex=state.players[player].effects.findIndex(effect=>effect?.card.id===card.id)
+      let destinationX=12
+      let destinationY=295
+      if(state.players[player].vs?.card.id===card.id){
+        destinationX=135
+        destinationY=348
+      }else if(effectIndex>=0){
+        const slotWidth=(370-6*5)/6
+        destinationX=10+effectIndex*(slotWidth+6)+(slotWidth-88)/2
+        destinationY=542
+      }
+      return {card,sourceX,sourceY,deltaX:destinationX-sourceX,deltaY:destinationY-(680+sourceY)}
+    })
+    setLeavingCards(nextLeaving)
+    window.setTimeout(()=>setLeavingCards([]),280)
+  },[handKey,state.players[player].vs?.card.id,state.players[player].effects,player])
+
   return <div className="mx-arena-hand-zone" data-board-element="hand-zone">
     <div className="mx-arena-hand-label">KAD DI TANGAN · {hand.length}</div>
     <div className="mx-arena-hand-fan">
       {hand.map((card,index)=>{
         const offset=index-(count-1)/2
         const rotate=offset*4.5
-        const y=Math.abs(offset)*5-(Math.abs(offset)<0.2?12:0)
-        const style={'--mx-hand-rotate':`${rotate}deg`,'--mx-hand-y':`${y}px`,'--mx-hand-z':String(index+1)} as CSSProperties
-        return <img key={card.id} src={card.artSrc} alt={card.name} draggable={false} style={style}/>
+        const y=Math.abs(offset)*5
+        const spread=liftedIndex<0||index===liftedIndex?0:index<liftedIndex?-8:8
+        const left=fanCardLeft(index,count)
+        const enterX=38-(left+44)
+        const lifted=card.id===activeLiftedId
+        const playable=showPlayability&&playableIds.has(card.id)
+        const unplayable=showPlayability&&!playable
+        const classes=['mx-arena-hand-card',playable?'is-playable':'',unplayable?'is-unplayable':'',lifted?'is-lifted':'',enteringIds.has(card.id)?'is-entering':''].filter(Boolean).join(' ')
+        const style={
+          '--mx-hand-rotate':`${rotate}deg`,
+          '--mx-hand-y':`${y}px`,
+          '--mx-hand-z':String(lifted?30:index+1),
+          '--mx-hand-spread':`${spread}px`,
+          '--mx-hand-enter-x':`${enterX}px`,
+          '--mx-hand-enter-y':'-430px',
+        } as CSSProperties
+        return <img key={card.id} data-arena-hand-card="true" data-card-id={card.id} className={classes} src={card.artSrc} alt={card.name} draggable={false} style={style}/>
       })}
+      {leavingCards.map(({card,sourceX,sourceY,deltaX,deltaY})=><img
+        key={`leaving-${card.id}`}
+        className="mx-arena-hand-leaving is-leaving"
+        src={card.artSrc}
+        alt=""
+        draggable={false}
+        aria-hidden="true"
+        style={{left:sourceX,top:sourceY,'--mx-leave-x':`${deltaX}px`,'--mx-leave-y':`${deltaY}px`} as CSSProperties}
+      />)}
     </div>
   </div>
 }
 
-export function ArenaBoardChrome({state,layout,timerSeconds,timerProgress}:ArenaBoardChromeProps){
+export function ArenaBoardChrome({state,layout,timerSeconds,timerProgress,hoveredHandCardId,touchLiftedHandCardId}:ArenaBoardChromeProps){
   const local=state.identity.localPlayerIndex
   const opponent=(local===0?1:0) as 0|1
   const active=activePlayer(state)
@@ -168,6 +254,6 @@ export function ArenaBoardChrome({state,layout,timerSeconds,timerProgress}:Arena
     <div className="mx-arena-effect-label is-own" data-board-element="local-effect-label">EFFECT KAMU</div>
     <EffectRow state={state} player={local} own/>
     <FighterHeader state={state} player={local} own/>
-    <HandFan state={state} player={local}/>
+    <HandFan state={state} player={local} hoveredCardId={hoveredHandCardId} touchLiftedCardId={touchLiftedHandCardId}/>
   </div>
 }
