@@ -34,9 +34,13 @@ for(const marker of ['data-board-element','KAD LAWAN','KAD KAMU','GILIRAN KAMU',
 for(const marker of ['Barlow Condensed','Space Grotesk','mxArenaShimmer','mxArenaBeam','mxArenaSpark','mxArenaGlowRed','mxArenaGlowBlue','prefers-reduced-motion']){
   if(!chromeCss.includes(marker))throw new Error(`arena board chrome CSS missing: ${marker}`)
 }
+if(/\.mx-arena-hand-fan[^\n{]*[^\n]*nth-child\(/.test(chromeCss)||chromeCss.includes('.mx-arena-hand-fan img:nth-child'))throw new Error('resting hand fan must not hard-code an nth-child glow or selection')
+for(const marker of ['data-arena-hand-card','is-playable','is-unplayable','is-lifted','is-entering','is-leaving']){
+  if(!chrome.includes(marker)&&!chromeCss.includes(marker))throw new Error(`arena hand fan behaviour missing: ${marker}`)
+}
 if(!layout.includes('const PHONE_WIDTH=390')||!layout.includes('const PHONE_HEIGHT=844')||!layout.includes('120*scale')||!layout.includes('170*scale'))throw new Error('arena layout must preserve the approved 390x844 geometry and 120x170 VS cards')
 if(!mockup.includes('owner-approved phone mockup (reference)')||!mockup.includes('/ui/landing/main-background.webp'))throw new Error('owner-approved arena mockup is missing or altered')
-for(const marker of ['/cards/inspect/','KAD DI TANGAN','MAIN KAD INI','TUTUP','ZON X','ZON TEPI']){
+for(const marker of ['/cards/inspect/','KAD DI TANGAN','MAIN KAD INI','TUTUP','ZON X','ZON TEPI','data-arena-inspect-timer','timerSeconds']){
   if(!inspect.includes(marker))throw new Error(`arena inspect missing: ${marker}`)
 }
 if(!root.includes('startingPractice.current'))throw new Error('practice double-start guard missing')
