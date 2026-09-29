@@ -74,10 +74,7 @@ test('signed-in practice match runs through ArenaNextRuntime from SET_VS to GAME
     const contextPrototype=CanvasRenderingContext2D.prototype
     const originalFillText=contextPrototype.fillText
     const originalStrokeText=contextPrototype.strokeText
-    const capture=(text:unknown)=>{
-      const value=String(text)
-      if(value.includes(expectedHandle))probe.textContent=value
-    }
+    const capture=(text:unknown)=>{const value=String(text);if(value.includes(expectedHandle))probe.textContent=value}
     contextPrototype.fillText=function(text:string,x:number,y:number,maxWidth?:number){capture(text);return maxWidth===undefined?originalFillText.call(this,text,x,y):originalFillText.call(this,text,x,y,maxWidth)}
     contextPrototype.strokeText=function(text:string,x:number,y:number,maxWidth?:number){capture(text);return maxWidth===undefined?originalStrokeText.call(this,text,x,y):originalStrokeText.call(this,text,x,y,maxWidth)}
   },handle)
@@ -132,32 +129,18 @@ test('signed-in practice match runs through ArenaNextRuntime from SET_VS to GAME
     const status=await arenaStatus(page)
     if(status.phase==='ATTACK')sawAttackPhase=true
     if(status.phase==='GAME_OVER')break
-
-    if(status.legalActions.length===0){
-      const advanced=await waitForVersionChange(page,status.version,BOT_WAIT_MS)
-      if(!advanced)throw new Error(`practice bot turn stuck in ${status.phase} at V${status.version}`)
-      continue
-    }
+    if(status.legalActions.length===0){const advanced=await waitForVersionChange(page,status.version,BOT_WAIT_MS);if(!advanced)throw new Error(`practice bot turn stuck in ${status.phase} at V${status.version}`);continue}
 
     const result=await driveOneHumanAction(page)
-    if(result.action==='RESOLVE_SELF_DISCARD'&&'selfDiscardMode' in result){
+    if(result.action==='RESOLVE_SELF_DISCARD'&&'selfDiscardMode' in result&&'selfDiscardCount' in result){
       if(result.selfDiscardMode==='EXACT'&&result.selfDiscardCount===2)sawExactTwoDiscard=true
       if(result.selfDiscardMode==='ANY')sawAnyDiscard=true
     }
     if(result.action==='SET_VS'&&result.advanced){
       sawSetVs=true
-      if(!phoneBoardCaptured){
-        await page.waitForTimeout(250)
-        await assertNoArenaBoardOverlaps(page,'practice board')
-        await attachScreenshot(page,testInfo,'practice-phone-board')
-        phoneBoardCaptured=true
-      }
+      if(!phoneBoardCaptured){await page.waitForTimeout(250);await assertNoArenaBoardOverlaps(page,'practice board');await attachScreenshot(page,testInfo,'practice-phone-board');phoneBoardCaptured=true}
     }
-
-    if(!result.advanced){
-      const after=await arenaStatus(page)
-      if(after.version===status.version)throw new Error(`practice match stuck in ${status.phase} at V${status.version}; legal=${status.legalActions.join('|')}`)
-    }
+    if(!result.advanced){const after=await arenaStatus(page);if(after.version===status.version)throw new Error(`practice match stuck in ${status.phase} at V${status.version}; legal=${status.legalActions.join('|')}`)}
   }
 
   const finalStatus=await arenaStatus(page)
