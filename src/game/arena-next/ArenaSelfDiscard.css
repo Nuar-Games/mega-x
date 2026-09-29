@@ -1,0 +1,11 @@
+.mx-arena-hand-card-wrap{position:absolute;width:88px;height:125px;pointer-events:none}
+.mx-arena-hand-card-wrap>.mx-arena-hand-card{position:absolute;left:0;top:0;margin:0}
+.mx-arena-board.is-self-discard .mx-arena-hand-card-wrap,.mx-arena-board.is-self-discard .mx-arena-hand-card,.mx-arena-board.is-self-discard .mx-self-discard-info,.mx-arena-board.is-self-discard .mx-self-discard-confirm{pointer-events:auto}
+.mx-arena-hand-card.is-discard-selected{opacity:1!important;border:3px solid #ff493f!important;box-shadow:0 0 18px rgba(255,73,63,.9),0 8px 18px rgba(0,0,0,.78)!important;transform:translateX(var(--mx-hand-spread,0px)) rotate(0deg) translateY(calc(var(--mx-hand-y) - 14px)) scale(1.03)!important}
+.mx-self-discard-mark{position:absolute;left:12px;right:12px;top:43px;height:26px;border-radius:5px;background:rgba(170,8,20,.92);border:1px solid #ff837b;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:900;letter-spacing:.12em;pointer-events:none;z-index:42}
+.mx-self-discard-info{position:absolute;right:4px;top:4px;width:24px;height:24px;border-radius:50%;border:1px solid rgba(255,255,255,.85);background:rgba(5,8,14,.88);color:#fff;font:800 14px/1 'Space Grotesk',sans-serif;display:flex;align-items:center;justify-content:center;z-index:45;cursor:pointer}
+.mx-self-discard-banner{position:absolute;left:18px;right:18px;top:-6px;min-height:28px;padding:5px 10px;border-radius:7px;border:1px solid #ff675d;background:linear-gradient(180deg,rgba(106,12,21,.96),rgba(54,5,11,.96));box-shadow:0 0 16px rgba(255,70,60,.35);color:#fff;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;letter-spacing:.06em;z-index:52}
+.mx-self-discard-banner.is-waiting{border-color:#7e8ba3;background:rgba(9,14,25,.94);box-shadow:none;color:#d5dce8}
+.mx-self-discard-confirm{cursor:pointer;padding-inline:8px;font-size:13px}
+.mx-self-discard-confirm:disabled{cursor:not-allowed;opacity:.45;filter:saturate(.45);box-shadow:none}
+@media (prefers-reduced-motion:reduce){.mx-arena-hand-card.is-discard-selected{transition:none!important}}
