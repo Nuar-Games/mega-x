@@ -11,6 +11,7 @@ import { ArenaPrototypeScene } from './prototype/ArenaPrototypeScene'
 
 const RUNTIME_HOST_ID='arena-next-runtime-host'
 const PRESENTATION_TIMER_SECONDS=20
+const TOUCH_INSPECT_LIFT_MS=120
 
 type ArenaNextRuntimeProps={
   allowPracticeBootstrap?:boolean
@@ -26,11 +27,15 @@ export function ArenaNextRuntime({allowPracticeBootstrap=true,session=null,match
   const gameRef=useRef<ReturnType<typeof createArenaPrototypeGame>['game']|null>(null)
   const sceneRef=useRef<ArenaPrototypeScene|null>(null)
   const transitionRef=useRef(Promise.resolve())
+  const lastPointerTypeRef=useRef('mouse')
+  const touchInspectTimerRef=useRef<number|null>(null)
   const [state,setState]=useState<ArenaState|null>(null)
   const [pointerSnapshot,setPointerSnapshot]=useState<PointerSnapshot>({version:-1,targets:[]})
   const [error,setError]=useState('')
   const [pinnedInspect,setPinnedInspect]=useState<ArenaInspectSelection|null>(null)
   const [hoverInspect,setHoverInspect]=useState<ArenaInspectSelection|null>(null)
+  const [hoveredHandCardId,setHoveredHandCardId]=useState<number|null>(null)
+  const [touchLiftedHandCardId,setTouchLiftedHandCardId]=useState<number|null>(null)
   const [timerSeconds,setTimerSeconds]=useState(PRESENTATION_TIMER_SECONDS)
   const [viewport,setViewport]=useState(()=>({width:window.innerWidth,height:window.innerHeight}))
 
@@ -42,6 +47,10 @@ export function ArenaNextRuntime({allowPracticeBootstrap=true,session=null,match
     const resize=()=>setViewport({width:window.innerWidth,height:window.innerHeight})
     window.addEventListener('resize',resize)
     return()=>window.removeEventListener('resize',resize)
+  },[])
+
+  useEffect(()=>()=>{
+    if(touchInspectTimerRef.current!==null)window.clearTimeout(touchInspectTimerRef.current)
   },[])
 
   useEffect(()=>{
@@ -63,6 +72,12 @@ export function ArenaNextRuntime({allowPracticeBootstrap=true,session=null,match
   useEffect(()=>{
     setPinnedInspect(null)
     setHoverInspect(null)
+    setHoveredHandCardId(null)
+    setTouchLiftedHandCardId(null)
+    if(touchInspectTimerRef.current!==null){
+      window.clearTimeout(touchInspectTimerRef.current)
+      touchInspectTimerRef.current=null
+    }
   },[state?.stateVersion])
 
   useEffect(()=>{
@@ -98,10 +113,32 @@ export function ArenaNextRuntime({allowPracticeBootstrap=true,session=null,match
       scene.setCommandDispatcher((command)=>{void controller.dispatch(command).catch(()=>undefined)})
       scene.setInspectDispatcher((selection,mode)=>{
         if(mode==='click'){
+          if(selection?.source==='HAND'&&lastPointerTypeRef.current==='touch'){
+            const card=selection.cards[selection.index]??selection.cards[0]
+            if(!card)return
+            setTouchLiftedHandCardId(card.id)
+            setHoverInspect(null)
+            setHoveredHandCardId(null)
+            if(touchInspectTimerRef.current!==null)window.clearTimeout(touchInspectTimerRef.current)
+            touchInspectTimerRef.current=window.setTimeout(()=>{
+              touchInspectTimerRef.current=null
+              setTouchLiftedHandCardId(null)
+              setPinnedInspect(selection)
+            },TOUCH_INSPECT_LIFT_MS)
+            return
+          }
           setPinnedInspect(selection)
+          setHoverInspect(null)
+          setHoveredHandCardId(null)
+          return
+        }
+        if(selection?.source==='HAND'){
+          const card=selection.cards[selection.index]??selection.cards[0]
+          setHoveredHandCardId(card?.id??null)
           setHoverInspect(null)
           return
         }
+        setHoveredHandCardId(null)
         setHoverInspect(selection)
       })
       publishPointerTargets(initial)
@@ -150,9 +187,9 @@ export function ArenaNextRuntime({allowPracticeBootstrap=true,session=null,match
   const opponentVsY=layout?.vs[opponent].y??-1
   const timerProgress=Math.max(0,Math.min(1,timerSeconds/PRESENTATION_TIMER_SECONDS))
 
-  return <main data-arena-board-version="2" style={{position:'fixed',inset:0,overflow:'hidden',background:'#020308',zIndex:99999}}>
+  return <main data-arena-board-version="2" onPointerDownCapture={(event)=>{lastPointerTypeRef.current=event.pointerType}} style={{position:'fixed',inset:0,overflow:'hidden',background:'#020308',zIndex:99999}}>
     {layout&&state&&<div style={{position:'absolute',inset:0,zIndex:10,transition:'filter .16s ease',filter:pinnedInspect?'blur(5px) brightness(.72)':'none'}}>
-      <ArenaBoardChrome state={state} layout={layout} timerSeconds={timerSeconds} timerProgress={timerProgress}/>
+      <ArenaBoardChrome state={state} layout={layout} timerSeconds={timerSeconds} timerProgress={timerProgress} hoveredHandCardId={hoveredHandCardId} touchLiftedHandCardId={touchLiftedHandCardId}/>
     </div>}
 
     <div id={RUNTIME_HOST_ID} ref={hostRef} aria-hidden="true" style={{position:'absolute',inset:0,zIndex:20,opacity:.001}} />
@@ -184,6 +221,7 @@ export function ArenaNextRuntime({allowPracticeBootstrap=true,session=null,match
       selection={activeInspect}
       localPlayerIndex={local}
       legalCommands={pinnedInspect?legalInspectCommands:[]}
+      timerSeconds={timerSeconds}
       hoverOnly={!pinnedInspect&&Boolean(hoverInspect)}
       onIndex={moveInspect}
       onClose={()=>{setPinnedInspect(null);setHoverInspect(null)}}
