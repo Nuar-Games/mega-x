@@ -18,12 +18,13 @@ export async function resolveSelfDiscard(page:Page,status:ArenaStatus){
   const selectable=status.pointerTargets.filter(target=>target.action==='SELECT_SELF_DISCARD')
   const required=status.selfDiscardMode==='EXACT'?status.selfDiscardCount:Math.min(1,selectable.length)
   if(required>selectable.length)return {advanced:false,action:'RESOLVE_SELF_DISCARD',selfDiscardMode:status.selfDiscardMode,selfDiscardCount:status.selfDiscardCount}
+  const orderedSelectable=status.selfDiscardMode==='EXACT'?[...selectable].sort((a,b)=>Number(a.cardId===26)-Number(b.cardId===26)):selectable
   const capture=status.mode==='PRACTICE'&&status.selfDiscardMode==='EXACT'&&status.selfDiscardCount===2
   const zonBefore=Number(await page.locator('.mx-arena-effect-row.is-own .mx-arena-side-zone strong').textContent().catch(()=>'-1'))
   const handBefore=await page.locator('[data-arena-hand-card="true"]').count()
   if(capture){await expect(page.locator('[data-self-discard-banner="true"]')).toContainText('BUANG 2 KAD KE ZON TEPI · 0/2');await page.screenshot({path:'e2e-artifacts/arena-board-v2/self-discard-banner.png',fullPage:true})}
   if(status.selfDiscardMode==='ANY'){await expect(page.locator('[data-self-discard-banner="true"]')).toContainText(`BUANG SEHINGGA ${status.selfDiscardLimit} KAD KE ZON TEPI`)}
-  for(let index=0;index<required;index+=1){await clickTarget(page,selectable[index]);await expect.poll(async()=>(await arenaStatus(page)).selfDiscardSelected,{timeout:2_000}).toBe(index+1);if(capture)await page.screenshot({path:`e2e-artifacts/arena-board-v2/self-discard-${index+1}-of-2.png`,fullPage:true})}
+  for(let index=0;index<required;index+=1){await clickTarget(page,orderedSelectable[index]);await expect.poll(async()=>(await arenaStatus(page)).selfDiscardSelected,{timeout:2_000}).toBe(index+1);if(capture)await page.screenshot({path:`e2e-artifacts/arena-board-v2/self-discard-${index+1}-of-2.png`,fullPage:true})}
   const confirm=page.locator('[data-self-discard-confirm="true"]');await expect(confirm).toBeEnabled({timeout:2_000});await confirm.click();const advanced=await waitForVersionChange(page,status.version)
   if(capture&&advanced){await expect(page.locator('.mx-arena-effect-row.is-own .mx-arena-side-zone strong')).toHaveText(String(zonBefore+2),{timeout:4_000});await expect(page.locator('[data-arena-hand-card="true"]')).toHaveCount(handBefore-2,{timeout:4_000});expect((await arenaStatus(page)).phase,'match must continue after Pipit discard').not.toBe('GAME_OVER');await page.screenshot({path:'e2e-artifacts/arena-board-v2/self-discard-confirmed.png',fullPage:true});console.log('[SELF_DISCARD_E2E] EXACT 2 visible React selection confirmed; 2 cards moved to Zon Tepi and match continued')}
   if(status.selfDiscardMode==='ANY'&&advanced)console.log(`[SELF_DISCARD_E2E] ANY visible React selection confirmed with ${required} card`)
