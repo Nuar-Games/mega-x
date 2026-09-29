@@ -99,16 +99,18 @@ test('signed-in practice match runs through ArenaNextRuntime from SET_VS to GAME
   console.log(`[PRACTICE_NAME] ${await renderedPracticeName.textContent()}`)
 
   const beforeInspect=await arenaStatus(page)
-  const setTargets=beforeInspect.pointerTargets.filter(target=>target.action==='SET_VS')
-  expect(setTargets.length,'SET_VS pointer targets are required to locate a hand card').toBeGreaterThan(0)
-  const firstCardId=setTargets[0].cardId
-  const firstCardTargets=setTargets.filter(target=>target.cardId===firstCardId)
-  const handX=firstCardTargets.reduce((sum,target)=>sum+target.x,0)/firstCardTargets.length
-  const handY=Math.max(...firstCardTargets.map(target=>target.y))+74
-  const canvasBox=await page.locator('#arena-next-runtime-host canvas').boundingBox()
-  expect(canvasBox,'arena canvas is missing').toBeTruthy()
-  await page.mouse.click(canvasBox!.x+handX,canvasBox!.y+handY)
+  const handCards=page.locator('[data-arena-hand-card="true"]')
+  expect(await handCards.count(),'Practice hand cards must render as interactive fan cards').toBeGreaterThan(0)
+  await expect(page.locator('[data-arena-hand-card="true"].is-selected'),'resting fan must not contain a selected/glowing card').toHaveCount(0)
+  await attachScreenshot(page,testInfo,'hand-fan-rest-playable')
+  const firstHandCard=handCards.first()
+  await firstHandCard.hover()
+  await page.waitForTimeout(180)
+  await attachScreenshot(page,testInfo,'hand-fan-hover')
+  await firstHandCard.click()
   await expect(page.locator('[data-arena-inspect="true"]')).toBeVisible({timeout:5_000})
+  await expect(page.locator('[data-arena-inspect-timer="true"]')).toBeVisible()
+  await expect(page.locator('[data-arena-inspect-timer="true"]')).toHaveText(/^\d+ SAAT$/)
   expect((await arenaStatus(page)).version,'opening inspect must not play the card').toBe(beforeInspect.version)
   await attachScreenshot(page,testInfo,'practice-inspect')
   await page.locator('[data-arena-inspect-close="true"]').click()
