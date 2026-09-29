@@ -7,6 +7,7 @@ const runtime=fs.readFileSync('src/game/arena-next/ArenaNextRuntime.tsx','utf8')
 const chrome=fs.readFileSync('src/game/arena-next/ArenaBoardChrome.tsx','utf8')
 const chromeCss=fs.readFileSync('src/game/arena-next/ArenaBoardChrome.css','utf8')
 const inspect=fs.readFileSync('src/game/arena-next/ArenaCardInspect.tsx','utf8')
+const scene=fs.readFileSync('src/game/arena-next/prototype/ArenaPrototypeScene.ts','utf8')
 const driver=fs.readFileSync('tests-e2e/helpers/arenaDriver.ts','utf8')
 const root=fs.readFileSync('src/root.tsx','utf8')
 const mockup=fs.readFileSync('docs/mockups/arena-v2-phone-mockup.html','utf8')
@@ -15,7 +16,7 @@ for(const marker of ['createArenaBoardLayout','localPlayerIndex','opponentPlayer
   if(!layout.includes(marker))throw new Error(`arena v2 layout missing: ${marker}`)
 }
 if(layout.includes('createDesktopPrototypeLayout'))throw new Error('desktop-only arena layout survived v2')
-for(const marker of ['createArenaBoardLayout','arenaHandPoint','arenaActionPoint','PLAY_EFFECT']){
+for(const marker of ['createArenaBoardLayout','arenaHandPoint','arenaActionPoint','PLAY_EFFECT','SELF_DISCARD_CARD']){
   if(!pointers.includes(marker))throw new Error(`pointer targets do not share viewer-relative layout: ${marker}`)
 }
 if(!commands.includes("case 'PLAY_EFFECT'")||!commands.includes("const key=`hand:${command.cardId}`")||!commands.includes("kind:'HAND_CARD'"))throw new Error('PLAY_EFFECT must route through the hand-card inspect surface')
@@ -31,9 +32,13 @@ if(runtime.includes('ARENA NEXT ·'))throw new Error('arena debug banner survive
 for(const marker of ['data-board-element','KAD LAWAN','KAD KAMU','GILIRAN KAMU','GILIRAN LAWAN','TAMAT TANPA EFFECT','KAD DI TANGAN','/ui/landing/main-background.webp','/cards/back-game.webp']){
   if(!chrome.includes(marker))throw new Error(`arena board chrome missing: ${marker}`)
 }
-for(const marker of ['Barlow Condensed','Space Grotesk','mxArenaShimmer','mxArenaBeam','mxArenaSpark','mxArenaGlowRed','mxArenaGlowBlue','prefers-reduced-motion']){
+for(const marker of ['data-self-discard-banner','BUANG SEHINGGA','SAHKAN BUANGAN','data-self-discard-card','data-self-discard-info','data-self-discard-confirm','LAWAN SEDANG MEMBUANG KAD']){
+  if(!chrome.includes(marker))throw new Error(`React self-discard UI missing: ${marker}`)
+}
+for(const marker of ['Barlow Condensed','Space Grotesk','mxArenaShimmer','mxArenaBeam','mxArenaSpark','mxArenaGlowRed','mxArenaGlowBlue','prefers-reduced-motion','is-discard-selected']){
   if(!chromeCss.includes(marker))throw new Error(`arena board chrome CSS missing: ${marker}`)
 }
+if(scene.includes('selectedSelfDiscardIds')||scene.includes('selfDiscardChoiceKey')||scene.includes('selfDiscardCanConfirm'))throw new Error('hidden Phaser scene must not own SELF_DISCARD selection state')
 if(/\.mx-arena-hand-fan[^\n{]*[^\n]*nth-child\(/.test(chromeCss)||chromeCss.includes('.mx-arena-hand-fan img:nth-child'))throw new Error('resting hand fan must not hard-code an nth-child glow or selection')
 for(const marker of ['data-arena-hand-card','is-playable','is-unplayable','is-lifted','is-entering','is-leaving']){
   if(!chrome.includes(marker)&&!chromeCss.includes(marker))throw new Error(`arena hand fan behaviour missing: ${marker}`)
